@@ -32,6 +32,7 @@ import { Route as AuthenticatedConsoleWatchlistsRouteImport } from './routes/_au
 import { Route as AuthenticatedConsoleCasesCaseIdRouteImport } from './routes/_authenticated/console.cases.$caseId'
 import { Route as ApiPublicHooksRefreshWatchlistsRouteImport } from './routes/api/public/hooks/refresh-watchlists'
 import { Route as ApiPublicV1CasesRouteImport } from './routes/api/public/v1/cases'
+import { Route as ApiPublicV1CasesCaseIdRouteImport } from './routes/api/public/v1/cases.$caseId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -156,6 +157,11 @@ const ApiPublicV1CasesRoute = ApiPublicV1CasesRouteImport.update({
   path: '/api/public/v1/cases',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicV1CasesCaseIdRoute = ApiPublicV1CasesCaseIdRouteImport.update({
+  id: '/$caseId',
+  path: '/$caseId',
+  getParentRoute: () => ApiPublicV1CasesRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -179,7 +185,8 @@ export interface FileRoutesByFullPath {
   '/console/': typeof AuthenticatedConsoleIndexRoute
   '/console/cases/$caseId': typeof AuthenticatedConsoleCasesCaseIdRoute
   '/api/public/hooks/refresh-watchlists': typeof ApiPublicHooksRefreshWatchlistsRoute
-  '/api/public/v1/cases': typeof ApiPublicV1CasesRoute
+  '/api/public/v1/cases': typeof ApiPublicV1CasesRouteWithChildren
+  '/api/public/v1/cases/$caseId': typeof ApiPublicV1CasesCaseIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -203,7 +210,8 @@ export interface FileRoutesByTo {
   '/console': typeof AuthenticatedConsoleIndexRoute
   '/console/cases/$caseId': typeof AuthenticatedConsoleCasesCaseIdRoute
   '/api/public/hooks/refresh-watchlists': typeof ApiPublicHooksRefreshWatchlistsRoute
-  '/api/public/v1/cases': typeof ApiPublicV1CasesRoute
+  '/api/public/v1/cases': typeof ApiPublicV1CasesRouteWithChildren
+  '/api/public/v1/cases/$caseId': typeof ApiPublicV1CasesCaseIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -229,7 +237,8 @@ export interface FileRoutesById {
   '/_authenticated/console/': typeof AuthenticatedConsoleIndexRoute
   '/_authenticated/console/cases/$caseId': typeof AuthenticatedConsoleCasesCaseIdRoute
   '/api/public/hooks/refresh-watchlists': typeof ApiPublicHooksRefreshWatchlistsRoute
-  '/api/public/v1/cases': typeof ApiPublicV1CasesRoute
+  '/api/public/v1/cases': typeof ApiPublicV1CasesRouteWithChildren
+  '/api/public/v1/cases/$caseId': typeof ApiPublicV1CasesCaseIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -256,6 +265,7 @@ export interface FileRouteTypes {
     | '/console/cases/$caseId'
     | '/api/public/hooks/refresh-watchlists'
     | '/api/public/v1/cases'
+    | '/api/public/v1/cases/$caseId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -280,6 +290,7 @@ export interface FileRouteTypes {
     | '/console/cases/$caseId'
     | '/api/public/hooks/refresh-watchlists'
     | '/api/public/v1/cases'
+    | '/api/public/v1/cases/$caseId'
   id:
     | '__root__'
     | '/'
@@ -305,6 +316,7 @@ export interface FileRouteTypes {
     | '/_authenticated/console/cases/$caseId'
     | '/api/public/hooks/refresh-watchlists'
     | '/api/public/v1/cases'
+    | '/api/public/v1/cases/$caseId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -324,7 +336,7 @@ export interface RootRouteChildren {
   SolutionsPersonVerificationRoute: typeof SolutionsPersonVerificationRoute
   SolutionsIndexRoute: typeof SolutionsIndexRoute
   ApiPublicHooksRefreshWatchlistsRoute: typeof ApiPublicHooksRefreshWatchlistsRoute
-  ApiPublicV1CasesRoute: typeof ApiPublicV1CasesRoute
+  ApiPublicV1CasesRoute: typeof ApiPublicV1CasesRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -490,6 +502,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicV1CasesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/v1/cases/$caseId': {
+      id: '/api/public/v1/cases/$caseId'
+      path: '/$caseId'
+      fullPath: '/api/public/v1/cases/$caseId'
+      preLoaderRoute: typeof ApiPublicV1CasesCaseIdRouteImport
+      parentRoute: typeof ApiPublicV1CasesRoute
+    }
   }
 }
 
@@ -514,6 +533,17 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
+interface ApiPublicV1CasesRouteChildren {
+  ApiPublicV1CasesCaseIdRoute: typeof ApiPublicV1CasesCaseIdRoute
+}
+
+const ApiPublicV1CasesRouteChildren: ApiPublicV1CasesRouteChildren = {
+  ApiPublicV1CasesCaseIdRoute: ApiPublicV1CasesCaseIdRoute,
+}
+
+const ApiPublicV1CasesRouteWithChildren =
+  ApiPublicV1CasesRoute._addFileChildren(ApiPublicV1CasesRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
@@ -531,7 +561,7 @@ const rootRouteChildren: RootRouteChildren = {
   SolutionsPersonVerificationRoute: SolutionsPersonVerificationRoute,
   SolutionsIndexRoute: SolutionsIndexRoute,
   ApiPublicHooksRefreshWatchlistsRoute: ApiPublicHooksRefreshWatchlistsRoute,
-  ApiPublicV1CasesRoute: ApiPublicV1CasesRoute,
+  ApiPublicV1CasesRoute: ApiPublicV1CasesRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
