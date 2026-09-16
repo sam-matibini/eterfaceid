@@ -27,6 +27,10 @@ import { Route as SolutionsBusinessVerificationRouteImport } from './routes/solu
 import { Route as SolutionsFraudRiskRouteImport } from './routes/solutions.fraud-risk'
 import { Route as SolutionsPersonVerificationRouteImport } from './routes/solutions.person-verification'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
+import { Route as AuthenticatedAdminBillingRouteImport } from './routes/_authenticated/admin.billing'
+import { Route as AuthenticatedAdminEmailsRouteImport } from './routes/_authenticated/admin.emails'
+import { Route as AuthenticatedAdminIntegrationsRouteImport } from './routes/_authenticated/admin.integrations'
+import { Route as AuthenticatedAdminOwnerRouteImport } from './routes/_authenticated/admin.owner'
 import { Route as AuthenticatedAdminPlansRouteImport } from './routes/_authenticated/admin.plans'
 import { Route as AuthenticatedConsoleIndexRouteImport } from './routes/_authenticated/console.index'
 import { Route as AuthenticatedConsoleAlertsRouteImport } from './routes/_authenticated/console.alerts'
@@ -37,6 +41,7 @@ import { Route as AuthenticatedConsoleSettingsRouteImport } from './routes/_auth
 import { Route as AuthenticatedConsoleTransactionsRouteImport } from './routes/_authenticated/console.transactions'
 import { Route as AuthenticatedConsoleWatchlistsRouteImport } from './routes/_authenticated/console.watchlists'
 import { Route as AuthenticatedAdminCompaniesOrgIdRouteImport } from './routes/_authenticated/admin.companies.$orgId'
+import { Route as AuthenticatedAdminInvoicesInvoiceIdRouteImport } from './routes/_authenticated/admin.invoices.$invoiceId'
 import { Route as AuthenticatedConsoleCasesCaseIdRouteImport } from './routes/_authenticated/console.cases.$caseId'
 import { Route as ApiPublicHooksRefreshWatchlistsRouteImport } from './routes/api/public/hooks/refresh-watchlists'
 import { Route as ApiPublicV1CasesRouteImport } from './routes/api/public/v1/cases'
@@ -135,6 +140,29 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   path: '/admin/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAdminBillingRoute =
+  AuthenticatedAdminBillingRouteImport.update({
+    id: '/admin/billing',
+    path: '/admin/billing',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdminEmailsRoute =
+  AuthenticatedAdminEmailsRouteImport.update({
+    id: '/admin/emails',
+    path: '/admin/emails',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdminIntegrationsRoute =
+  AuthenticatedAdminIntegrationsRouteImport.update({
+    id: '/admin/integrations',
+    path: '/admin/integrations',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdminOwnerRoute = AuthenticatedAdminOwnerRouteImport.update({
+  id: '/admin/owner',
+  path: '/admin/owner',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedAdminPlansRoute = AuthenticatedAdminPlansRouteImport.update({
   id: '/admin/plans',
   path: '/admin/plans',
@@ -194,6 +222,12 @@ const AuthenticatedAdminCompaniesOrgIdRoute =
     path: '/admin/companies/$orgId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAdminInvoicesInvoiceIdRoute =
+  AuthenticatedAdminInvoicesInvoiceIdRouteImport.update({
+    id: '/admin/invoices/$invoiceId',
+    path: '/admin/invoices/$invoiceId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedConsoleCasesCaseIdRoute =
   AuthenticatedConsoleCasesCaseIdRouteImport.update({
     id: '/console/cases/$caseId',
@@ -244,6 +278,10 @@ export interface FileRoutesByFullPath {
   '/solutions/fraud-risk': typeof SolutionsFraudRiskRoute
   '/solutions/person-verification': typeof SolutionsPersonVerificationRoute
   '/solutions/': typeof SolutionsIndexRoute
+  '/admin/billing': typeof AuthenticatedAdminBillingRoute
+  '/admin/emails': typeof AuthenticatedAdminEmailsRoute
+  '/admin/integrations': typeof AuthenticatedAdminIntegrationsRoute
+  '/admin/owner': typeof AuthenticatedAdminOwnerRoute
   '/admin/plans': typeof AuthenticatedAdminPlansRoute
   '/console/alerts': typeof AuthenticatedConsoleAlertsRoute
   '/console/audit': typeof AuthenticatedConsoleAuditRoute
@@ -255,6 +293,7 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/console/': typeof AuthenticatedConsoleIndexRoute
   '/admin/companies/$orgId': typeof AuthenticatedAdminCompaniesOrgIdRoute
+  '/admin/invoices/$invoiceId': typeof AuthenticatedAdminInvoicesInvoiceIdRoute
   '/console/cases/$caseId': typeof AuthenticatedConsoleCasesCaseIdRoute
   '/api/public/hooks/refresh-watchlists': typeof ApiPublicHooksRefreshWatchlistsRoute
   '/api/public/v1/cases': typeof ApiPublicV1CasesRouteWithChildren
@@ -279,6 +318,10 @@ export interface FileRoutesByTo {
   '/solutions/fraud-risk': typeof SolutionsFraudRiskRoute
   '/solutions/person-verification': typeof SolutionsPersonVerificationRoute
   '/solutions': typeof SolutionsIndexRoute
+  '/admin/billing': typeof AuthenticatedAdminBillingRoute
+  '/admin/emails': typeof AuthenticatedAdminEmailsRoute
+  '/admin/integrations': typeof AuthenticatedAdminIntegrationsRoute
+  '/admin/owner': typeof AuthenticatedAdminOwnerRoute
   '/admin/plans': typeof AuthenticatedAdminPlansRoute
   '/console/alerts': typeof AuthenticatedConsoleAlertsRoute
   '/console/audit': typeof AuthenticatedConsoleAuditRoute
@@ -290,6 +333,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/console': typeof AuthenticatedConsoleIndexRoute
   '/admin/companies/$orgId': typeof AuthenticatedAdminCompaniesOrgIdRoute
+  '/admin/invoices/$invoiceId': typeof AuthenticatedAdminInvoicesInvoiceIdRoute
   '/console/cases/$caseId': typeof AuthenticatedConsoleCasesCaseIdRoute
   '/api/public/hooks/refresh-watchlists': typeof ApiPublicHooksRefreshWatchlistsRoute
   '/api/public/v1/cases': typeof ApiPublicV1CasesRouteWithChildren
@@ -316,6 +360,10 @@ export interface FileRoutesById {
   '/solutions/fraud-risk': typeof SolutionsFraudRiskRoute
   '/solutions/person-verification': typeof SolutionsPersonVerificationRoute
   '/solutions/': typeof SolutionsIndexRoute
+  '/_authenticated/admin/billing': typeof AuthenticatedAdminBillingRoute
+  '/_authenticated/admin/emails': typeof AuthenticatedAdminEmailsRoute
+  '/_authenticated/admin/integrations': typeof AuthenticatedAdminIntegrationsRoute
+  '/_authenticated/admin/owner': typeof AuthenticatedAdminOwnerRoute
   '/_authenticated/admin/plans': typeof AuthenticatedAdminPlansRoute
   '/_authenticated/console/alerts': typeof AuthenticatedConsoleAlertsRoute
   '/_authenticated/console/audit': typeof AuthenticatedConsoleAuditRoute
@@ -327,6 +375,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/console/': typeof AuthenticatedConsoleIndexRoute
   '/_authenticated/admin/companies/$orgId': typeof AuthenticatedAdminCompaniesOrgIdRoute
+  '/_authenticated/admin/invoices/$invoiceId': typeof AuthenticatedAdminInvoicesInvoiceIdRoute
   '/_authenticated/console/cases/$caseId': typeof AuthenticatedConsoleCasesCaseIdRoute
   '/api/public/hooks/refresh-watchlists': typeof ApiPublicHooksRefreshWatchlistsRoute
   '/api/public/v1/cases': typeof ApiPublicV1CasesRouteWithChildren
@@ -353,6 +402,10 @@ export interface FileRouteTypes {
     | '/solutions/fraud-risk'
     | '/solutions/person-verification'
     | '/solutions/'
+    | '/admin/billing'
+    | '/admin/emails'
+    | '/admin/integrations'
+    | '/admin/owner'
     | '/admin/plans'
     | '/console/alerts'
     | '/console/audit'
@@ -364,6 +417,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/console/'
     | '/admin/companies/$orgId'
+    | '/admin/invoices/$invoiceId'
     | '/console/cases/$caseId'
     | '/api/public/hooks/refresh-watchlists'
     | '/api/public/v1/cases'
@@ -388,6 +442,10 @@ export interface FileRouteTypes {
     | '/solutions/fraud-risk'
     | '/solutions/person-verification'
     | '/solutions'
+    | '/admin/billing'
+    | '/admin/emails'
+    | '/admin/integrations'
+    | '/admin/owner'
     | '/admin/plans'
     | '/console/alerts'
     | '/console/audit'
@@ -399,6 +457,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/console'
     | '/admin/companies/$orgId'
+    | '/admin/invoices/$invoiceId'
     | '/console/cases/$caseId'
     | '/api/public/hooks/refresh-watchlists'
     | '/api/public/v1/cases'
@@ -424,6 +483,10 @@ export interface FileRouteTypes {
     | '/solutions/fraud-risk'
     | '/solutions/person-verification'
     | '/solutions/'
+    | '/_authenticated/admin/billing'
+    | '/_authenticated/admin/emails'
+    | '/_authenticated/admin/integrations'
+    | '/_authenticated/admin/owner'
     | '/_authenticated/admin/plans'
     | '/_authenticated/console/alerts'
     | '/_authenticated/console/audit'
@@ -435,6 +498,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/'
     | '/_authenticated/console/'
     | '/_authenticated/admin/companies/$orgId'
+    | '/_authenticated/admin/invoices/$invoiceId'
     | '/_authenticated/console/cases/$caseId'
     | '/api/public/hooks/refresh-watchlists'
     | '/api/public/v1/cases'
@@ -594,6 +658,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/billing': {
+      id: '/_authenticated/admin/billing'
+      path: '/admin/billing'
+      fullPath: '/admin/billing'
+      preLoaderRoute: typeof AuthenticatedAdminBillingRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/emails': {
+      id: '/_authenticated/admin/emails'
+      path: '/admin/emails'
+      fullPath: '/admin/emails'
+      preLoaderRoute: typeof AuthenticatedAdminEmailsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/integrations': {
+      id: '/_authenticated/admin/integrations'
+      path: '/admin/integrations'
+      fullPath: '/admin/integrations'
+      preLoaderRoute: typeof AuthenticatedAdminIntegrationsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/owner': {
+      id: '/_authenticated/admin/owner'
+      path: '/admin/owner'
+      fullPath: '/admin/owner'
+      preLoaderRoute: typeof AuthenticatedAdminOwnerRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin/plans': {
       id: '/_authenticated/admin/plans'
       path: '/admin/plans'
@@ -664,6 +756,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminCompaniesOrgIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/invoices/$invoiceId': {
+      id: '/_authenticated/admin/invoices/$invoiceId'
+      path: '/admin/invoices/$invoiceId'
+      fullPath: '/admin/invoices/$invoiceId'
+      preLoaderRoute: typeof AuthenticatedAdminInvoicesInvoiceIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/console/cases/$caseId': {
       id: '/_authenticated/console/cases/$caseId'
       path: '/console/cases/$caseId'
@@ -711,6 +810,10 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
+  AuthenticatedAdminBillingRoute: typeof AuthenticatedAdminBillingRoute
+  AuthenticatedAdminEmailsRoute: typeof AuthenticatedAdminEmailsRoute
+  AuthenticatedAdminIntegrationsRoute: typeof AuthenticatedAdminIntegrationsRoute
+  AuthenticatedAdminOwnerRoute: typeof AuthenticatedAdminOwnerRoute
   AuthenticatedAdminPlansRoute: typeof AuthenticatedAdminPlansRoute
   AuthenticatedConsoleAlertsRoute: typeof AuthenticatedConsoleAlertsRoute
   AuthenticatedConsoleAuditRoute: typeof AuthenticatedConsoleAuditRoute
@@ -722,11 +825,16 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
   AuthenticatedConsoleIndexRoute: typeof AuthenticatedConsoleIndexRoute
   AuthenticatedAdminCompaniesOrgIdRoute: typeof AuthenticatedAdminCompaniesOrgIdRoute
+  AuthenticatedAdminInvoicesInvoiceIdRoute: typeof AuthenticatedAdminInvoicesInvoiceIdRoute
   AuthenticatedConsoleCasesCaseIdRoute: typeof AuthenticatedConsoleCasesCaseIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
+  AuthenticatedAdminBillingRoute: AuthenticatedAdminBillingRoute,
+  AuthenticatedAdminEmailsRoute: AuthenticatedAdminEmailsRoute,
+  AuthenticatedAdminIntegrationsRoute: AuthenticatedAdminIntegrationsRoute,
+  AuthenticatedAdminOwnerRoute: AuthenticatedAdminOwnerRoute,
   AuthenticatedAdminPlansRoute: AuthenticatedAdminPlansRoute,
   AuthenticatedConsoleAlertsRoute: AuthenticatedConsoleAlertsRoute,
   AuthenticatedConsoleAuditRoute: AuthenticatedConsoleAuditRoute,
@@ -738,6 +846,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
   AuthenticatedConsoleIndexRoute: AuthenticatedConsoleIndexRoute,
   AuthenticatedAdminCompaniesOrgIdRoute: AuthenticatedAdminCompaniesOrgIdRoute,
+  AuthenticatedAdminInvoicesInvoiceIdRoute:
+    AuthenticatedAdminInvoicesInvoiceIdRoute,
   AuthenticatedConsoleCasesCaseIdRoute: AuthenticatedConsoleCasesCaseIdRoute,
 }
 
