@@ -134,6 +134,9 @@ export const submitDocument = createServerFn({ method: "POST" })
       detail: { case_id: data.caseId, result, mrz_valid: merged.mrzValid },
     });
 
+    const { recordUsage } = await import("@/lib/usage.server");
+    await recordUsage(context.supabase as never, (kase as any)?.org_id, "verifications");
+
     return { documentId: inserted.id as string, result, checks, parsed: merged, mrz };
   });
 
