@@ -87,6 +87,7 @@ export const inviteMember = createServerFn({ method: "POST" })
       .object({
         email: z.string().trim().email("Enter a valid email address").max(255),
         role: z.enum(["admin", "analyst", "viewer"]),
+        origin: z.string().trim().url().max(300).optional(),
       })
       .parse(input),
   )
