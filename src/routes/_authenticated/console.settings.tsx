@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useRoles } from "@/hooks/useSession";
 import { createApiKey, revokeApiKey } from "@/lib/api-keys.functions";
 import { fetchApiKeys, fetchRoles, logAudit, type AppRole } from "@/lib/console";
+import { WebhooksPanel } from "@/components/console/webhooks";
 
 export const Route = createFileRoute("/_authenticated/console/settings")({
   head: () => ({
@@ -202,6 +203,8 @@ function SettingsPage() {
             Only a hash of each key is stored, so keys can be revoked but never re-displayed.
           </p>
         </Panel>
+
+        <WebhooksPanel isAdmin={isAdmin} />
       </div>
     </ConsoleShell>
   );

@@ -6,9 +6,9 @@
 - Phase 3a — in-house watchlist warehouse, ingestion, name-matching engine, case screening, list search
 - Phase 3b — document engine (machine-readable zone reader with check digits, provincial number formats, expiry and cross-checks), liveness scoring, reviewer face-match decision
 - Phase 3c — own risk signals (email, phone, device, network, velocity) with an explainable score
+- Phase 3d — transaction monitoring with FINTRAC/FinCEN/FATF rules, beneficial-ownership calculation (25% UBO, OFAC 50% rule), address and age verification, regulatory report packages (STR/LCTR/EFTR/SAR/CTR/FIU), regulatory coverage page, public REST API v1 (cases, screening, transactions) and signed webhooks
 
 ## Next
-- Phase 3d — public REST API + webhooks for customers
 - Phase 3e — optional add-ons when keys arrive: Plaid, Interac, Twilio/Telesign, IP/email reputation
 - Nightly automatic list refresh (endpoint built at /api/public/hooks/refresh-watchlists; needs the schedule switched on after publish)
 - Face-match model: currently a reviewer confirms the selfie against the document; automatic scoring needs model weights installed
