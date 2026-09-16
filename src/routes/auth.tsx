@@ -37,9 +37,19 @@ function AuthPage() {
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [company, setCompany] = useState("");
+  const [hasInvite, setHasInvite] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    const token = window.sessionStorage.getItem("eid_invite_token");
+    if (token) {
+      setHasInvite(true);
+      setMode("signup");
+    }
+  }, []);
 
   useEffect(() => {
     if (ready && session) void navigate({ to: "/console", replace: true });
@@ -54,9 +64,14 @@ function AuthPage() {
       setError(parsed.error.issues[0]?.message ?? "Check your details");
       return;
     }
+    if (mode === "signup" && !hasInvite && company.trim().length < 2) {
+      setError("Enter your company name");
+      return;
+    }
     setBusy(true);
     try {
       if (mode === "signup") {
+        if (!hasInvite) window.sessionStorage.setItem("eid_company", company.trim());
         const { data, error: signUpError } = await supabase.auth.signUp({
           email: parsed.data.email,
           password: parsed.data.password,
@@ -79,6 +94,7 @@ function AuthPage() {
       setBusy(false);
     }
   }
+
 
   async function google() {
     setError(null);

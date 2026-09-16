@@ -19,6 +19,8 @@ import { Route as ContactRouteImport } from './routes/contact'
 import { Route as DevelopersRouteImport } from './routes/developers'
 import { Route as IndustriesRouteImport } from './routes/industries'
 import { Route as PricingRouteImport } from './routes/pricing'
+import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
+import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as SolutionsIndexRouteImport } from './routes/solutions.index'
 import { Route as SolutionsAmlScreeningRouteImport } from './routes/solutions.aml-screening'
 import { Route as SolutionsBusinessVerificationRouteImport } from './routes/solutions.business-verification'
@@ -86,6 +88,16 @@ const IndustriesRoute = IndustriesRouteImport.update({
 const PricingRoute = PricingRouteImport.update({
   id: '/pricing',
   path: '/pricing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const InviteTokenRoute = InviteTokenRouteImport.update({
+  id: '/invite/$token',
+  path: '/invite/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SolutionsIndexRoute = SolutionsIndexRouteImport.update({
@@ -206,6 +218,8 @@ export interface FileRoutesByFullPath {
   '/developers': typeof DevelopersRoute
   '/industries': typeof IndustriesRoute
   '/pricing': typeof PricingRoute
+  '/onboarding': typeof AuthenticatedOnboardingRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/solutions/aml-screening': typeof SolutionsAmlScreeningRoute
   '/solutions/business-verification': typeof SolutionsBusinessVerificationRoute
   '/solutions/fraud-risk': typeof SolutionsFraudRiskRoute
@@ -236,6 +250,8 @@ export interface FileRoutesByTo {
   '/developers': typeof DevelopersRoute
   '/industries': typeof IndustriesRoute
   '/pricing': typeof PricingRoute
+  '/onboarding': typeof AuthenticatedOnboardingRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/solutions/aml-screening': typeof SolutionsAmlScreeningRoute
   '/solutions/business-verification': typeof SolutionsBusinessVerificationRoute
   '/solutions/fraud-risk': typeof SolutionsFraudRiskRoute
@@ -268,6 +284,8 @@ export interface FileRoutesById {
   '/developers': typeof DevelopersRoute
   '/industries': typeof IndustriesRoute
   '/pricing': typeof PricingRoute
+  '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/solutions/aml-screening': typeof SolutionsAmlScreeningRoute
   '/solutions/business-verification': typeof SolutionsBusinessVerificationRoute
   '/solutions/fraud-risk': typeof SolutionsFraudRiskRoute
@@ -300,6 +318,8 @@ export interface FileRouteTypes {
     | '/developers'
     | '/industries'
     | '/pricing'
+    | '/onboarding'
+    | '/invite/$token'
     | '/solutions/aml-screening'
     | '/solutions/business-verification'
     | '/solutions/fraud-risk'
@@ -330,6 +350,8 @@ export interface FileRouteTypes {
     | '/developers'
     | '/industries'
     | '/pricing'
+    | '/onboarding'
+    | '/invite/$token'
     | '/solutions/aml-screening'
     | '/solutions/business-verification'
     | '/solutions/fraud-risk'
@@ -361,6 +383,8 @@ export interface FileRouteTypes {
     | '/developers'
     | '/industries'
     | '/pricing'
+    | '/_authenticated/onboarding'
+    | '/invite/$token'
     | '/solutions/aml-screening'
     | '/solutions/business-verification'
     | '/solutions/fraud-risk'
@@ -393,6 +417,7 @@ export interface RootRouteChildren {
   DevelopersRoute: typeof DevelopersRoute
   IndustriesRoute: typeof IndustriesRoute
   PricingRoute: typeof PricingRoute
+  InviteTokenRoute: typeof InviteTokenRoute
   SolutionsAmlScreeningRoute: typeof SolutionsAmlScreeningRoute
   SolutionsBusinessVerificationRoute: typeof SolutionsBusinessVerificationRoute
   SolutionsFraudRiskRoute: typeof SolutionsFraudRiskRoute
@@ -474,6 +499,20 @@ declare module '@tanstack/react-router' {
       path: '/pricing'
       fullPath: '/pricing'
       preLoaderRoute: typeof PricingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/onboarding': {
+      id: '/_authenticated/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof AuthenticatedOnboardingRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/invite/$token': {
+      id: '/invite/$token'
+      path: '/invite/$token'
+      fullPath: '/invite/$token'
+      preLoaderRoute: typeof InviteTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/solutions/': {
@@ -613,6 +652,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
   AuthenticatedConsoleAlertsRoute: typeof AuthenticatedConsoleAlertsRoute
   AuthenticatedConsoleAuditRoute: typeof AuthenticatedConsoleAuditRoute
   AuthenticatedConsoleComplianceRoute: typeof AuthenticatedConsoleComplianceRoute
@@ -625,6 +665,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
   AuthenticatedConsoleAlertsRoute: AuthenticatedConsoleAlertsRoute,
   AuthenticatedConsoleAuditRoute: AuthenticatedConsoleAuditRoute,
   AuthenticatedConsoleComplianceRoute: AuthenticatedConsoleComplianceRoute,
@@ -661,6 +702,7 @@ const rootRouteChildren: RootRouteChildren = {
   DevelopersRoute: DevelopersRoute,
   IndustriesRoute: IndustriesRoute,
   PricingRoute: PricingRoute,
+  InviteTokenRoute: InviteTokenRoute,
   SolutionsAmlScreeningRoute: SolutionsAmlScreeningRoute,
   SolutionsBusinessVerificationRoute: SolutionsBusinessVerificationRoute,
   SolutionsFraudRiskRoute: SolutionsFraudRiskRoute,
