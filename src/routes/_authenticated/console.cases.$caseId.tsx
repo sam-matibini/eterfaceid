@@ -1,8 +1,12 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 
+import { screenCase } from "@/lib/screening.functions";
+
 import { ConsoleShell, Panel, StatusPill } from "@/components/console/shell";
+import { VerificationPanels } from "@/components/console/verification";
 import { supabase } from "@/integrations/supabase/client";
 import { useRoles } from "@/hooks/useSession";
 import {
@@ -29,6 +33,7 @@ function CaseDetail() {
   const { caseId } = useParams({ from: "/_authenticated/console/cases/$caseId" });
   const queryClient = useQueryClient();
   const { canWrite } = useRoles();
+  const screen = useServerFn(screenCase);
   const [note, setNote] = useState("");
 
   const { data, isLoading, error } = useQuery({
@@ -47,6 +52,15 @@ function CaseDetail() {
     },
     onSuccess: () => {
       setNote("");
+      void queryClient.invalidateQueries({ queryKey: ["case", caseId] });
+      void queryClient.invalidateQueries({ queryKey: ["cases"] });
+      void queryClient.invalidateQueries({ queryKey: ["audit"] });
+    },
+  });
+
+  const runScreening = useMutation({
+    mutationFn: () => screen({ data: { caseId } }),
+    onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["case", caseId] });
       void queryClient.invalidateQueries({ queryKey: ["cases"] });
       void queryClient.invalidateQueries({ queryKey: ["audit"] });
@@ -180,7 +194,21 @@ function CaseDetail() {
             </Panel>
           ) : null}
 
-          <Panel title="Screening hits">
+          <Panel
+            title="Screening hits"
+            action={
+              canWrite ? (
+                <button
+                  type="button"
+                  disabled={runScreening.isPending}
+                  onClick={() => runScreening.mutate()}
+                  className="rounded-md border border-[var(--rule)] px-3 py-1.5 text-xs transition-colors hover:bg-[var(--paper-deep)] disabled:opacity-50"
+                >
+                  {runScreening.isPending ? "Screening…" : "Run screening"}
+                </button>
+              ) : undefined
+            }
+          >
             <div className="space-y-4">
               {data.hits.map((hit) => (
                 <div key={hit.id} className="border border-[var(--rule)] px-4 py-3">
@@ -201,6 +229,18 @@ function CaseDetail() {
                   </div>
                   {hit.detail ? (
                     <p className="mt-2 text-sm text-muted-foreground">{hit.detail}</p>
+                  ) : null}
+                  {Array.isArray(hit.reasons) && hit.reasons.length ? (
+                    <ul className="mt-2 flex flex-wrap gap-2">
+                      {(hit.reasons as string[]).map((reason, i) => (
+                        <li
+                          key={i}
+                          className="rounded-full border border-[var(--rule)] px-2 py-0.5 text-xs text-muted-foreground"
+                        >
+                          {reason}
+                        </li>
+                      ))}
+                    </ul>
                   ) : null}
                   {canWrite && hit.disposition === "open" ? (
                     <div className="mt-3 flex gap-2">
@@ -231,6 +271,8 @@ function CaseDetail() {
               ) : null}
             </div>
           </Panel>
+
+          <VerificationPanels caseId={caseId} canWrite={canWrite} />
         </div>
 
         <div className="space-y-6">

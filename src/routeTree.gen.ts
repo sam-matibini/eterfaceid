@@ -28,7 +28,9 @@ import { Route as AuthenticatedConsoleIndexRouteImport } from './routes/_authent
 import { Route as AuthenticatedConsoleAlertsRouteImport } from './routes/_authenticated/console.alerts'
 import { Route as AuthenticatedConsoleAuditRouteImport } from './routes/_authenticated/console.audit'
 import { Route as AuthenticatedConsoleSettingsRouteImport } from './routes/_authenticated/console.settings'
+import { Route as AuthenticatedConsoleWatchlistsRouteImport } from './routes/_authenticated/console.watchlists'
 import { Route as AuthenticatedConsoleCasesCaseIdRouteImport } from './routes/_authenticated/console.cases.$caseId'
+import { Route as ApiPublicHooksRefreshWatchlistsRouteImport } from './routes/api/public/hooks/refresh-watchlists'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -130,11 +132,23 @@ const AuthenticatedConsoleSettingsRoute =
     path: '/console/settings',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedConsoleWatchlistsRoute =
+  AuthenticatedConsoleWatchlistsRouteImport.update({
+    id: '/console/watchlists',
+    path: '/console/watchlists',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedConsoleCasesCaseIdRoute =
   AuthenticatedConsoleCasesCaseIdRouteImport.update({
     id: '/console/cases/$caseId',
     path: '/console/cases/$caseId',
     getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const ApiPublicHooksRefreshWatchlistsRoute =
+  ApiPublicHooksRefreshWatchlistsRouteImport.update({
+    id: '/api/public/hooks/refresh-watchlists',
+    path: '/api/public/hooks/refresh-watchlists',
+    getParentRoute: () => rootRouteImport,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -155,8 +169,10 @@ export interface FileRoutesByFullPath {
   '/console/alerts': typeof AuthenticatedConsoleAlertsRoute
   '/console/audit': typeof AuthenticatedConsoleAuditRoute
   '/console/settings': typeof AuthenticatedConsoleSettingsRoute
+  '/console/watchlists': typeof AuthenticatedConsoleWatchlistsRoute
   '/console/': typeof AuthenticatedConsoleIndexRoute
   '/console/cases/$caseId': typeof AuthenticatedConsoleCasesCaseIdRoute
+  '/api/public/hooks/refresh-watchlists': typeof ApiPublicHooksRefreshWatchlistsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -176,8 +192,10 @@ export interface FileRoutesByTo {
   '/console/alerts': typeof AuthenticatedConsoleAlertsRoute
   '/console/audit': typeof AuthenticatedConsoleAuditRoute
   '/console/settings': typeof AuthenticatedConsoleSettingsRoute
+  '/console/watchlists': typeof AuthenticatedConsoleWatchlistsRoute
   '/console': typeof AuthenticatedConsoleIndexRoute
   '/console/cases/$caseId': typeof AuthenticatedConsoleCasesCaseIdRoute
+  '/api/public/hooks/refresh-watchlists': typeof ApiPublicHooksRefreshWatchlistsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -199,8 +217,10 @@ export interface FileRoutesById {
   '/_authenticated/console/alerts': typeof AuthenticatedConsoleAlertsRoute
   '/_authenticated/console/audit': typeof AuthenticatedConsoleAuditRoute
   '/_authenticated/console/settings': typeof AuthenticatedConsoleSettingsRoute
+  '/_authenticated/console/watchlists': typeof AuthenticatedConsoleWatchlistsRoute
   '/_authenticated/console/': typeof AuthenticatedConsoleIndexRoute
   '/_authenticated/console/cases/$caseId': typeof AuthenticatedConsoleCasesCaseIdRoute
+  '/api/public/hooks/refresh-watchlists': typeof ApiPublicHooksRefreshWatchlistsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -222,8 +242,10 @@ export interface FileRouteTypes {
     | '/console/alerts'
     | '/console/audit'
     | '/console/settings'
+    | '/console/watchlists'
     | '/console/'
     | '/console/cases/$caseId'
+    | '/api/public/hooks/refresh-watchlists'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -243,8 +265,10 @@ export interface FileRouteTypes {
     | '/console/alerts'
     | '/console/audit'
     | '/console/settings'
+    | '/console/watchlists'
     | '/console'
     | '/console/cases/$caseId'
+    | '/api/public/hooks/refresh-watchlists'
   id:
     | '__root__'
     | '/'
@@ -265,8 +289,10 @@ export interface FileRouteTypes {
     | '/_authenticated/console/alerts'
     | '/_authenticated/console/audit'
     | '/_authenticated/console/settings'
+    | '/_authenticated/console/watchlists'
     | '/_authenticated/console/'
     | '/_authenticated/console/cases/$caseId'
+    | '/api/public/hooks/refresh-watchlists'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -285,6 +311,7 @@ export interface RootRouteChildren {
   SolutionsFraudRiskRoute: typeof SolutionsFraudRiskRoute
   SolutionsPersonVerificationRoute: typeof SolutionsPersonVerificationRoute
   SolutionsIndexRoute: typeof SolutionsIndexRoute
+  ApiPublicHooksRefreshWatchlistsRoute: typeof ApiPublicHooksRefreshWatchlistsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -422,12 +449,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedConsoleSettingsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/console/watchlists': {
+      id: '/_authenticated/console/watchlists'
+      path: '/console/watchlists'
+      fullPath: '/console/watchlists'
+      preLoaderRoute: typeof AuthenticatedConsoleWatchlistsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/console/cases/$caseId': {
       id: '/_authenticated/console/cases/$caseId'
       path: '/console/cases/$caseId'
       fullPath: '/console/cases/$caseId'
       preLoaderRoute: typeof AuthenticatedConsoleCasesCaseIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/api/public/hooks/refresh-watchlists': {
+      id: '/api/public/hooks/refresh-watchlists'
+      path: '/api/public/hooks/refresh-watchlists'
+      fullPath: '/api/public/hooks/refresh-watchlists'
+      preLoaderRoute: typeof ApiPublicHooksRefreshWatchlistsRouteImport
+      parentRoute: typeof rootRouteImport
     }
   }
 }
@@ -436,6 +477,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedConsoleAlertsRoute: typeof AuthenticatedConsoleAlertsRoute
   AuthenticatedConsoleAuditRoute: typeof AuthenticatedConsoleAuditRoute
   AuthenticatedConsoleSettingsRoute: typeof AuthenticatedConsoleSettingsRoute
+  AuthenticatedConsoleWatchlistsRoute: typeof AuthenticatedConsoleWatchlistsRoute
   AuthenticatedConsoleIndexRoute: typeof AuthenticatedConsoleIndexRoute
   AuthenticatedConsoleCasesCaseIdRoute: typeof AuthenticatedConsoleCasesCaseIdRoute
 }
@@ -444,6 +486,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedConsoleAlertsRoute: AuthenticatedConsoleAlertsRoute,
   AuthenticatedConsoleAuditRoute: AuthenticatedConsoleAuditRoute,
   AuthenticatedConsoleSettingsRoute: AuthenticatedConsoleSettingsRoute,
+  AuthenticatedConsoleWatchlistsRoute: AuthenticatedConsoleWatchlistsRoute,
   AuthenticatedConsoleIndexRoute: AuthenticatedConsoleIndexRoute,
   AuthenticatedConsoleCasesCaseIdRoute: AuthenticatedConsoleCasesCaseIdRoute,
 }
@@ -467,6 +510,7 @@ const rootRouteChildren: RootRouteChildren = {
   SolutionsFraudRiskRoute: SolutionsFraudRiskRoute,
   SolutionsPersonVerificationRoute: SolutionsPersonVerificationRoute,
   SolutionsIndexRoute: SolutionsIndexRoute,
+  ApiPublicHooksRefreshWatchlistsRoute: ApiPublicHooksRefreshWatchlistsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
