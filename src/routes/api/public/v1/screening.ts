@@ -10,6 +10,7 @@ const schema = z.object({
   country: z.string().trim().length(2).optional(),
   threshold: z.number().min(0.3).max(1).optional(),
   case_id: z.string().uuid().optional(),
+  entity_type: z.enum(["person", "business"]).optional(),
 });
 
 export const Route = createFileRoute("/api/public/v1/screening")({
@@ -37,10 +38,21 @@ export const Route = createFileRoute("/api/public/v1/screening")({
 
         const results = ((entities ?? []) as any[])
           .map((e) => {
-            const scored = scoreMatch(
-              { name: parsed.data.name, birthDate: parsed.data.birth_date, country: parsed.data.country },
-              { name: e.name, aliases: e.aliases ?? [], birthDate: e.birth_date, countries: e.countries ?? [] },
-            );
+            const kind = parsed.data.entity_type ?? "person";
+            const names: string[] = [e.name, ...((e.aliases ?? []) as string[])];
+            let scored = { score: 0, nameScore: 0, reasons: ["No comparable name tokens"] as string[] };
+            for (const candidateName of names) {
+              const outcome = scoreMatch({
+                query: parsed.data.name,
+                candidate: candidateName,
+                kind,
+                queryBirthDate: parsed.data.birth_date ?? null,
+                candidateBirthDate: e.birth_date ?? null,
+                queryCountry: parsed.data.country ?? null,
+                candidateCountries: (e.countries ?? []) as string[],
+              });
+              if (outcome.score > scored.score) scored = outcome;
+            }
             return {
               entity_id: e.id,
               name: e.name,
@@ -61,6 +73,7 @@ export const Route = createFileRoute("/api/public/v1/screening")({
         await auth.admin.from("screening_runs").insert({
           case_id: parsed.data.case_id ?? null,
           subject_name: parsed.data.name,
+          subject_type: parsed.data.entity_type ?? "person",
           birth_date: parsed.data.birth_date ?? null,
           country: parsed.data.country?.toUpperCase() ?? null,
           engine_version: ENGINE_VERSION,
