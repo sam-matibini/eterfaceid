@@ -44,15 +44,9 @@ function CaseDetail() {
     queryFn: () => fetchCase(caseId),
   });
 
-  const decideCase = useMutation({
-    mutationFn: async (status: CaseStatus) => {
-      const { error: updateError } = await supabase
-        .from("cases")
-        .update({ status, decision_note: note || null })
-        .eq("id", caseId);
-      if (updateError) throw updateError;
-      await logAudit("case.decision", "case", caseId, { status, note });
-    },
+  const decide = useServerFn(decideCase);
+  const decideCaseMutation = useMutation({
+    mutationFn: async (status: CaseStatus) => decide({ data: { caseId, status, note } }),
     onSuccess: () => {
       setNote("");
       void queryClient.invalidateQueries({ queryKey: ["case", caseId] });
