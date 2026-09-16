@@ -10,7 +10,10 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AboutRouteImport } from './routes/about'
+import { Route as CareersRouteImport } from './routes/careers'
 import { Route as ComplianceRouteImport } from './routes/compliance'
+import { Route as DevelopersRouteImport } from './routes/developers'
 import { Route as IndustriesRouteImport } from './routes/industries'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as SolutionsIndexRouteImport } from './routes/solutions.index'
@@ -24,9 +27,24 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AboutRoute = AboutRouteImport.update({
+  id: '/about',
+  path: '/about',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CareersRoute = CareersRouteImport.update({
+  id: '/careers',
+  path: '/careers',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ComplianceRoute = ComplianceRouteImport.update({
   id: '/compliance',
   path: '/compliance',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DevelopersRoute = DevelopersRouteImport.update({
+  id: '/developers',
+  path: '/developers',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndustriesRoute = IndustriesRouteImport.update({
@@ -69,7 +87,10 @@ const SolutionsPersonVerificationRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
+  '/careers': typeof CareersRoute
   '/compliance': typeof ComplianceRoute
+  '/developers': typeof DevelopersRoute
   '/industries': typeof IndustriesRoute
   '/pricing': typeof PricingRoute
   '/solutions/aml-screening': typeof SolutionsAmlScreeningRoute
@@ -80,7 +101,10 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
+  '/careers': typeof CareersRoute
   '/compliance': typeof ComplianceRoute
+  '/developers': typeof DevelopersRoute
   '/industries': typeof IndustriesRoute
   '/pricing': typeof PricingRoute
   '/solutions/aml-screening': typeof SolutionsAmlScreeningRoute
@@ -92,7 +116,10 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
+  '/careers': typeof CareersRoute
   '/compliance': typeof ComplianceRoute
+  '/developers': typeof DevelopersRoute
   '/industries': typeof IndustriesRoute
   '/pricing': typeof PricingRoute
   '/solutions/aml-screening': typeof SolutionsAmlScreeningRoute
@@ -105,7 +132,10 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/about'
+    | '/careers'
     | '/compliance'
+    | '/developers'
     | '/industries'
     | '/pricing'
     | '/solutions/aml-screening'
@@ -116,7 +146,10 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/about'
+    | '/careers'
     | '/compliance'
+    | '/developers'
     | '/industries'
     | '/pricing'
     | '/solutions/aml-screening'
@@ -127,7 +160,10 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/about'
+    | '/careers'
     | '/compliance'
+    | '/developers'
     | '/industries'
     | '/pricing'
     | '/solutions/aml-screening'
@@ -139,7 +175,10 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AboutRoute: typeof AboutRoute
+  CareersRoute: typeof CareersRoute
   ComplianceRoute: typeof ComplianceRoute
+  DevelopersRoute: typeof DevelopersRoute
   IndustriesRoute: typeof IndustriesRoute
   PricingRoute: typeof PricingRoute
   SolutionsAmlScreeningRoute: typeof SolutionsAmlScreeningRoute
@@ -158,11 +197,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/about': {
+      id: '/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof AboutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/careers': {
+      id: '/careers'
+      path: '/careers'
+      fullPath: '/careers'
+      preLoaderRoute: typeof CareersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/compliance': {
       id: '/compliance'
       path: '/compliance'
       fullPath: '/compliance'
       preLoaderRoute: typeof ComplianceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/developers': {
+      id: '/developers'
+      path: '/developers'
+      fullPath: '/developers'
+      preLoaderRoute: typeof DevelopersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/industries': {
@@ -219,7 +279,10 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AboutRoute: AboutRoute,
+  CareersRoute: CareersRoute,
   ComplianceRoute: ComplianceRoute,
+  DevelopersRoute: DevelopersRoute,
   IndustriesRoute: IndustriesRoute,
   PricingRoute: PricingRoute,
   SolutionsAmlScreeningRoute: SolutionsAmlScreeningRoute,
