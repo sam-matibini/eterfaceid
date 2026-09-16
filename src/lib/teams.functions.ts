@@ -119,7 +119,31 @@ export const inviteMember = createServerFn({ method: "POST" })
       detail: { email: data.email, role: data.role } as never,
     });
 
-    return { invite, token };
+    const { sendNotification } = await import("@/lib/email.server");
+    const { data: org } = await supabaseAdmin
+      .from("organizations")
+      .select("name")
+      .eq("id", membership.org_id)
+      .maybeSingle();
+    const { data: inviter } = await supabaseAdmin
+      .from("profiles")
+      .select("full_name, email")
+      .eq("id", context.userId)
+      .maybeSingle();
+    const link = `${data.origin ?? "https://eterfaceid.lovable.app"}/invite/${token}`;
+    const emailed = await sendNotification(supabaseAdmin, {
+      event: "team.invite",
+      to: data.email,
+      orgId: membership.org_id,
+      data: {
+        org: org?.name ?? "your team",
+        inviter: inviter?.full_name ?? inviter?.email ?? "A colleague",
+        role: data.role,
+        link,
+      },
+    });
+
+    return { invite, token, emailed };
   });
 
 export const revokeInvite = createServerFn({ method: "POST" })
