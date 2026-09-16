@@ -72,7 +72,7 @@ export async function fetchCompany(orgId: string) {
     supabase.from("organizations").select("*").eq("id", orgId).maybeSingle(),
     supabase.from("org_subscriptions").select("*").eq("org_id", orgId).maybeSingle(),
     supabase.from("usage_counters").select("*").eq("org_id", orgId).order("period", { ascending: false }),
-    supabase.from("organization_members").select("user_id, role"),
+    supabase.from("organization_members").select("org_id, user_id, role").eq("org_id", orgId),
     supabase.from("invoices").select("*").eq("org_id", orgId).order("created_at", { ascending: false }),
     supabase.from("cases").select("id", { count: "exact", head: true }).eq("org_id", orgId),
   ]);
