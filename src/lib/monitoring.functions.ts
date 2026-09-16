@@ -61,13 +61,14 @@ export const recordTransaction = createServerFn({ method: "POST" })
         _threshold: 0.82,
         _limit: 5,
       });
-      if (matches && matches.length) {
+      const top = matches?.[0];
+      if (top) {
         alerts.push({
           code: "SANCTIONED_COUNTERPARTY",
           name: "Counterparty matches a screening list",
           severity: "high",
           citation: "FATF R.6/R.7; OFAC 31 CFR Part 501; Canadian sanctions regime",
-          detail: `Closest list name: ${matches[0].matched_name} (score ${Number(matches[0].sim).toFixed(2)})`,
+          detail: `Closest list name: ${top.matched_name} (score ${Number(top.sim).toFixed(2)})`,
           weight: 45,
         });
       }
