@@ -18,7 +18,7 @@ export const Route = createFileRoute("/solutions/fraud-risk")({
       },
     ],
   }),
-  component: FraudRisk;
+  component: FraudRisk,
 });
 
 function FraudRisk() {
