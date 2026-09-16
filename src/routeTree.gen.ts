@@ -10,6 +10,9 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ComplianceRouteImport } from './routes/compliance'
+import { Route as IndustriesRouteImport } from './routes/industries'
+import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as SolutionsIndexRouteImport } from './routes/solutions.index'
 import { Route as SolutionsAmlScreeningRouteImport } from './routes/solutions.aml-screening'
 import { Route as SolutionsBusinessVerificationRouteImport } from './routes/solutions.business-verification'
@@ -19,6 +22,21 @@ import { Route as SolutionsPersonVerificationRouteImport } from './routes/soluti
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ComplianceRoute = ComplianceRouteImport.update({
+  id: '/compliance',
+  path: '/compliance',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IndustriesRoute = IndustriesRouteImport.update({
+  id: '/industries',
+  path: '/industries',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PricingRoute = PricingRouteImport.update({
+  id: '/pricing',
+  path: '/pricing',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SolutionsIndexRoute = SolutionsIndexRouteImport.update({
@@ -51,6 +69,9 @@ const SolutionsPersonVerificationRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/compliance': typeof ComplianceRoute
+  '/industries': typeof IndustriesRoute
+  '/pricing': typeof PricingRoute
   '/solutions/aml-screening': typeof SolutionsAmlScreeningRoute
   '/solutions/business-verification': typeof SolutionsBusinessVerificationRoute
   '/solutions/fraud-risk': typeof SolutionsFraudRiskRoute
@@ -59,6 +80,9 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/compliance': typeof ComplianceRoute
+  '/industries': typeof IndustriesRoute
+  '/pricing': typeof PricingRoute
   '/solutions/aml-screening': typeof SolutionsAmlScreeningRoute
   '/solutions/business-verification': typeof SolutionsBusinessVerificationRoute
   '/solutions/fraud-risk': typeof SolutionsFraudRiskRoute
@@ -68,6 +92,9 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/compliance': typeof ComplianceRoute
+  '/industries': typeof IndustriesRoute
+  '/pricing': typeof PricingRoute
   '/solutions/aml-screening': typeof SolutionsAmlScreeningRoute
   '/solutions/business-verification': typeof SolutionsBusinessVerificationRoute
   '/solutions/fraud-risk': typeof SolutionsFraudRiskRoute
@@ -78,6 +105,9 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/compliance'
+    | '/industries'
+    | '/pricing'
     | '/solutions/aml-screening'
     | '/solutions/business-verification'
     | '/solutions/fraud-risk'
@@ -86,6 +116,9 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/compliance'
+    | '/industries'
+    | '/pricing'
     | '/solutions/aml-screening'
     | '/solutions/business-verification'
     | '/solutions/fraud-risk'
@@ -94,6 +127,9 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/compliance'
+    | '/industries'
+    | '/pricing'
     | '/solutions/aml-screening'
     | '/solutions/business-verification'
     | '/solutions/fraud-risk'
@@ -103,6 +139,9 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ComplianceRoute: typeof ComplianceRoute
+  IndustriesRoute: typeof IndustriesRoute
+  PricingRoute: typeof PricingRoute
   SolutionsAmlScreeningRoute: typeof SolutionsAmlScreeningRoute
   SolutionsBusinessVerificationRoute: typeof SolutionsBusinessVerificationRoute
   SolutionsFraudRiskRoute: typeof SolutionsFraudRiskRoute
@@ -117,6 +156,27 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/compliance': {
+      id: '/compliance'
+      path: '/compliance'
+      fullPath: '/compliance'
+      preLoaderRoute: typeof ComplianceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/industries': {
+      id: '/industries'
+      path: '/industries'
+      fullPath: '/industries'
+      preLoaderRoute: typeof IndustriesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pricing': {
+      id: '/pricing'
+      path: '/pricing'
+      fullPath: '/pricing'
+      preLoaderRoute: typeof PricingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/solutions/': {
@@ -159,6 +219,9 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ComplianceRoute: ComplianceRoute,
+  IndustriesRoute: IndustriesRoute,
+  PricingRoute: PricingRoute,
   SolutionsAmlScreeningRoute: SolutionsAmlScreeningRoute,
   SolutionsBusinessVerificationRoute: SolutionsBusinessVerificationRoute,
   SolutionsFraudRiskRoute: SolutionsFraudRiskRoute,
