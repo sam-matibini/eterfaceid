@@ -4,6 +4,7 @@ import { useEffect, type ReactNode } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization, useRoles, useSession } from "@/hooks/useSession";
+import { usePlatformStaff } from "@/hooks/usePlatformStaff";
 
 const navItems = [
   { to: "/console", label: "Cases", exact: true },
@@ -23,6 +24,7 @@ export function ConsoleShell({ children }: { children: ReactNode }) {
   const { user } = useSession();
   const { roles } = useRoles();
   const { organization, ready } = useOrganization();
+  const { isStaff } = usePlatformStaff();
 
   useEffect(() => {
     if (ready && !organization) void navigate({ to: "/onboarding", replace: true });
@@ -62,6 +64,11 @@ export function ConsoleShell({ children }: { children: ReactNode }) {
             ))}
           </nav>
           <div className="flex items-center gap-4 text-sm">
+            {isStaff ? (
+              <Link to="/admin" className="text-[var(--signal)] transition-opacity hover:opacity-80">
+                App admin
+              </Link>
+            ) : null}
             <span className="hidden text-muted-foreground sm:inline">
               {organization ? `${organization.name} · ` : ""}
               {user?.email}

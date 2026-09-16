@@ -131,6 +131,23 @@ export const recordTransaction = createServerFn({ method: "POST" })
       detail: { score, status, rules: alerts.map((a) => a.code) },
     });
 
+    const { data: kaseOrg } = await context.supabase
+      .from("cases")
+      .select("org_id, reference, subject_name")
+      .eq("id", data.caseId)
+      .maybeSingle();
+    const orgId = (kaseOrg as any)?.org_id as string | undefined;
+    const { recordUsage, notifyOrg } = await import("@/lib/usage.server");
+    await recordUsage(context.supabase as never, orgId, "transactions");
+    if (orgId && alerts.some((a) => a.severity === "high")) {
+      await notifyOrg(orgId, "alert.opened", {
+        subject: (kaseOrg as any)?.subject_name ?? "A customer",
+        reference: (kaseOrg as any)?.reference ?? "",
+        detail: alerts.filter((a) => a.severity === "high").map((a) => a.name).join("; "),
+        link: `/console/cases/${data.caseId}`,
+      });
+    }
+
     return { transactionId: inserted.id as string, score, status, alerts };
   });
 

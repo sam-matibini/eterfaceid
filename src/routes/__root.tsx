@@ -135,6 +135,7 @@ function RootComponent() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const bareLayout =
     pathname.startsWith("/console") ||
+    pathname.startsWith("/admin") ||
     pathname.startsWith("/auth") ||
     pathname.startsWith("/onboarding") ||
     pathname.startsWith("/invite");

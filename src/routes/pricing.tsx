@@ -1,5 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { CTASection, PageHero, Placeholder, Section } from "@/components/site/primitives";
+import { fetchPlans, money } from "@/lib/platform";
 
 export const Route = createFileRoute("/pricing")({
   head: () => ({
@@ -67,6 +69,20 @@ const tiers = [
 ];
 
 function Pricing() {
+  const plans = useQuery({ queryKey: ["public-plans"], queryFn: fetchPlans });
+  const configured = (plans.data ?? []).filter((p) => p.public_visible);
+  const displayed = configured.length
+    ? configured.map((p) => ({
+        name: p.name,
+        price: p.custom_pricing || p.price_amount == null ? "Custom" : money(p.price_amount, p.price_currency),
+        unit: p.price_unit,
+        for: p.blurb ?? "",
+        includes: p.features ?? [],
+        featured: p.featured,
+        configured: true,
+      }))
+    : tiers.map((t) => ({ ...t, featured: Boolean((t as { featured?: boolean }).featured), configured: false }));
+
   return (
     <>
       <PageHero
@@ -77,7 +93,7 @@ function Pricing() {
 
       <Section>
         <div className="grid gap-px overflow-hidden border border-rule bg-rule lg:grid-cols-3">
-          {tiers.map((t) => (
+          {displayed.map((t) => (
             <div
               key={t.name}
               className={t.featured ? "bg-paper p-8" : "bg-background p-8"}
@@ -91,7 +107,13 @@ function Pricing() {
                 )}
               </div>
               <p className="mt-5 font-display text-[1.9rem] font-semibold leading-none text-ink">
-                {t.price === "Custom" ? "Custom" : <Placeholder>{t.price} price</Placeholder>}
+                {t.price === "Custom" ? (
+                  "Custom"
+                ) : t.configured ? (
+                  t.price
+                ) : (
+                  <Placeholder>{t.price} price</Placeholder>
+                )}
               </p>
               <p className="mt-2 text-[0.8rem] text-ink-soft">{t.unit}</p>
               <p className="mt-5 border-t border-rule pt-5 text-[0.88rem] leading-[1.7] text-ink-soft">
@@ -113,10 +135,12 @@ function Pricing() {
             </div>
           ))}
         </div>
-        <p className="mt-8 max-w-[70ch] text-[0.85rem] leading-[1.7] text-ink-soft">
-          Prices above are placeholders. Replace them once your unit economics across document
-          verification, registry lookups and screening sources are settled.
-        </p>
+        {configured.length === 0 ? (
+          <p className="mt-8 max-w-[70ch] text-[0.85rem] leading-[1.7] text-ink-soft">
+            Prices above are placeholders. Set your real plans and prices in the app admin area and this
+            page updates itself.
+          </p>
+        ) : null}
       </Section>
 
       <CTASection
