@@ -133,7 +133,12 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const bareLayout = pathname.startsWith("/console") || pathname.startsWith("/auth");
+  const bareLayout =
+    pathname.startsWith("/console") ||
+    pathname.startsWith("/auth") ||
+    pathname.startsWith("/onboarding") ||
+    pathname.startsWith("/invite");
+
 
   useEffect(() => {
     const { data } = supabase.auth.onAuthStateChange((event) => {

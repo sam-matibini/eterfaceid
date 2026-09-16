@@ -27,6 +27,14 @@ export const Route = createFileRoute("/api/public/v1/transactions")({
         const parsed = schema.safeParse(await request.json().catch(() => null));
         if (!parsed.success) return jsonResponse({ error: "invalid_request", issues: parsed.error.issues }, 422);
         const body = parsed.data;
+        const { data: parentCase } = await auth.admin
+          .from("cases")
+          .select("id")
+          .eq("id", body.case_id)
+          .eq("org_id", auth.orgId)
+          .maybeSingle();
+        if (!parentCase) return jsonResponse({ error: "not_found", message: "Unknown case" }, 404);
+
         const occurredAt = body.occurred_at ?? new Date().toISOString();
         const amountCad = body.amount_cad ?? body.amount;
 
@@ -76,6 +84,7 @@ export const Route = createFileRoute("/api/public/v1/transactions")({
         const { data: inserted, error } = await auth.admin
           .from("transactions")
           .insert({
+            org_id: auth.orgId,
             case_id: body.case_id,
             external_id: body.external_id ?? null,
             direction: body.direction,
@@ -106,7 +115,7 @@ export const Route = createFileRoute("/api/public/v1/transactions")({
               detail: a.detail,
             })),
           );
-          await dispatchWebhook(auth.admin, auth.environment, "transaction.flagged", {
+          await dispatchWebhook(auth.admin, auth.orgId, auth.environment, "transaction.flagged", {
             transaction_id: (inserted as any).id,
             case_id: body.case_id,
             score,

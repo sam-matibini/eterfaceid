@@ -37,9 +37,19 @@ function AuthPage() {
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [company, setCompany] = useState("");
+  const [hasInvite, setHasInvite] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    const token = window.sessionStorage.getItem("eid_invite_token");
+    if (token) {
+      setHasInvite(true);
+      setMode("signup");
+    }
+  }, []);
 
   useEffect(() => {
     if (ready && session) void navigate({ to: "/console", replace: true });
@@ -54,9 +64,14 @@ function AuthPage() {
       setError(parsed.error.issues[0]?.message ?? "Check your details");
       return;
     }
+    if (mode === "signup" && !hasInvite && company.trim().length < 2) {
+      setError("Enter your company name");
+      return;
+    }
     setBusy(true);
     try {
       if (mode === "signup") {
+        if (!hasInvite) window.sessionStorage.setItem("eid_company", company.trim());
         const { data, error: signUpError } = await supabase.auth.signUp({
           email: parsed.data.email,
           password: parsed.data.password,
@@ -79,6 +94,7 @@ function AuthPage() {
       setBusy(false);
     }
   }
+
 
   async function google() {
     setError(null);
@@ -109,9 +125,11 @@ function AuthPage() {
           {mode === "signin" ? "Sign in to the console" : "Create a console account"}
         </h1>
         <p className="mt-3 text-sm text-muted-foreground">
-          The review console is where analysts work cases, adjudicate screening hits and keep the
-          audit trail.
+          {hasInvite
+            ? "You have been invited to a team. Create your account and you will join it straight away."
+            : "The review console is where analysts work cases, adjudicate screening hits and keep the audit trail."}
         </p>
+
 
         <button
           type="button"
@@ -154,6 +172,22 @@ function AuthPage() {
               className="mt-1 h-11 w-full rounded-md border border-[var(--rule)] bg-background px-3 text-sm outline-none focus-visible:border-[var(--signal)]"
             />
           </div>
+          {mode === "signup" && !hasInvite ? (
+            <div>
+              <label htmlFor="company" className="text-sm font-medium">
+                Company name
+              </label>
+              <input
+                id="company"
+                value={company}
+                autoComplete="organization"
+                onChange={(e) => setCompany(e.target.value)}
+                placeholder="Acme Payments Inc."
+                className="mt-1 h-11 w-full rounded-md border border-[var(--rule)] bg-background px-3 text-sm outline-none focus-visible:border-[var(--signal)]"
+              />
+            </div>
+          ) : null}
+
 
           {error ? <p className="text-sm text-[var(--signal)]">{error}</p> : null}
           {notice ? <p className="text-sm text-muted-foreground">{notice}</p> : null}
@@ -182,9 +216,10 @@ function AuthPage() {
         </button>
 
         <p className="mt-8 text-xs text-muted-foreground">
-          The first account created becomes the administrator. Everyone after that starts with
-          view-only access until an administrator grants a role.
+          Signing up creates your own company workspace and makes you its administrator. You can
+          invite colleagues from Settings and choose what each of them can do.
         </p>
+
       </main>
     </div>
   );

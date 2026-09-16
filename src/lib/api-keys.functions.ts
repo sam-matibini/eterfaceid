@@ -22,12 +22,16 @@ export const createApiKey = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { data: isAdmin, error: roleError } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "admin",
-    });
-    if (roleError) throw new Error("Could not verify your permissions");
-    if (!isAdmin) throw new Error("Only administrators can create API keys");
+    const { data: membership } = await context.supabase
+      .from("organization_members")
+      .select("org_id, role")
+      .eq("user_id", context.userId)
+      .order("created_at")
+      .limit(1)
+      .maybeSingle();
+    if (!membership) throw new Error("You are not part of a team yet");
+    if (membership.role !== "admin") throw new Error("Only administrators can create API keys");
+
 
     const raw = Array.from(crypto.getRandomValues(new Uint8Array(24)))
       .map((b) => b.toString(16).padStart(2, "0"))
@@ -63,11 +67,15 @@ export const revokeApiKey = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    const { data: isAdmin } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "admin",
-    });
-    if (!isAdmin) throw new Error("Only administrators can revoke API keys");
+    const { data: membership } = await context.supabase
+      .from("organization_members")
+      .select("role")
+      .eq("user_id", context.userId)
+      .order("created_at")
+      .limit(1)
+      .maybeSingle();
+    if (membership?.role !== "admin") throw new Error("Only administrators can revoke API keys");
+
 
     const { error } = await context.supabase
       .from("api_keys")

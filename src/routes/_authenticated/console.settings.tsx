@@ -4,11 +4,12 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 
 import { ConsoleShell, Panel, StatusPill } from "@/components/console/shell";
-import { supabase } from "@/integrations/supabase/client";
 import { useRoles } from "@/hooks/useSession";
 import { createApiKey, revokeApiKey } from "@/lib/api-keys.functions";
-import { fetchApiKeys, fetchRoles, logAudit, type AppRole } from "@/lib/console";
+import { fetchApiKeys } from "@/lib/console";
+import { TeamPanel } from "@/components/console/team";
 import { WebhooksPanel } from "@/components/console/webhooks";
+
 
 export const Route = createFileRoute("/_authenticated/console/settings")({
   head: () => ({
@@ -20,8 +21,6 @@ export const Route = createFileRoute("/_authenticated/console/settings")({
   component: SettingsPage,
 });
 
-const allRoles: AppRole[] = ["admin", "analyst", "viewer"];
-
 function SettingsPage() {
   const queryClient = useQueryClient();
   const { isAdmin } = useRoles();
@@ -32,26 +31,8 @@ function SettingsPage() {
   const [environment, setEnvironment] = useState<"sandbox" | "live">("sandbox");
   const [freshSecret, setFreshSecret] = useState<string | null>(null);
 
-  const people = useQuery({ queryKey: ["people"], queryFn: fetchRoles });
   const keys = useQuery({ queryKey: ["api-keys"], queryFn: fetchApiKeys });
 
-  const setRole = useMutation({
-    mutationFn: async ({ userId, role }: { userId: string; role: AppRole }) => {
-      const { error: deleteError } = await supabase
-        .from("user_roles")
-        .delete()
-        .eq("user_id", userId);
-      if (deleteError) throw deleteError;
-      const { error } = await supabase.from("user_roles").insert({ user_id: userId, role });
-      if (error) throw error;
-      await logAudit("role.assigned", "user", userId, { role });
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["people"] });
-      void queryClient.invalidateQueries({ queryKey: ["my-roles"] });
-      void queryClient.invalidateQueries({ queryKey: ["audit"] });
-    },
-  });
 
   const addKey = useMutation({
     mutationFn: async () => createKey({ data: { name: keyName, environment } }),
@@ -80,42 +61,8 @@ function SettingsPage() {
       </p>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
-        <Panel title="People and access">
-          <div className="space-y-4 text-sm">
-            {(people.data ?? []).map((person) => (
-              <div key={person.id} className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <div className="font-medium">{person.full_name ?? person.email}</div>
-                  <div className="text-xs text-muted-foreground">{person.email}</div>
-                </div>
-                {isAdmin ? (
-                  <select
-                    value={person.roles[0] ?? "viewer"}
-                    onChange={(e) =>
-                      setRole.mutate({ userId: person.id, role: e.target.value as AppRole })
-                    }
-                    className="h-9 rounded-md border border-[var(--rule)] bg-background px-2 text-sm"
-                  >
-                    {allRoles.map((role) => (
-                      <option key={role} value={role}>
-                        {role}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <StatusPill tone="pending">{person.roles.join(", ") || "no role"}</StatusPill>
-                )}
-              </div>
-            ))}
-            {(people.data ?? []).length === 0 ? (
-              <p className="text-muted-foreground">No accounts yet.</p>
-            ) : null}
-          </div>
-          <p className="mt-5 border-t border-[var(--rule)] pt-4 text-xs text-muted-foreground">
-            Admin: full access including roles and keys. Analyst: works cases and adjudicates hits.
-            Viewer: read-only.
-          </p>
-        </Panel>
+        <TeamPanel isAdmin={isAdmin} />
+
 
         <Panel title="API keys">
           {isAdmin ? (

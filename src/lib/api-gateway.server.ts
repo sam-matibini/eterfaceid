@@ -5,9 +5,11 @@ export type AdminClient = SupabaseClient<Database>;
 
 export type ApiContext = {
   keyId: string;
+  orgId: string;
   environment: string;
   admin: AdminClient;
 };
+
 
 export async function sha256Hex(value: string) {
   const bytes = new TextEncoder().encode(value);
@@ -41,19 +43,26 @@ export async function authenticateApiRequest(request: Request): Promise<ApiConte
   const hash = await sha256Hex(token);
   const { data: key } = await admin
     .from("api_keys")
-    .select("id, environment, revoked_at")
+    .select("id, environment, revoked_at, org_id")
     .eq("key_hash", hash)
     .maybeSingle();
   if (!key) return jsonResponse({ error: "invalid_api_key" }, 401);
   if ((key as any).revoked_at) return jsonResponse({ error: "revoked_api_key" }, 401);
 
   await admin.from("api_keys").update({ last_used_at: new Date().toISOString() }).eq("id", (key as any).id);
-  return { keyId: (key as any).id as string, environment: (key as any).environment as string, admin };
+  return {
+    keyId: (key as any).id as string,
+    orgId: (key as any).org_id as string,
+    environment: (key as any).environment as string,
+    admin,
+  };
 }
+
 
 /** Signs and delivers an event to every enabled webhook endpoint for the environment. */
 export async function dispatchWebhook(
   admin: AdminClient,
+  orgId: string,
   environment: string,
   event: string,
   payload: Record<string, unknown>,
@@ -62,7 +71,9 @@ export async function dispatchWebhook(
     .from("webhook_endpoints")
     .select("id, url, secret, events, enabled, environment")
     .eq("enabled", true)
+    .eq("org_id", orgId)
     .eq("environment", environment);
+
 
   for (const endpoint of (endpoints ?? []) as any[]) {
     if (Array.isArray(endpoint.events) && endpoint.events.length && !endpoint.events.includes(event)) continue;

@@ -11,7 +11,7 @@ export const Route = createFileRoute("/api/public/v1/cases/$caseId")({
         const caseId = params.caseId;
 
         const [record, checks, hits, owners, transactions] = await Promise.all([
-          auth.admin.from("cases").select("*").eq("id", caseId).maybeSingle(),
+          auth.admin.from("cases").select("*").eq("id", caseId).eq("org_id", auth.orgId).maybeSingle(),
           auth.admin.from("case_checks").select("category, name, result, detail, checked_at").eq("case_id", caseId),
           auth.admin
             .from("screening_hits")
