@@ -32,6 +32,7 @@ function CaseDetail() {
   const { caseId } = useParams({ from: "/_authenticated/console/cases/$caseId" });
   const queryClient = useQueryClient();
   const { canWrite } = useRoles();
+  const screen = useServerFn(screenCase);
   const [note, setNote] = useState("");
 
   const { data, isLoading, error } = useQuery({
