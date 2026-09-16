@@ -5,7 +5,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { evaluateTransaction, transactionRisk, type TxInput } from "@/lib/transaction-rules";
 import { computeEffectiveOwnership, fiftyPercentRule, type OwnerRow } from "@/lib/ownership";
 import { validateAddress, addressResult, validateAge } from "@/lib/address-rules";
-import { normalizeName } from "@/lib/name-match";
+import { normalizeName, scoreMatch } from "@/lib/name-match";
 
 async function ensureWriter(context: { supabase: any; userId: string }) {
   const { data: allowed } = await context.supabase.rpc("can_write", { _user_id: context.userId });
@@ -58,17 +58,21 @@ export const recordTransaction = createServerFn({ method: "POST" })
     if (data.counterpartyName) {
       const { data: matches } = await context.supabase.rpc("match_watchlist_names", {
         _q: normalizeName(data.counterpartyName),
-        _threshold: 0.82,
-        _limit: 5,
+        _threshold: 0.45,
+        _limit: 50,
       });
-      const top = matches?.[0];
-      if (top) {
+      let best: { name: string; score: number } | null = null;
+      for (const m of matches ?? []) {
+        const outcome = scoreMatch({ query: data.counterpartyName, candidate: m.matched_name });
+        if (!best || outcome.score > best.score) best = { name: m.matched_name, score: outcome.score };
+      }
+      if (best && best.score >= 0.8) {
         alerts.push({
           code: "SANCTIONED_COUNTERPARTY",
           name: "Counterparty matches a screening list",
           severity: "high",
           citation: "FATF R.6/R.7; OFAC 31 CFR Part 501; Canadian sanctions regime",
-          detail: `Closest list name: ${top.matched_name} (score ${Number(top.sim).toFixed(2)})`,
+          detail: `Closest list name: ${best.name} (score ${best.score.toFixed(2)})`,
           weight: 45,
         });
       }

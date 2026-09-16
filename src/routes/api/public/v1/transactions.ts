@@ -52,16 +52,21 @@ export const Route = createFileRoute("/api/public/v1/transactions")({
         if (body.counterparty_name) {
           const { data: matches } = await auth.admin.rpc("match_watchlist_names", {
             _q: normalizeName(body.counterparty_name),
-            _threshold: 0.82,
-            _limit: 5,
+            _threshold: 0.45,
+            _limit: 50,
           });
-          if (matches && (matches as any[]).length) {
+          let best: { name: string; score: number } | null = null;
+          for (const m of (matches ?? []) as any[]) {
+            const outcome = scoreMatch({ query: body.counterparty_name, candidate: m.matched_name });
+            if (!best || outcome.score > best.score) best = { name: m.matched_name, score: outcome.score };
+          }
+          if (best && best.score >= 0.8) {
             alerts.push({
               code: "SANCTIONED_COUNTERPARTY",
               name: "Counterparty matches a screening list",
               severity: "high",
               citation: "FATF R.6/R.7; OFAC 31 CFR Part 501; Canadian sanctions regime",
-              detail: `Closest list name: ${(matches as any[])[0].matched_name}`,
+              detail: `Closest list name: ${best.name} (score ${best.score.toFixed(2)})`,
               weight: 45,
             });
           }
