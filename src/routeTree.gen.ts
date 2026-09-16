@@ -26,6 +26,7 @@ import { Route as SolutionsFraudRiskRouteImport } from './routes/solutions.fraud
 import { Route as SolutionsPersonVerificationRouteImport } from './routes/solutions.person-verification'
 import { Route as AuthenticatedConsoleIndexRouteImport } from './routes/_authenticated/console.index'
 import { Route as AuthenticatedConsoleAlertsRouteImport } from './routes/_authenticated/console.alerts'
+import { Route as AuthenticatedConsoleAuditRouteImport } from './routes/_authenticated/console.audit'
 import { Route as AuthenticatedConsoleCasesCaseIdRouteImport } from './routes/_authenticated/console.cases.$caseId'
 
 const IndexRoute = IndexRouteImport.update({
@@ -116,6 +117,12 @@ const AuthenticatedConsoleAlertsRoute =
     path: '/console/alerts',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedConsoleAuditRoute =
+  AuthenticatedConsoleAuditRouteImport.update({
+    id: '/console/audit',
+    path: '/console/audit',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedConsoleCasesCaseIdRoute =
   AuthenticatedConsoleCasesCaseIdRouteImport.update({
     id: '/console/cases/$caseId',
@@ -139,6 +146,7 @@ export interface FileRoutesByFullPath {
   '/solutions/person-verification': typeof SolutionsPersonVerificationRoute
   '/solutions/': typeof SolutionsIndexRoute
   '/console/alerts': typeof AuthenticatedConsoleAlertsRoute
+  '/console/audit': typeof AuthenticatedConsoleAuditRoute
   '/console/': typeof AuthenticatedConsoleIndexRoute
   '/console/cases/$caseId': typeof AuthenticatedConsoleCasesCaseIdRoute
 }
@@ -158,6 +166,7 @@ export interface FileRoutesByTo {
   '/solutions/person-verification': typeof SolutionsPersonVerificationRoute
   '/solutions': typeof SolutionsIndexRoute
   '/console/alerts': typeof AuthenticatedConsoleAlertsRoute
+  '/console/audit': typeof AuthenticatedConsoleAuditRoute
   '/console': typeof AuthenticatedConsoleIndexRoute
   '/console/cases/$caseId': typeof AuthenticatedConsoleCasesCaseIdRoute
 }
@@ -179,6 +188,7 @@ export interface FileRoutesById {
   '/solutions/person-verification': typeof SolutionsPersonVerificationRoute
   '/solutions/': typeof SolutionsIndexRoute
   '/_authenticated/console/alerts': typeof AuthenticatedConsoleAlertsRoute
+  '/_authenticated/console/audit': typeof AuthenticatedConsoleAuditRoute
   '/_authenticated/console/': typeof AuthenticatedConsoleIndexRoute
   '/_authenticated/console/cases/$caseId': typeof AuthenticatedConsoleCasesCaseIdRoute
 }
@@ -200,6 +210,7 @@ export interface FileRouteTypes {
     | '/solutions/person-verification'
     | '/solutions/'
     | '/console/alerts'
+    | '/console/audit'
     | '/console/'
     | '/console/cases/$caseId'
   fileRoutesByTo: FileRoutesByTo
@@ -219,6 +230,7 @@ export interface FileRouteTypes {
     | '/solutions/person-verification'
     | '/solutions'
     | '/console/alerts'
+    | '/console/audit'
     | '/console'
     | '/console/cases/$caseId'
   id:
@@ -239,6 +251,7 @@ export interface FileRouteTypes {
     | '/solutions/person-verification'
     | '/solutions/'
     | '/_authenticated/console/alerts'
+    | '/_authenticated/console/audit'
     | '/_authenticated/console/'
     | '/_authenticated/console/cases/$caseId'
   fileRoutesById: FileRoutesById
@@ -382,6 +395,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedConsoleAlertsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/console/audit': {
+      id: '/_authenticated/console/audit'
+      path: '/console/audit'
+      fullPath: '/console/audit'
+      preLoaderRoute: typeof AuthenticatedConsoleAuditRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/console/cases/$caseId': {
       id: '/_authenticated/console/cases/$caseId'
       path: '/console/cases/$caseId'
@@ -394,12 +414,14 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedConsoleAlertsRoute: typeof AuthenticatedConsoleAlertsRoute
+  AuthenticatedConsoleAuditRoute: typeof AuthenticatedConsoleAuditRoute
   AuthenticatedConsoleIndexRoute: typeof AuthenticatedConsoleIndexRoute
   AuthenticatedConsoleCasesCaseIdRoute: typeof AuthenticatedConsoleCasesCaseIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedConsoleAlertsRoute: AuthenticatedConsoleAlertsRoute,
+  AuthenticatedConsoleAuditRoute: AuthenticatedConsoleAuditRoute,
   AuthenticatedConsoleIndexRoute: AuthenticatedConsoleIndexRoute,
   AuthenticatedConsoleCasesCaseIdRoute: AuthenticatedConsoleCasesCaseIdRoute,
 }
