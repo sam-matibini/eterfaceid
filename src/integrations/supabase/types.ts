@@ -70,6 +70,7 @@ export type Database = {
           contact_email: string | null
           country: string | null
           created_at: string
+          cron_secret: string
           email_from_address: string | null
           email_from_name: string | null
           id: string
@@ -94,6 +95,7 @@ export type Database = {
           contact_email?: string | null
           country?: string | null
           created_at?: string
+          cron_secret?: string
           email_from_address?: string | null
           email_from_name?: string | null
           id?: string
@@ -118,6 +120,7 @@ export type Database = {
           contact_email?: string | null
           country?: string | null
           created_at?: string
+          cron_secret?: string
           email_from_address?: string | null
           email_from_name?: string | null
           id?: string

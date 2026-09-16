@@ -49,7 +49,12 @@ async function requireAdmin(supabase: any, userId: string) {
 export const createOrganization = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
-    z.object({ name: z.string().trim().min(2, "Enter your company name").max(80) }).parse(input),
+    z
+      .object({
+        name: z.string().trim().min(2, "Enter your company name").max(80),
+        origin: z.string().trim().url().max(300).optional(),
+      })
+      .parse(input),
   )
   .handler(async ({ data, context }) => {
     const existing = await currentMembership(context.supabase, context.userId);
@@ -76,6 +81,24 @@ export const createOrganization = createServerFn({ method: "POST" })
       entity_id: org.id,
       detail: { name: data.name } as never,
     });
+
+    try {
+      const email = context.claims?.email as string | undefined;
+      if (email) {
+        const { sendNotification } = await import("@/lib/email.server");
+        await sendNotification(supabaseAdmin, {
+          event: "team.welcome",
+          to: [email],
+          orgId: org.id as string,
+          data: {
+            org: org.name as string,
+            link: `${data.origin ?? "https://eterfaceid.lovable.app"}/console`,
+          },
+        });
+      }
+    } catch {
+      /* the welcome email must never block sign-up */
+    }
 
     return { orgId: org.id as string, existing: false };
   });

@@ -44,6 +44,7 @@ import { Route as AuthenticatedAdminCompaniesOrgIdRouteImport } from './routes/_
 import { Route as AuthenticatedAdminInvoicesInvoiceIdRouteImport } from './routes/_authenticated/admin.invoices.$invoiceId'
 import { Route as AuthenticatedConsoleCasesCaseIdRouteImport } from './routes/_authenticated/console.cases.$caseId'
 import { Route as ApiPublicHooksRefreshWatchlistsRouteImport } from './routes/api/public/hooks/refresh-watchlists'
+import { Route as ApiPublicHooksRescreenRouteImport } from './routes/api/public/hooks/rescreen'
 import { Route as ApiPublicV1CasesRouteImport } from './routes/api/public/v1/cases'
 import { Route as ApiPublicV1ScreeningRouteImport } from './routes/api/public/v1/screening'
 import { Route as ApiPublicV1TransactionsRouteImport } from './routes/api/public/v1/transactions'
@@ -240,6 +241,11 @@ const ApiPublicHooksRefreshWatchlistsRoute =
     path: '/api/public/hooks/refresh-watchlists',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksRescreenRoute = ApiPublicHooksRescreenRouteImport.update({
+  id: '/api/public/hooks/rescreen',
+  path: '/api/public/hooks/rescreen',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicV1CasesRoute = ApiPublicV1CasesRouteImport.update({
   id: '/api/public/v1/cases',
   path: '/api/public/v1/cases',
@@ -296,6 +302,7 @@ export interface FileRoutesByFullPath {
   '/admin/invoices/$invoiceId': typeof AuthenticatedAdminInvoicesInvoiceIdRoute
   '/console/cases/$caseId': typeof AuthenticatedConsoleCasesCaseIdRoute
   '/api/public/hooks/refresh-watchlists': typeof ApiPublicHooksRefreshWatchlistsRoute
+  '/api/public/hooks/rescreen': typeof ApiPublicHooksRescreenRoute
   '/api/public/v1/cases': typeof ApiPublicV1CasesRouteWithChildren
   '/api/public/v1/screening': typeof ApiPublicV1ScreeningRoute
   '/api/public/v1/transactions': typeof ApiPublicV1TransactionsRoute
@@ -336,6 +343,7 @@ export interface FileRoutesByTo {
   '/admin/invoices/$invoiceId': typeof AuthenticatedAdminInvoicesInvoiceIdRoute
   '/console/cases/$caseId': typeof AuthenticatedConsoleCasesCaseIdRoute
   '/api/public/hooks/refresh-watchlists': typeof ApiPublicHooksRefreshWatchlistsRoute
+  '/api/public/hooks/rescreen': typeof ApiPublicHooksRescreenRoute
   '/api/public/v1/cases': typeof ApiPublicV1CasesRouteWithChildren
   '/api/public/v1/screening': typeof ApiPublicV1ScreeningRoute
   '/api/public/v1/transactions': typeof ApiPublicV1TransactionsRoute
@@ -378,6 +386,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/invoices/$invoiceId': typeof AuthenticatedAdminInvoicesInvoiceIdRoute
   '/_authenticated/console/cases/$caseId': typeof AuthenticatedConsoleCasesCaseIdRoute
   '/api/public/hooks/refresh-watchlists': typeof ApiPublicHooksRefreshWatchlistsRoute
+  '/api/public/hooks/rescreen': typeof ApiPublicHooksRescreenRoute
   '/api/public/v1/cases': typeof ApiPublicV1CasesRouteWithChildren
   '/api/public/v1/screening': typeof ApiPublicV1ScreeningRoute
   '/api/public/v1/transactions': typeof ApiPublicV1TransactionsRoute
@@ -420,6 +429,7 @@ export interface FileRouteTypes {
     | '/admin/invoices/$invoiceId'
     | '/console/cases/$caseId'
     | '/api/public/hooks/refresh-watchlists'
+    | '/api/public/hooks/rescreen'
     | '/api/public/v1/cases'
     | '/api/public/v1/screening'
     | '/api/public/v1/transactions'
@@ -460,6 +470,7 @@ export interface FileRouteTypes {
     | '/admin/invoices/$invoiceId'
     | '/console/cases/$caseId'
     | '/api/public/hooks/refresh-watchlists'
+    | '/api/public/hooks/rescreen'
     | '/api/public/v1/cases'
     | '/api/public/v1/screening'
     | '/api/public/v1/transactions'
@@ -501,6 +512,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/invoices/$invoiceId'
     | '/_authenticated/console/cases/$caseId'
     | '/api/public/hooks/refresh-watchlists'
+    | '/api/public/hooks/rescreen'
     | '/api/public/v1/cases'
     | '/api/public/v1/screening'
     | '/api/public/v1/transactions'
@@ -525,6 +537,7 @@ export interface RootRouteChildren {
   SolutionsPersonVerificationRoute: typeof SolutionsPersonVerificationRoute
   SolutionsIndexRoute: typeof SolutionsIndexRoute
   ApiPublicHooksRefreshWatchlistsRoute: typeof ApiPublicHooksRefreshWatchlistsRoute
+  ApiPublicHooksRescreenRoute: typeof ApiPublicHooksRescreenRoute
   ApiPublicV1CasesRoute: typeof ApiPublicV1CasesRouteWithChildren
   ApiPublicV1ScreeningRoute: typeof ApiPublicV1ScreeningRoute
   ApiPublicV1TransactionsRoute: typeof ApiPublicV1TransactionsRoute
@@ -777,6 +790,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksRefreshWatchlistsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/rescreen': {
+      id: '/api/public/hooks/rescreen'
+      path: '/api/public/hooks/rescreen'
+      fullPath: '/api/public/hooks/rescreen'
+      preLoaderRoute: typeof ApiPublicHooksRescreenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/v1/cases': {
       id: '/api/public/v1/cases'
       path: '/api/public/v1/cases'
@@ -883,6 +903,7 @@ const rootRouteChildren: RootRouteChildren = {
   SolutionsPersonVerificationRoute: SolutionsPersonVerificationRoute,
   SolutionsIndexRoute: SolutionsIndexRoute,
   ApiPublicHooksRefreshWatchlistsRoute: ApiPublicHooksRefreshWatchlistsRoute,
+  ApiPublicHooksRescreenRoute: ApiPublicHooksRescreenRoute,
   ApiPublicV1CasesRoute: ApiPublicV1CasesRouteWithChildren,
   ApiPublicV1ScreeningRoute: ApiPublicV1ScreeningRoute,
   ApiPublicV1TransactionsRoute: ApiPublicV1TransactionsRoute,
