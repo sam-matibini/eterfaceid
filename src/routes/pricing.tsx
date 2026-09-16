@@ -69,6 +69,20 @@ const tiers = [
 ];
 
 function Pricing() {
+  const plans = useQuery({ queryKey: ["public-plans"], queryFn: fetchPlans });
+  const configured = (plans.data ?? []).filter((p) => p.public_visible);
+  const displayed = configured.length
+    ? configured.map((p) => ({
+        name: p.name,
+        price: p.custom_pricing || p.price_amount == null ? "Custom" : money(p.price_amount, p.price_currency),
+        unit: p.price_unit,
+        for: p.blurb ?? "",
+        includes: p.features ?? [],
+        featured: p.featured,
+        configured: true,
+      }))
+    : tiers.map((t) => ({ ...t, featured: Boolean((t as { featured?: boolean }).featured), configured: false }));
+
   return (
     <>
       <PageHero
