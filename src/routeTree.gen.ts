@@ -25,6 +25,7 @@ import { Route as SolutionsBusinessVerificationRouteImport } from './routes/solu
 import { Route as SolutionsFraudRiskRouteImport } from './routes/solutions.fraud-risk'
 import { Route as SolutionsPersonVerificationRouteImport } from './routes/solutions.person-verification'
 import { Route as AuthenticatedConsoleIndexRouteImport } from './routes/_authenticated/console.index'
+import { Route as AuthenticatedConsoleCasesCaseIdRouteImport } from './routes/_authenticated/console.cases.$caseId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -108,6 +109,12 @@ const AuthenticatedConsoleIndexRoute =
     path: '/console/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedConsoleCasesCaseIdRoute =
+  AuthenticatedConsoleCasesCaseIdRouteImport.update({
+    id: '/console/cases/$caseId',
+    path: '/console/cases/$caseId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -125,6 +132,7 @@ export interface FileRoutesByFullPath {
   '/solutions/person-verification': typeof SolutionsPersonVerificationRoute
   '/solutions/': typeof SolutionsIndexRoute
   '/console/': typeof AuthenticatedConsoleIndexRoute
+  '/console/cases/$caseId': typeof AuthenticatedConsoleCasesCaseIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -142,6 +150,7 @@ export interface FileRoutesByTo {
   '/solutions/person-verification': typeof SolutionsPersonVerificationRoute
   '/solutions': typeof SolutionsIndexRoute
   '/console': typeof AuthenticatedConsoleIndexRoute
+  '/console/cases/$caseId': typeof AuthenticatedConsoleCasesCaseIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -161,6 +170,7 @@ export interface FileRoutesById {
   '/solutions/person-verification': typeof SolutionsPersonVerificationRoute
   '/solutions/': typeof SolutionsIndexRoute
   '/_authenticated/console/': typeof AuthenticatedConsoleIndexRoute
+  '/_authenticated/console/cases/$caseId': typeof AuthenticatedConsoleCasesCaseIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -180,6 +190,7 @@ export interface FileRouteTypes {
     | '/solutions/person-verification'
     | '/solutions/'
     | '/console/'
+    | '/console/cases/$caseId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -197,6 +208,7 @@ export interface FileRouteTypes {
     | '/solutions/person-verification'
     | '/solutions'
     | '/console'
+    | '/console/cases/$caseId'
   id:
     | '__root__'
     | '/'
@@ -215,6 +227,7 @@ export interface FileRouteTypes {
     | '/solutions/person-verification'
     | '/solutions/'
     | '/_authenticated/console/'
+    | '/_authenticated/console/cases/$caseId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -349,15 +362,24 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedConsoleIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/console/cases/$caseId': {
+      id: '/_authenticated/console/cases/$caseId'
+      path: '/console/cases/$caseId'
+      fullPath: '/console/cases/$caseId'
+      preLoaderRoute: typeof AuthenticatedConsoleCasesCaseIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedConsoleIndexRoute: typeof AuthenticatedConsoleIndexRoute
+  AuthenticatedConsoleCasesCaseIdRoute: typeof AuthenticatedConsoleCasesCaseIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedConsoleIndexRoute: AuthenticatedConsoleIndexRoute,
+  AuthenticatedConsoleCasesCaseIdRoute: AuthenticatedConsoleCasesCaseIdRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
