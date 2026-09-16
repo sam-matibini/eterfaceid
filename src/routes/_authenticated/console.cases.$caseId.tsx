@@ -53,6 +53,15 @@ function CaseDetail() {
     },
   });
 
+  const runScreening = useMutation({
+    mutationFn: () => screen({ data: { caseId } }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["case", caseId] });
+      void queryClient.invalidateQueries({ queryKey: ["cases"] });
+      void queryClient.invalidateQueries({ queryKey: ["audit"] });
+    },
+  });
+
   const decideHit = useMutation({
     mutationFn: async ({
       id,
