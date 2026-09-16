@@ -10,7 +10,9 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AboutRouteImport } from './routes/about'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CareersRouteImport } from './routes/careers'
 import { Route as ComplianceRouteImport } from './routes/compliance'
 import { Route as ContactRouteImport } from './routes/contact'
@@ -22,15 +24,25 @@ import { Route as SolutionsAmlScreeningRouteImport } from './routes/solutions.am
 import { Route as SolutionsBusinessVerificationRouteImport } from './routes/solutions.business-verification'
 import { Route as SolutionsFraudRiskRouteImport } from './routes/solutions.fraud-risk'
 import { Route as SolutionsPersonVerificationRouteImport } from './routes/solutions.person-verification'
+import { Route as AuthenticatedConsoleIndexRouteImport } from './routes/_authenticated/console.index'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AboutRoute = AboutRouteImport.update({
   id: '/about',
   path: '/about',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CareersRoute = CareersRouteImport.update({
@@ -90,10 +102,17 @@ const SolutionsPersonVerificationRoute =
     path: '/solutions/person-verification',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AuthenticatedConsoleIndexRoute =
+  AuthenticatedConsoleIndexRouteImport.update({
+    id: '/console/',
+    path: '/console/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/auth': typeof AuthRoute
   '/careers': typeof CareersRoute
   '/compliance': typeof ComplianceRoute
   '/contact': typeof ContactRoute
@@ -105,10 +124,12 @@ export interface FileRoutesByFullPath {
   '/solutions/fraud-risk': typeof SolutionsFraudRiskRoute
   '/solutions/person-verification': typeof SolutionsPersonVerificationRoute
   '/solutions/': typeof SolutionsIndexRoute
+  '/console/': typeof AuthenticatedConsoleIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/auth': typeof AuthRoute
   '/careers': typeof CareersRoute
   '/compliance': typeof ComplianceRoute
   '/contact': typeof ContactRoute
@@ -120,11 +141,14 @@ export interface FileRoutesByTo {
   '/solutions/fraud-risk': typeof SolutionsFraudRiskRoute
   '/solutions/person-verification': typeof SolutionsPersonVerificationRoute
   '/solutions': typeof SolutionsIndexRoute
+  '/console': typeof AuthenticatedConsoleIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/about': typeof AboutRoute
+  '/auth': typeof AuthRoute
   '/careers': typeof CareersRoute
   '/compliance': typeof ComplianceRoute
   '/contact': typeof ContactRoute
@@ -136,12 +160,14 @@ export interface FileRoutesById {
   '/solutions/fraud-risk': typeof SolutionsFraudRiskRoute
   '/solutions/person-verification': typeof SolutionsPersonVerificationRoute
   '/solutions/': typeof SolutionsIndexRoute
+  '/_authenticated/console/': typeof AuthenticatedConsoleIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/about'
+    | '/auth'
     | '/careers'
     | '/compliance'
     | '/contact'
@@ -153,10 +179,12 @@ export interface FileRouteTypes {
     | '/solutions/fraud-risk'
     | '/solutions/person-verification'
     | '/solutions/'
+    | '/console/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/about'
+    | '/auth'
     | '/careers'
     | '/compliance'
     | '/contact'
@@ -168,10 +196,13 @@ export interface FileRouteTypes {
     | '/solutions/fraud-risk'
     | '/solutions/person-verification'
     | '/solutions'
+    | '/console'
   id:
     | '__root__'
     | '/'
+    | '/_authenticated'
     | '/about'
+    | '/auth'
     | '/careers'
     | '/compliance'
     | '/contact'
@@ -183,11 +214,14 @@ export interface FileRouteTypes {
     | '/solutions/fraud-risk'
     | '/solutions/person-verification'
     | '/solutions/'
+    | '/_authenticated/console/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AboutRoute: typeof AboutRoute
+  AuthRoute: typeof AuthRoute
   CareersRoute: typeof CareersRoute
   ComplianceRoute: typeof ComplianceRoute
   ContactRoute: typeof ContactRoute
@@ -210,11 +244,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/about': {
       id: '/about'
       path: '/about'
       fullPath: '/about'
       preLoaderRoute: typeof AboutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/careers': {
@@ -294,12 +342,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SolutionsPersonVerificationRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/console/': {
+      id: '/_authenticated/console/'
+      path: '/console'
+      fullPath: '/console/'
+      preLoaderRoute: typeof AuthenticatedConsoleIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedConsoleIndexRoute: typeof AuthenticatedConsoleIndexRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedConsoleIndexRoute: AuthenticatedConsoleIndexRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AboutRoute: AboutRoute,
+  AuthRoute: AuthRoute,
   CareersRoute: CareersRoute,
   ComplianceRoute: ComplianceRoute,
   ContactRoute: ContactRoute,
