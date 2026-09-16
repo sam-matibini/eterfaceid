@@ -26,7 +26,7 @@ export function Footer() {
               </h2>
               <ul className="mt-4 space-y-2.5">
                 {group.links.map((link) => (
-                  <li key={link.heading ?? link.label + link.to}>
+                  <li key={link.label + link.to}>
                     <Link
                       to={link.to}
                       className="text-[0.85rem] text-ink transition-colors hover:text-signal"
