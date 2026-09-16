@@ -22,3 +22,9 @@
 - Companies (organizations), members with roles, email invites, onboarding screen.
 - Every record is owned by a company; access rules and the public API are company-scoped.
 - Invite emails are not sent automatically yet: the admin copies the invite link from Settings.
+
+## App admin, billing and email notifications (done)
+- /admin area for eterfaceID staff only: customer companies, plans and prices, billing and invoices, company details, integrations, email log.
+- Plans set in /admin drive the public pricing page and invoice calculations.
+- Usage is counted per company per month (verifications, screenings, transactions) and invoices are generated from it.
+- Emails send automatically for invitations, welcomes, screening matches, monitoring alerts and filed reports; each type can be switched off per workspace in Settings.
