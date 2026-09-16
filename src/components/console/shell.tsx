@@ -1,9 +1,9 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
-import { useRoles, useSession } from "@/hooks/useSession";
+import { useOrganization, useRoles, useSession } from "@/hooks/useSession";
 
 const navItems = [
   { to: "/console", label: "Cases", exact: true },
@@ -22,6 +22,11 @@ export function ConsoleShell({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const { user } = useSession();
   const { roles } = useRoles();
+  const { organization, ready } = useOrganization();
+
+  useEffect(() => {
+    if (ready && !organization) void navigate({ to: "/onboarding", replace: true });
+  }, [ready, organization, navigate]);
 
   async function signOut() {
     await queryClient.cancelQueries();
@@ -29,6 +34,7 @@ export function ConsoleShell({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
     void navigate({ to: "/auth", replace: true });
   }
+
 
   return (
     <div className="flex min-h-screen flex-col bg-[var(--paper)]">
@@ -57,9 +63,11 @@ export function ConsoleShell({ children }: { children: ReactNode }) {
           </nav>
           <div className="flex items-center gap-4 text-sm">
             <span className="hidden text-muted-foreground sm:inline">
+              {organization ? `${organization.name} · ` : ""}
               {user?.email}
               {roles.length ? ` · ${roles.join(", ")}` : ""}
             </span>
+
             <button
               type="button"
               onClick={signOut}

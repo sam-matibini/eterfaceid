@@ -29,25 +29,43 @@ export function useSession() {
   return { session, ready, user: session?.user ?? null };
 }
 
-export function useRoles() {
-  const { user } = useSession();
+export function useOrganization() {
+  const { user, ready } = useSession();
   const query = useQuery({
-    queryKey: ["my-roles", user?.id],
+    queryKey: ["my-org", user?.id],
     enabled: Boolean(user?.id),
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user!.id);
+        .from("organization_members")
+        .select("org_id, role, organizations(id, name, slug)")
+        .eq("user_id", user!.id)
+        .order("created_at")
+        .limit(1)
+        .maybeSingle();
       if (error) throw error;
-      return (data ?? []).map((r) => r.role as AppRole);
+      if (!data) return null;
+      return {
+        orgId: data.org_id as string,
+        role: data.role as AppRole,
+        name: (data.organizations as { name: string } | null)?.name ?? "Your team",
+      };
     },
   });
-  const roles = query.data ?? [];
   return {
-    roles,
-    isAdmin: roles.includes("admin"),
-    canWrite: roles.includes("admin") || roles.includes("analyst"),
-    loading: query.isLoading,
+    organization: query.data ?? null,
+    loading: !ready || query.isLoading,
+    ready: ready && !query.isLoading,
   };
 }
+
+export function useRoles() {
+  const { organization, loading } = useOrganization();
+  const roles = organization ? [organization.role] : [];
+  return {
+    roles,
+    isAdmin: organization?.role === "admin",
+    canWrite: organization?.role === "admin" || organization?.role === "analyst",
+    loading,
+  };
+}
+

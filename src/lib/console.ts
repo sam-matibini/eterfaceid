@@ -73,18 +73,34 @@ export async function fetchAuditEvents() {
   return data;
 }
 
-export async function fetchRoles() {
-  const [roles, profiles] = await Promise.all([
-    supabase.from("user_roles").select("*"),
+export async function fetchTeam() {
+  const [members, profiles, invites] = await Promise.all([
+    supabase.from("organization_members").select("user_id, role, created_at"),
     supabase.from("profiles").select("*"),
+    supabase
+      .from("organization_invites")
+      .select("*")
+      .is("accepted_at", null)
+      .is("revoked_at", null)
+      .order("created_at", { ascending: false }),
   ]);
-  if (roles.error) throw roles.error;
+  if (members.error) throw members.error;
   if (profiles.error) throw profiles.error;
-  return (profiles.data ?? []).map((p) => ({
-    ...p,
-    roles: (roles.data ?? []).filter((r) => r.user_id === p.id).map((r) => r.role as AppRole),
-  }));
+  if (invites.error) throw invites.error;
+  return {
+    members: (members.data ?? []).map((m) => {
+      const profile = (profiles.data ?? []).find((p) => p.id === m.user_id);
+      return {
+        userId: m.user_id,
+        role: m.role as AppRole,
+        email: profile?.email ?? null,
+        fullName: profile?.full_name ?? null,
+      };
+    }),
+    invites: invites.data ?? [],
+  };
 }
+
 
 export async function fetchApiKeys() {
   const { data, error } = await supabase
