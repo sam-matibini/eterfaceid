@@ -27,6 +27,7 @@ import { Route as SolutionsPersonVerificationRouteImport } from './routes/soluti
 import { Route as AuthenticatedConsoleIndexRouteImport } from './routes/_authenticated/console.index'
 import { Route as AuthenticatedConsoleAlertsRouteImport } from './routes/_authenticated/console.alerts'
 import { Route as AuthenticatedConsoleAuditRouteImport } from './routes/_authenticated/console.audit'
+import { Route as AuthenticatedConsoleComplianceRouteImport } from './routes/_authenticated/console.compliance'
 import { Route as AuthenticatedConsoleReportsRouteImport } from './routes/_authenticated/console.reports'
 import { Route as AuthenticatedConsoleSettingsRouteImport } from './routes/_authenticated/console.settings'
 import { Route as AuthenticatedConsoleTransactionsRouteImport } from './routes/_authenticated/console.transactions'
@@ -132,6 +133,12 @@ const AuthenticatedConsoleAuditRoute =
     path: '/console/audit',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedConsoleComplianceRoute =
+  AuthenticatedConsoleComplianceRouteImport.update({
+    id: '/console/compliance',
+    path: '/console/compliance',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedConsoleReportsRoute =
   AuthenticatedConsoleReportsRouteImport.update({
     id: '/console/reports',
@@ -206,6 +213,7 @@ export interface FileRoutesByFullPath {
   '/solutions/': typeof SolutionsIndexRoute
   '/console/alerts': typeof AuthenticatedConsoleAlertsRoute
   '/console/audit': typeof AuthenticatedConsoleAuditRoute
+  '/console/compliance': typeof AuthenticatedConsoleComplianceRoute
   '/console/reports': typeof AuthenticatedConsoleReportsRoute
   '/console/settings': typeof AuthenticatedConsoleSettingsRoute
   '/console/transactions': typeof AuthenticatedConsoleTransactionsRoute
@@ -235,6 +243,7 @@ export interface FileRoutesByTo {
   '/solutions': typeof SolutionsIndexRoute
   '/console/alerts': typeof AuthenticatedConsoleAlertsRoute
   '/console/audit': typeof AuthenticatedConsoleAuditRoute
+  '/console/compliance': typeof AuthenticatedConsoleComplianceRoute
   '/console/reports': typeof AuthenticatedConsoleReportsRoute
   '/console/settings': typeof AuthenticatedConsoleSettingsRoute
   '/console/transactions': typeof AuthenticatedConsoleTransactionsRoute
@@ -266,6 +275,7 @@ export interface FileRoutesById {
   '/solutions/': typeof SolutionsIndexRoute
   '/_authenticated/console/alerts': typeof AuthenticatedConsoleAlertsRoute
   '/_authenticated/console/audit': typeof AuthenticatedConsoleAuditRoute
+  '/_authenticated/console/compliance': typeof AuthenticatedConsoleComplianceRoute
   '/_authenticated/console/reports': typeof AuthenticatedConsoleReportsRoute
   '/_authenticated/console/settings': typeof AuthenticatedConsoleSettingsRoute
   '/_authenticated/console/transactions': typeof AuthenticatedConsoleTransactionsRoute
@@ -297,6 +307,7 @@ export interface FileRouteTypes {
     | '/solutions/'
     | '/console/alerts'
     | '/console/audit'
+    | '/console/compliance'
     | '/console/reports'
     | '/console/settings'
     | '/console/transactions'
@@ -326,6 +337,7 @@ export interface FileRouteTypes {
     | '/solutions'
     | '/console/alerts'
     | '/console/audit'
+    | '/console/compliance'
     | '/console/reports'
     | '/console/settings'
     | '/console/transactions'
@@ -356,6 +368,7 @@ export interface FileRouteTypes {
     | '/solutions/'
     | '/_authenticated/console/alerts'
     | '/_authenticated/console/audit'
+    | '/_authenticated/console/compliance'
     | '/_authenticated/console/reports'
     | '/_authenticated/console/settings'
     | '/_authenticated/console/transactions'
@@ -519,6 +532,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedConsoleAuditRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/console/compliance': {
+      id: '/_authenticated/console/compliance'
+      path: '/console/compliance'
+      fullPath: '/console/compliance'
+      preLoaderRoute: typeof AuthenticatedConsoleComplianceRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/console/reports': {
       id: '/_authenticated/console/reports'
       path: '/console/reports'
@@ -595,6 +615,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedConsoleAlertsRoute: typeof AuthenticatedConsoleAlertsRoute
   AuthenticatedConsoleAuditRoute: typeof AuthenticatedConsoleAuditRoute
+  AuthenticatedConsoleComplianceRoute: typeof AuthenticatedConsoleComplianceRoute
   AuthenticatedConsoleReportsRoute: typeof AuthenticatedConsoleReportsRoute
   AuthenticatedConsoleSettingsRoute: typeof AuthenticatedConsoleSettingsRoute
   AuthenticatedConsoleTransactionsRoute: typeof AuthenticatedConsoleTransactionsRoute
@@ -606,6 +627,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedConsoleAlertsRoute: AuthenticatedConsoleAlertsRoute,
   AuthenticatedConsoleAuditRoute: AuthenticatedConsoleAuditRoute,
+  AuthenticatedConsoleComplianceRoute: AuthenticatedConsoleComplianceRoute,
   AuthenticatedConsoleReportsRoute: AuthenticatedConsoleReportsRoute,
   AuthenticatedConsoleSettingsRoute: AuthenticatedConsoleSettingsRoute,
   AuthenticatedConsoleTransactionsRoute: AuthenticatedConsoleTransactionsRoute,
