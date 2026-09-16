@@ -143,3 +143,42 @@ export async function logAudit(
     detail: detail as never,
   });
 }
+
+export async function fetchTransactions() {
+  const { data, error } = await supabase
+    .from("transactions")
+    .select("*, cases(reference, subject_name), transaction_alerts(*)")
+    .order("occurred_at", { ascending: false })
+    .limit(100);
+  if (error) throw error;
+  return data;
+}
+
+export async function fetchReports() {
+  const { data, error } = await supabase
+    .from("regulatory_reports")
+    .select("*, cases(reference, subject_name)")
+    .order("created_at", { ascending: false })
+    .limit(100);
+  if (error) throw error;
+  return data;
+}
+
+export async function fetchWebhookEndpoints() {
+  const { data, error } = await supabase
+    .from("webhook_endpoints")
+    .select("*")
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data;
+}
+
+export async function fetchWebhookDeliveries() {
+  const { data, error } = await supabase
+    .from("webhook_deliveries")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(50);
+  if (error) throw error;
+  return data;
+}
