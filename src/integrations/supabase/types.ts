@@ -85,35 +85,116 @@ export type Database = {
       }
       business_owners: {
         Row: {
+          birth_date: string | null
           case_id: string
+          control_basis: string | null
           control_role: string | null
+          country: string | null
           created_at: string
+          effective_pct: number | null
+          entity_type: string
           id: string
+          is_ubo: boolean
           name: string
           ownership_pct: number | null
+          parent_owner_id: string | null
           screening_status: string
         }
         Insert: {
+          birth_date?: string | null
           case_id: string
+          control_basis?: string | null
           control_role?: string | null
+          country?: string | null
           created_at?: string
+          effective_pct?: number | null
+          entity_type?: string
           id?: string
+          is_ubo?: boolean
           name: string
           ownership_pct?: number | null
+          parent_owner_id?: string | null
           screening_status?: string
         }
         Update: {
+          birth_date?: string | null
           case_id?: string
+          control_basis?: string | null
           control_role?: string | null
+          country?: string | null
           created_at?: string
+          effective_pct?: number | null
+          entity_type?: string
           id?: string
+          is_ubo?: boolean
           name?: string
           ownership_pct?: number | null
+          parent_owner_id?: string | null
           screening_status?: string
         }
         Relationships: [
           {
             foreignKeyName: "business_owners_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_owners_parent_owner_id_fkey"
+            columns: ["parent_owner_id"]
+            isOneToOne: false
+            referencedRelation: "business_owners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      case_addresses: {
+        Row: {
+          case_id: string
+          checks: Json
+          city: string | null
+          country: string
+          created_at: string
+          id: string
+          line1: string
+          line2: string | null
+          postal_code: string | null
+          region: string | null
+          result: Database["public"]["Enums"]["check_result"]
+          source: string
+        }
+        Insert: {
+          case_id: string
+          checks?: Json
+          city?: string | null
+          country?: string
+          created_at?: string
+          id?: string
+          line1: string
+          line2?: string | null
+          postal_code?: string | null
+          region?: string | null
+          result?: Database["public"]["Enums"]["check_result"]
+          source?: string
+        }
+        Update: {
+          case_id?: string
+          checks?: Json
+          city?: string | null
+          country?: string
+          created_at?: string
+          id?: string
+          line1?: string
+          line2?: string | null
+          postal_code?: string | null
+          region?: string | null
+          result?: Database["public"]["Enums"]["check_result"]
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "case_addresses_case_id_fkey"
             columns: ["case_id"]
             isOneToOne: false
             referencedRelation: "cases"
@@ -434,6 +515,69 @@ export type Database = {
         }
         Relationships: []
       }
+      regulatory_reports: {
+        Row: {
+          authority: string
+          case_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          jurisdiction: string
+          payload: Json
+          reference: string | null
+          report_type: string
+          status: string
+          submitted_at: string | null
+          transaction_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          authority?: string
+          case_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          jurisdiction?: string
+          payload?: Json
+          reference?: string | null
+          report_type: string
+          status?: string
+          submitted_at?: string | null
+          transaction_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          authority?: string
+          case_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          jurisdiction?: string
+          payload?: Json
+          reference?: string | null
+          report_type?: string
+          status?: string
+          submitted_at?: string | null
+          transaction_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "regulatory_reports_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "regulatory_reports_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       risk_factors: {
         Row: {
           case_id: string
@@ -682,6 +826,131 @@ export type Database = {
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "verification_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transaction_alerts: {
+        Row: {
+          case_id: string
+          citation: string | null
+          created_at: string
+          detail: string | null
+          id: string
+          rule_code: string
+          rule_name: string
+          severity: string
+          status: string
+          transaction_id: string
+        }
+        Insert: {
+          case_id: string
+          citation?: string | null
+          created_at?: string
+          detail?: string | null
+          id?: string
+          rule_code: string
+          rule_name: string
+          severity?: string
+          status?: string
+          transaction_id: string
+        }
+        Update: {
+          case_id?: string
+          citation?: string | null
+          created_at?: string
+          detail?: string | null
+          id?: string
+          rule_code?: string
+          rule_name?: string
+          severity?: string
+          status?: string
+          transaction_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transaction_alerts_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transaction_alerts_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transactions: {
+        Row: {
+          amount: number
+          amount_cad: number
+          case_id: string
+          channel: string
+          counterparty_account: string | null
+          counterparty_country: string | null
+          counterparty_name: string | null
+          created_at: string
+          created_by: string | null
+          currency: string
+          detail: Json
+          direction: string
+          external_id: string | null
+          id: string
+          method: string
+          occurred_at: string
+          risk_score: number
+          status: string
+        }
+        Insert: {
+          amount: number
+          amount_cad: number
+          case_id: string
+          channel?: string
+          counterparty_account?: string | null
+          counterparty_country?: string | null
+          counterparty_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          detail?: Json
+          direction?: string
+          external_id?: string | null
+          id?: string
+          method?: string
+          occurred_at?: string
+          risk_score?: number
+          status?: string
+        }
+        Update: {
+          amount?: number
+          amount_cad?: number
+          case_id?: string
+          channel?: string
+          counterparty_account?: string | null
+          counterparty_country?: string | null
+          counterparty_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          detail?: Json
+          direction?: string
+          external_id?: string | null
+          id?: string
+          method?: string
+          occurred_at?: string
+          risk_score?: number
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
             referencedColumns: ["id"]
           },
         ]
@@ -962,6 +1231,89 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      webhook_deliveries: {
+        Row: {
+          attempts: number
+          created_at: string
+          endpoint_id: string
+          error_detail: string | null
+          event: string
+          id: string
+          payload: Json
+          response_code: number | null
+          status: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          endpoint_id: string
+          error_detail?: string | null
+          event: string
+          id?: string
+          payload?: Json
+          response_code?: number | null
+          status?: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          endpoint_id?: string
+          error_detail?: string | null
+          event?: string
+          id?: string
+          payload?: Json
+          response_code?: number | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_deliveries_endpoint_id_fkey"
+            columns: ["endpoint_id"]
+            isOneToOne: false
+            referencedRelation: "webhook_endpoints"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      webhook_endpoints: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          enabled: boolean
+          environment: string
+          events: string[]
+          id: string
+          secret: string
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          enabled?: boolean
+          environment?: string
+          events?: string[]
+          id?: string
+          secret: string
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          enabled?: boolean
+          environment?: string
+          events?: string[]
+          id?: string
+          secret?: string
+          updated_at?: string
+          url?: string
+        }
+        Relationships: []
       }
     }
     Views: {
