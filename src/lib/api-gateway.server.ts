@@ -5,9 +5,11 @@ export type AdminClient = SupabaseClient<Database>;
 
 export type ApiContext = {
   keyId: string;
+  orgId: string;
   environment: string;
   admin: AdminClient;
 };
+
 
 export async function sha256Hex(value: string) {
   const bytes = new TextEncoder().encode(value);
