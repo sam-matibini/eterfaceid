@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 
 import { screenCase } from "@/lib/screening.functions";
+import { decideCase } from "@/lib/verification.functions";
 
 import { ConsoleShell, Panel, StatusPill } from "@/components/console/shell";
 import { VerificationPanels } from "@/components/console/verification";
@@ -321,22 +322,22 @@ function CaseDetail() {
                 <div className="mt-3 flex gap-2">
                   <button
                     type="button"
-                    disabled={decideCase.isPending}
-                    onClick={() => decideCase.mutate("approved")}
+                    disabled={decideCaseMutation.isPending}
+                    onClick={() => decideCaseMutation.mutate("approved")}
                     className="flex-1 rounded-md bg-[var(--ink)] px-3 py-2 text-sm text-background transition-opacity hover:opacity-90"
                   >
                     Approve
                   </button>
                   <button
                     type="button"
-                    disabled={decideCase.isPending}
-                    onClick={() => decideCase.mutate("rejected")}
+                    disabled={decideCaseMutation.isPending}
+                    onClick={() => decideCaseMutation.mutate("rejected")}
                     className="flex-1 rounded-md border border-[var(--signal)] px-3 py-2 text-sm text-[var(--signal)] transition-colors hover:bg-[var(--paper-deep)]"
                   >
                     Reject
                   </button>
                 </div>
-                {decideCase.isError ? (
+                {decideCaseMutation.isError ? (
                   <p className="mt-2 text-sm text-[var(--signal)]">
                     That decision could not be saved.
                   </p>
