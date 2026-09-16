@@ -11,6 +11,9 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SolutionsIndexRouteImport } from './routes/solutions.index'
+import { Route as SolutionsAmlScreeningRouteImport } from './routes/solutions.aml-screening'
+import { Route as SolutionsBusinessVerificationRouteImport } from './routes/solutions.business-verification'
+import { Route as SolutionsFraudRiskRouteImport } from './routes/solutions.fraud-risk'
 import { Route as SolutionsPersonVerificationRouteImport } from './routes/solutions.person-verification'
 
 const IndexRoute = IndexRouteImport.update({
@@ -23,6 +26,22 @@ const SolutionsIndexRoute = SolutionsIndexRouteImport.update({
   path: '/solutions/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SolutionsAmlScreeningRoute = SolutionsAmlScreeningRouteImport.update({
+  id: '/solutions/aml-screening',
+  path: '/solutions/aml-screening',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SolutionsBusinessVerificationRoute =
+  SolutionsBusinessVerificationRouteImport.update({
+    id: '/solutions/business-verification',
+    path: '/solutions/business-verification',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const SolutionsFraudRiskRoute = SolutionsFraudRiskRouteImport.update({
+  id: '/solutions/fraud-risk',
+  path: '/solutions/fraud-risk',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SolutionsPersonVerificationRoute =
   SolutionsPersonVerificationRouteImport.update({
     id: '/solutions/person-verification',
@@ -32,30 +51,61 @@ const SolutionsPersonVerificationRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/solutions/aml-screening': typeof SolutionsAmlScreeningRoute
+  '/solutions/business-verification': typeof SolutionsBusinessVerificationRoute
+  '/solutions/fraud-risk': typeof SolutionsFraudRiskRoute
   '/solutions/person-verification': typeof SolutionsPersonVerificationRoute
   '/solutions/': typeof SolutionsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/solutions/aml-screening': typeof SolutionsAmlScreeningRoute
+  '/solutions/business-verification': typeof SolutionsBusinessVerificationRoute
+  '/solutions/fraud-risk': typeof SolutionsFraudRiskRoute
   '/solutions/person-verification': typeof SolutionsPersonVerificationRoute
   '/solutions': typeof SolutionsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/solutions/aml-screening': typeof SolutionsAmlScreeningRoute
+  '/solutions/business-verification': typeof SolutionsBusinessVerificationRoute
+  '/solutions/fraud-risk': typeof SolutionsFraudRiskRoute
   '/solutions/person-verification': typeof SolutionsPersonVerificationRoute
   '/solutions/': typeof SolutionsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/solutions/person-verification' | '/solutions/'
+  fullPaths:
+    | '/'
+    | '/solutions/aml-screening'
+    | '/solutions/business-verification'
+    | '/solutions/fraud-risk'
+    | '/solutions/person-verification'
+    | '/solutions/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/solutions/person-verification' | '/solutions'
-  id: '__root__' | '/' | '/solutions/person-verification' | '/solutions/'
+  to:
+    | '/'
+    | '/solutions/aml-screening'
+    | '/solutions/business-verification'
+    | '/solutions/fraud-risk'
+    | '/solutions/person-verification'
+    | '/solutions'
+  id:
+    | '__root__'
+    | '/'
+    | '/solutions/aml-screening'
+    | '/solutions/business-verification'
+    | '/solutions/fraud-risk'
+    | '/solutions/person-verification'
+    | '/solutions/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  SolutionsAmlScreeningRoute: typeof SolutionsAmlScreeningRoute
+  SolutionsBusinessVerificationRoute: typeof SolutionsBusinessVerificationRoute
+  SolutionsFraudRiskRoute: typeof SolutionsFraudRiskRoute
   SolutionsPersonVerificationRoute: typeof SolutionsPersonVerificationRoute
   SolutionsIndexRoute: typeof SolutionsIndexRoute
 }
@@ -76,6 +126,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SolutionsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/solutions/aml-screening': {
+      id: '/solutions/aml-screening'
+      path: '/solutions/aml-screening'
+      fullPath: '/solutions/aml-screening'
+      preLoaderRoute: typeof SolutionsAmlScreeningRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/solutions/business-verification': {
+      id: '/solutions/business-verification'
+      path: '/solutions/business-verification'
+      fullPath: '/solutions/business-verification'
+      preLoaderRoute: typeof SolutionsBusinessVerificationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/solutions/fraud-risk': {
+      id: '/solutions/fraud-risk'
+      path: '/solutions/fraud-risk'
+      fullPath: '/solutions/fraud-risk'
+      preLoaderRoute: typeof SolutionsFraudRiskRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/solutions/person-verification': {
       id: '/solutions/person-verification'
       path: '/solutions/person-verification'
@@ -88,6 +159,9 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  SolutionsAmlScreeningRoute: SolutionsAmlScreeningRoute,
+  SolutionsBusinessVerificationRoute: SolutionsBusinessVerificationRoute,
+  SolutionsFraudRiskRoute: SolutionsFraudRiskRoute,
   SolutionsPersonVerificationRoute: SolutionsPersonVerificationRoute,
   SolutionsIndexRoute: SolutionsIndexRoute,
 }
