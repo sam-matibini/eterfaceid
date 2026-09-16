@@ -270,6 +270,8 @@ function CaseDetail() {
               ) : null}
             </div>
           </Panel>
+
+          <VerificationPanels caseId={caseId} canWrite={canWrite} />
         </div>
 
         <div className="space-y-6">
