@@ -19,6 +19,7 @@ export const Route = createFileRoute("/api/public/v1/cases")({
         const { data, error } = await auth.admin
           .from("cases")
           .select("id, reference, case_type, subject_name, country, status, risk_level, risk_score, created_at")
+          .eq("org_id", auth.orgId)
           .order("created_at", { ascending: false })
           .limit(100);
         if (error) return jsonResponse({ error: "query_failed", message: error.message }, 500);
@@ -35,6 +36,7 @@ export const Route = createFileRoute("/api/public/v1/cases")({
         const { data, error } = await auth.admin
           .from("cases")
           .insert({
+            org_id: auth.orgId,
             reference,
             case_type: parsed.data.case_type,
             subject_name: parsed.data.subject_name,
@@ -45,12 +47,13 @@ export const Route = createFileRoute("/api/public/v1/cases")({
         if (error) return jsonResponse({ error: "create_failed", message: error.message }, 500);
 
         await auth.admin.from("audit_events").insert({
+          org_id: auth.orgId,
           action: "case.created.api",
           entity_type: "case",
           entity_id: (data as any).id,
           detail: { environment: auth.environment, reference },
         });
-        await dispatchWebhook(auth.admin, auth.environment, "case.created", data as Record<string, unknown>);
+        await dispatchWebhook(auth.admin, auth.orgId, auth.environment, "case.created", data as Record<string, unknown>);
         return jsonResponse({ data }, 201);
       },
     },

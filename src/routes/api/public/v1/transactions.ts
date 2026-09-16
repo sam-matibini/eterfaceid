@@ -106,7 +106,7 @@ export const Route = createFileRoute("/api/public/v1/transactions")({
               detail: a.detail,
             })),
           );
-          await dispatchWebhook(auth.admin, auth.environment, "transaction.flagged", {
+          await dispatchWebhook(auth.admin, auth.orgId, auth.environment, "transaction.flagged", {
             transaction_id: (inserted as any).id,
             case_id: body.case_id,
             score,

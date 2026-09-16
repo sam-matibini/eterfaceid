@@ -71,6 +71,7 @@ export const Route = createFileRoute("/api/public/v1/screening")({
           .slice(0, 50);
 
         await auth.admin.from("screening_runs").insert({
+          org_id: auth.orgId,
           case_id: parsed.data.case_id ?? null,
           subject_name: parsed.data.name,
           subject_type: parsed.data.entity_type ?? "person",
@@ -83,7 +84,7 @@ export const Route = createFileRoute("/api/public/v1/screening")({
         });
 
         if (results.length) {
-          await dispatchWebhook(auth.admin, auth.environment, "screening.hits", {
+          await dispatchWebhook(auth.admin, auth.orgId, auth.environment, "screening.hits", {
             name: parsed.data.name,
             case_id: parsed.data.case_id ?? null,
             hits: results.length,
