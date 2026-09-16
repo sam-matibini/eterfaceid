@@ -77,6 +77,24 @@ export const createOrganization = createServerFn({ method: "POST" })
       detail: { name: data.name } as never,
     });
 
+    try {
+      const email = context.claims?.email as string | undefined;
+      if (email) {
+        const { sendNotification } = await import("@/lib/email.server");
+        await sendNotification(supabaseAdmin, {
+          event: "team.welcome",
+          to: [email],
+          orgId: org.id as string,
+          data: {
+            org: org.name as string,
+            link: `${data.origin ?? "https://eterfaceid.lovable.app"}/console`,
+          },
+        });
+      }
+    } catch {
+      /* the welcome email must never block sign-up */
+    }
+
     return { orgId: org.id as string, existing: false };
   });
 

@@ -211,6 +211,14 @@ export const submitSelfie = createServerFn({ method: "POST" })
       detail: { case_id: data.caseId, liveness, result },
     });
 
+    const { data: selfieCase } = await context.supabase
+      .from("cases")
+      .select("org_id")
+      .eq("id", data.caseId)
+      .maybeSingle();
+    const { recordUsage } = await import("@/lib/usage.server");
+    await recordUsage(context.supabase as never, (selfieCase as any)?.org_id, "verifications");
+
     return { selfieId: inserted.id as string, liveness, result };
   });
 
@@ -384,5 +392,83 @@ export const runRiskAssessment = createServerFn({ method: "POST" })
       detail: { score, level, factor_count: factors.length },
     });
 
+    const { data: riskCase } = await context.supabase
+      .from("cases")
+      .select("org_id")
+      .eq("id", data.caseId)
+      .maybeSingle();
+    const { recordUsage } = await import("@/lib/usage.server");
+    await recordUsage(context.supabase as never, (riskCase as any)?.org_id, "verifications");
+
     return { score, level, factors, phone };
+  });
+
+/* ------------------------------------------------------- case decisions */
+
+/**
+ * Approve or reject a case. Runs server-side so the decision, the audit
+ * entry and the notification always happen together.
+ */
+export const decideCase = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(
+    (input: { caseId: string; status: "pending" | "in_review" | "approved" | "rejected"; note?: string | undefined }) =>
+      input,
+  )
+  .handler(async ({ data, context }) => {
+    await ensureWriter(context);
+    const note = (data.note ?? "").trim().slice(0, 1000);
+
+    const { data: updated, error } = await context.supabase
+      .from("cases")
+      .update({ status: data.status, decision_note: note || null })
+      .eq("id", data.caseId)
+      .select("id, org_id, reference, subject_name, assigned_to, created_by")
+      .single();
+    if (error) throw new Error(error.message);
+
+    await context.supabase.from("audit_events").insert({
+      actor_id: context.userId,
+      actor_email: context.claims?.email ?? null,
+      action: "case.decision",
+      entity_type: "case",
+      entity_id: data.caseId,
+      detail: { status: data.status, note },
+    });
+
+    if (data.status === "approved" || data.status === "rejected") {
+      try {
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const { sendNotification } = await import("@/lib/email.server");
+        const ids = [updated.assigned_to, updated.created_by].filter(
+          (id): id is string => Boolean(id),
+        );
+        const unique = [...new Set(ids)];
+        if (unique.length) {
+          const { data: profiles } = await supabaseAdmin
+            .from("profiles")
+            .select("email")
+            .in("id", unique);
+          const to = (profiles ?? []).map((p) => p.email).filter((e): e is string => Boolean(e));
+          if (to.length) {
+            await sendNotification(supabaseAdmin, {
+              event: "case.decision",
+              to,
+              orgId: updated.org_id as string,
+              data: {
+                reference: updated.reference ?? "",
+                subject: updated.subject_name ?? "",
+                decision: data.status,
+                note,
+                link: `/console/cases/${data.caseId}`,
+              },
+            });
+          }
+        }
+      } catch {
+        /* notifications never block a decision */
+      }
+    }
+
+    return { ok: true, status: data.status };
   });
