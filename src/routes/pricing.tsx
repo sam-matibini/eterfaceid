@@ -107,7 +107,13 @@ function Pricing() {
                 )}
               </div>
               <p className="mt-5 font-display text-[1.9rem] font-semibold leading-none text-ink">
-                {t.price === "Custom" ? "Custom" : <Placeholder>{t.price} price</Placeholder>}
+                {t.price === "Custom" ? (
+                  "Custom"
+                ) : t.configured ? (
+                  t.price
+                ) : (
+                  <Placeholder>{t.price} price</Placeholder>
+                )}
               </p>
               <p className="mt-2 text-[0.8rem] text-ink-soft">{t.unit}</p>
               <p className="mt-5 border-t border-rule pt-5 text-[0.88rem] leading-[1.7] text-ink-soft">
