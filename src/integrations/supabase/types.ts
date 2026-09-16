@@ -61,6 +61,81 @@ export type Database = {
           },
         ]
       }
+      app_settings: {
+        Row: {
+          address_line1: string | null
+          address_line2: string | null
+          billing_email: string | null
+          city: string | null
+          contact_email: string | null
+          country: string | null
+          created_at: string
+          email_from_address: string | null
+          email_from_name: string | null
+          id: string
+          invoice_footer: string | null
+          legal_name: string | null
+          phone: string | null
+          postal_code: string | null
+          region: string | null
+          registration_number: string | null
+          singleton: boolean
+          support_email: string | null
+          tax_number: string | null
+          tax_rate: number
+          trading_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          address_line1?: string | null
+          address_line2?: string | null
+          billing_email?: string | null
+          city?: string | null
+          contact_email?: string | null
+          country?: string | null
+          created_at?: string
+          email_from_address?: string | null
+          email_from_name?: string | null
+          id?: string
+          invoice_footer?: string | null
+          legal_name?: string | null
+          phone?: string | null
+          postal_code?: string | null
+          region?: string | null
+          registration_number?: string | null
+          singleton?: boolean
+          support_email?: string | null
+          tax_number?: string | null
+          tax_rate?: number
+          trading_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address_line1?: string | null
+          address_line2?: string | null
+          billing_email?: string | null
+          city?: string | null
+          contact_email?: string | null
+          country?: string | null
+          created_at?: string
+          email_from_address?: string | null
+          email_from_name?: string | null
+          id?: string
+          invoice_footer?: string | null
+          legal_name?: string | null
+          phone?: string | null
+          postal_code?: string | null
+          region?: string | null
+          registration_number?: string | null
+          singleton?: boolean
+          support_email?: string | null
+          tax_number?: string | null
+          tax_rate?: number
+          trading_name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       audit_events: {
         Row: {
           action: string
@@ -542,6 +617,201 @@ export type Database = {
           },
         ]
       }
+      email_log: {
+        Row: {
+          created_at: string
+          error_detail: string | null
+          event: string
+          id: string
+          org_id: string | null
+          provider: string
+          provider_id: string | null
+          recipient: string
+          status: string
+          subject: string
+        }
+        Insert: {
+          created_at?: string
+          error_detail?: string | null
+          event: string
+          id?: string
+          org_id?: string | null
+          provider?: string
+          provider_id?: string | null
+          recipient: string
+          status: string
+          subject: string
+        }
+        Update: {
+          created_at?: string
+          error_detail?: string | null
+          event?: string
+          id?: string
+          org_id?: string | null
+          provider?: string
+          provider_id?: string | null
+          recipient?: string
+          status?: string
+          subject?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_log_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integration_settings: {
+        Row: {
+          category: string
+          config: Json
+          created_at: string
+          enabled: boolean
+          id: string
+          label: string
+          last_checked_at: string | null
+          last_error: string | null
+          provider: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          config?: Json
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          label: string
+          last_checked_at?: string | null
+          last_error?: string | null
+          provider: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          config?: Json
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          label?: string
+          last_checked_at?: string | null
+          last_error?: string | null
+          provider?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      invoice_lines: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string
+          id: string
+          invoice_id: string
+          quantity: number
+          unit_amount: number
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          description: string
+          id?: string
+          invoice_id: string
+          quantity?: number
+          unit_amount?: number
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string
+          id?: string
+          invoice_id?: string
+          quantity?: number
+          unit_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_lines_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoices: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          currency: string
+          due_at: string | null
+          id: string
+          issued_at: string | null
+          notes: string | null
+          number: string
+          org_id: string
+          paid_at: string | null
+          period: string
+          status: string
+          subtotal: number
+          tax_amount: number
+          tax_rate: number
+          total: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          due_at?: string | null
+          id?: string
+          issued_at?: string | null
+          notes?: string | null
+          number: string
+          org_id: string
+          paid_at?: string | null
+          period: string
+          status?: string
+          subtotal?: number
+          tax_amount?: number
+          tax_rate?: number
+          total?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          due_at?: string | null
+          id?: string
+          issued_at?: string | null
+          notes?: string | null
+          number?: string
+          org_id?: string
+          paid_at?: string | null
+          period?: string
+          status?: string
+          subtotal?: number
+          tax_amount?: number
+          tax_rate?: number
+          total?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       monitoring_alerts: {
         Row: {
           alert_type: string
@@ -583,6 +853,92 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_preferences: {
+        Row: {
+          enabled: boolean
+          event: string
+          id: string
+          org_id: string
+          updated_at: string
+        }
+        Insert: {
+          enabled?: boolean
+          event: string
+          id?: string
+          org_id: string
+          updated_at?: string
+        }
+        Update: {
+          enabled?: boolean
+          event?: string
+          id?: string
+          org_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_preferences_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      org_subscriptions: {
+        Row: {
+          created_at: string
+          id: string
+          included_volume_override: number | null
+          notes: string | null
+          org_id: string
+          plan_id: string | null
+          price_override: number | null
+          started_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          included_volume_override?: number | null
+          notes?: string | null
+          org_id: string
+          plan_id?: string | null
+          price_override?: number | null
+          started_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          included_volume_override?: number | null
+          notes?: string | null
+          org_id?: string
+          plan_id?: string | null
+          price_override?: number | null
+          started_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_subscriptions_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "org_subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
             referencedColumns: ["id"]
           },
         ]
@@ -693,6 +1049,87 @@ export type Database = {
           name?: string
           slug?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      plans: {
+        Row: {
+          blurb: string | null
+          code: string
+          created_at: string
+          custom_pricing: boolean
+          featured: boolean
+          features: string[]
+          id: string
+          included_volume: number
+          name: string
+          overage_amount: number | null
+          price_amount: number | null
+          price_currency: string
+          price_unit: string
+          public_visible: boolean
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          blurb?: string | null
+          code: string
+          created_at?: string
+          custom_pricing?: boolean
+          featured?: boolean
+          features?: string[]
+          id?: string
+          included_volume?: number
+          name: string
+          overage_amount?: number | null
+          price_amount?: number | null
+          price_currency?: string
+          price_unit?: string
+          public_visible?: boolean
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          blurb?: string | null
+          code?: string
+          created_at?: string
+          custom_pricing?: boolean
+          featured?: boolean
+          features?: string[]
+          id?: string
+          included_volume?: number
+          name?: string
+          overage_amount?: number | null
+          price_amount?: number | null
+          price_currency?: string
+          price_unit?: string
+          public_visible?: boolean
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      platform_staff: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          level: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          level?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          level?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -1227,6 +1664,44 @@ export type Database = {
           },
         ]
       }
+      usage_counters: {
+        Row: {
+          id: string
+          org_id: string
+          period: string
+          screenings: number
+          transactions: number
+          updated_at: string
+          verifications: number
+        }
+        Insert: {
+          id?: string
+          org_id: string
+          period: string
+          screenings?: number
+          transactions?: number
+          updated_at?: string
+          verifications?: number
+        }
+        Update: {
+          id?: string
+          org_id?: string
+          period?: string
+          screenings?: number
+          transactions?: number
+          updated_at?: string
+          verifications?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "usage_counters_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -1623,6 +2098,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      bump_usage: {
+        Args: { _amount?: number; _kind: string; _org: string }
+        Returns: undefined
+      }
       caller_org_id: { Args: never; Returns: string }
       can_write: { Args: { _user_id: string }; Returns: boolean }
       can_write_org: { Args: { _org: string }; Returns: boolean }
@@ -1640,6 +2119,7 @@ export type Database = {
         Returns: boolean
       }
       is_org_member: { Args: { _org: string }; Returns: boolean }
+      is_platform_staff: { Args: never; Returns: boolean }
       match_watchlist_names: {
         Args: { _limit?: number; _q: string; _threshold?: number }
         Returns: {
