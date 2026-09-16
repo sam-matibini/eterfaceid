@@ -10,33 +10,195 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AboutRouteImport } from './routes/about'
+import { Route as CareersRouteImport } from './routes/careers'
+import { Route as ComplianceRouteImport } from './routes/compliance'
+import { Route as ContactRouteImport } from './routes/contact'
+import { Route as DevelopersRouteImport } from './routes/developers'
+import { Route as IndustriesRouteImport } from './routes/industries'
+import { Route as PricingRouteImport } from './routes/pricing'
+import { Route as SolutionsIndexRouteImport } from './routes/solutions.index'
+import { Route as SolutionsAmlScreeningRouteImport } from './routes/solutions.aml-screening'
+import { Route as SolutionsBusinessVerificationRouteImport } from './routes/solutions.business-verification'
+import { Route as SolutionsFraudRiskRouteImport } from './routes/solutions.fraud-risk'
+import { Route as SolutionsPersonVerificationRouteImport } from './routes/solutions.person-verification'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AboutRoute = AboutRouteImport.update({
+  id: '/about',
+  path: '/about',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CareersRoute = CareersRouteImport.update({
+  id: '/careers',
+  path: '/careers',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ComplianceRoute = ComplianceRouteImport.update({
+  id: '/compliance',
+  path: '/compliance',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContactRoute = ContactRouteImport.update({
+  id: '/contact',
+  path: '/contact',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DevelopersRoute = DevelopersRouteImport.update({
+  id: '/developers',
+  path: '/developers',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IndustriesRoute = IndustriesRouteImport.update({
+  id: '/industries',
+  path: '/industries',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PricingRoute = PricingRouteImport.update({
+  id: '/pricing',
+  path: '/pricing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SolutionsIndexRoute = SolutionsIndexRouteImport.update({
+  id: '/solutions/',
+  path: '/solutions/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SolutionsAmlScreeningRoute = SolutionsAmlScreeningRouteImport.update({
+  id: '/solutions/aml-screening',
+  path: '/solutions/aml-screening',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SolutionsBusinessVerificationRoute =
+  SolutionsBusinessVerificationRouteImport.update({
+    id: '/solutions/business-verification',
+    path: '/solutions/business-verification',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const SolutionsFraudRiskRoute = SolutionsFraudRiskRouteImport.update({
+  id: '/solutions/fraud-risk',
+  path: '/solutions/fraud-risk',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SolutionsPersonVerificationRoute =
+  SolutionsPersonVerificationRouteImport.update({
+    id: '/solutions/person-verification',
+    path: '/solutions/person-verification',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
+  '/careers': typeof CareersRoute
+  '/compliance': typeof ComplianceRoute
+  '/contact': typeof ContactRoute
+  '/developers': typeof DevelopersRoute
+  '/industries': typeof IndustriesRoute
+  '/pricing': typeof PricingRoute
+  '/solutions/aml-screening': typeof SolutionsAmlScreeningRoute
+  '/solutions/business-verification': typeof SolutionsBusinessVerificationRoute
+  '/solutions/fraud-risk': typeof SolutionsFraudRiskRoute
+  '/solutions/person-verification': typeof SolutionsPersonVerificationRoute
+  '/solutions/': typeof SolutionsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
+  '/careers': typeof CareersRoute
+  '/compliance': typeof ComplianceRoute
+  '/contact': typeof ContactRoute
+  '/developers': typeof DevelopersRoute
+  '/industries': typeof IndustriesRoute
+  '/pricing': typeof PricingRoute
+  '/solutions/aml-screening': typeof SolutionsAmlScreeningRoute
+  '/solutions/business-verification': typeof SolutionsBusinessVerificationRoute
+  '/solutions/fraud-risk': typeof SolutionsFraudRiskRoute
+  '/solutions/person-verification': typeof SolutionsPersonVerificationRoute
+  '/solutions': typeof SolutionsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
+  '/careers': typeof CareersRoute
+  '/compliance': typeof ComplianceRoute
+  '/contact': typeof ContactRoute
+  '/developers': typeof DevelopersRoute
+  '/industries': typeof IndustriesRoute
+  '/pricing': typeof PricingRoute
+  '/solutions/aml-screening': typeof SolutionsAmlScreeningRoute
+  '/solutions/business-verification': typeof SolutionsBusinessVerificationRoute
+  '/solutions/fraud-risk': typeof SolutionsFraudRiskRoute
+  '/solutions/person-verification': typeof SolutionsPersonVerificationRoute
+  '/solutions/': typeof SolutionsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/about'
+    | '/careers'
+    | '/compliance'
+    | '/contact'
+    | '/developers'
+    | '/industries'
+    | '/pricing'
+    | '/solutions/aml-screening'
+    | '/solutions/business-verification'
+    | '/solutions/fraud-risk'
+    | '/solutions/person-verification'
+    | '/solutions/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/about'
+    | '/careers'
+    | '/compliance'
+    | '/contact'
+    | '/developers'
+    | '/industries'
+    | '/pricing'
+    | '/solutions/aml-screening'
+    | '/solutions/business-verification'
+    | '/solutions/fraud-risk'
+    | '/solutions/person-verification'
+    | '/solutions'
+  id:
+    | '__root__'
+    | '/'
+    | '/about'
+    | '/careers'
+    | '/compliance'
+    | '/contact'
+    | '/developers'
+    | '/industries'
+    | '/pricing'
+    | '/solutions/aml-screening'
+    | '/solutions/business-verification'
+    | '/solutions/fraud-risk'
+    | '/solutions/person-verification'
+    | '/solutions/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AboutRoute: typeof AboutRoute
+  CareersRoute: typeof CareersRoute
+  ComplianceRoute: typeof ComplianceRoute
+  ContactRoute: typeof ContactRoute
+  DevelopersRoute: typeof DevelopersRoute
+  IndustriesRoute: typeof IndustriesRoute
+  PricingRoute: typeof PricingRoute
+  SolutionsAmlScreeningRoute: typeof SolutionsAmlScreeningRoute
+  SolutionsBusinessVerificationRoute: typeof SolutionsBusinessVerificationRoute
+  SolutionsFraudRiskRoute: typeof SolutionsFraudRiskRoute
+  SolutionsPersonVerificationRoute: typeof SolutionsPersonVerificationRoute
+  SolutionsIndexRoute: typeof SolutionsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +210,107 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/about': {
+      id: '/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof AboutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/careers': {
+      id: '/careers'
+      path: '/careers'
+      fullPath: '/careers'
+      preLoaderRoute: typeof CareersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/compliance': {
+      id: '/compliance'
+      path: '/compliance'
+      fullPath: '/compliance'
+      preLoaderRoute: typeof ComplianceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contact': {
+      id: '/contact'
+      path: '/contact'
+      fullPath: '/contact'
+      preLoaderRoute: typeof ContactRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/developers': {
+      id: '/developers'
+      path: '/developers'
+      fullPath: '/developers'
+      preLoaderRoute: typeof DevelopersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/industries': {
+      id: '/industries'
+      path: '/industries'
+      fullPath: '/industries'
+      preLoaderRoute: typeof IndustriesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pricing': {
+      id: '/pricing'
+      path: '/pricing'
+      fullPath: '/pricing'
+      preLoaderRoute: typeof PricingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/solutions/': {
+      id: '/solutions/'
+      path: '/solutions'
+      fullPath: '/solutions/'
+      preLoaderRoute: typeof SolutionsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/solutions/aml-screening': {
+      id: '/solutions/aml-screening'
+      path: '/solutions/aml-screening'
+      fullPath: '/solutions/aml-screening'
+      preLoaderRoute: typeof SolutionsAmlScreeningRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/solutions/business-verification': {
+      id: '/solutions/business-verification'
+      path: '/solutions/business-verification'
+      fullPath: '/solutions/business-verification'
+      preLoaderRoute: typeof SolutionsBusinessVerificationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/solutions/fraud-risk': {
+      id: '/solutions/fraud-risk'
+      path: '/solutions/fraud-risk'
+      fullPath: '/solutions/fraud-risk'
+      preLoaderRoute: typeof SolutionsFraudRiskRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/solutions/person-verification': {
+      id: '/solutions/person-verification'
+      path: '/solutions/person-verification'
+      fullPath: '/solutions/person-verification'
+      preLoaderRoute: typeof SolutionsPersonVerificationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AboutRoute: AboutRoute,
+  CareersRoute: CareersRoute,
+  ComplianceRoute: ComplianceRoute,
+  ContactRoute: ContactRoute,
+  DevelopersRoute: DevelopersRoute,
+  IndustriesRoute: IndustriesRoute,
+  PricingRoute: PricingRoute,
+  SolutionsAmlScreeningRoute: SolutionsAmlScreeningRoute,
+  SolutionsBusinessVerificationRoute: SolutionsBusinessVerificationRoute,
+  SolutionsFraudRiskRoute: SolutionsFraudRiskRoute,
+  SolutionsPersonVerificationRoute: SolutionsPersonVerificationRoute,
+  SolutionsIndexRoute: SolutionsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
