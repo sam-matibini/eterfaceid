@@ -135,10 +135,12 @@ function Pricing() {
             </div>
           ))}
         </div>
-        <p className="mt-8 max-w-[70ch] text-[0.85rem] leading-[1.7] text-ink-soft">
-          Prices above are placeholders. Replace them once your unit economics across document
-          verification, registry lookups and screening sources are settled.
-        </p>
+        {configured.length === 0 ? (
+          <p className="mt-8 max-w-[70ch] text-[0.85rem] leading-[1.7] text-ink-soft">
+            Prices above are placeholders. Set your real plans and prices in the app admin area and this
+            page updates itself.
+          </p>
+        ) : null}
       </Section>
 
       <CTASection
