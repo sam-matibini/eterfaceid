@@ -204,6 +204,24 @@ export const acceptInvite = createServerFn({ method: "POST" })
       detail: { role: invite.role } as never,
     });
 
+    const { sendNotification } = await import("@/lib/email.server");
+    const [{ data: joiner }, { data: org }] = await Promise.all([
+      supabaseAdmin.from("profiles").select("email, full_name").eq("id", context.userId).maybeSingle(),
+      supabaseAdmin.from("organizations").select("name").eq("id", invite.org_id).maybeSingle(),
+    ]);
+    if (joiner?.email) {
+      await sendNotification(supabaseAdmin, {
+        event: "team.welcome",
+        to: joiner.email,
+        orgId: invite.org_id,
+        data: {
+          org: org?.name ?? "your team",
+          name: joiner.full_name ?? joiner.email,
+          role: invite.role,
+        },
+      });
+    }
+
     return { orgId: invite.org_id as string };
   });
 
