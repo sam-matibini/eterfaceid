@@ -24,6 +24,7 @@ export function ConsoleShell({ children }: { children: ReactNode }) {
   const { user } = useSession();
   const { roles } = useRoles();
   const { organization, ready } = useOrganization();
+  const { isStaff } = usePlatformStaff();
 
   useEffect(() => {
     if (ready && !organization) void navigate({ to: "/onboarding", replace: true });
