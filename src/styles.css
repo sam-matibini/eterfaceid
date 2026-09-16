@@ -161,5 +161,55 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    letter-spacing: -0.018em;
+  }
+
+  ::selection {
+    background: color-mix(in oklch, var(--signal) 22%, transparent);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--signal);
+    outline-offset: 2px;
   }
 }
+
+/* Small bracket marker used before solution names, echoing the reference. */
+@utility marker-bracket {
+  position: relative;
+  padding-left: 1.1rem;
+
+  &::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.55em;
+    width: 0.45rem;
+    height: 0.45rem;
+    background: var(--signal);
+    clip-path: polygon(0 0, 100% 50%, 0 100%);
+  }
+}
+
+@utility rule-top {
+  border-top: 1px solid var(--rule);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
