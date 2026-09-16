@@ -4,7 +4,12 @@
  * cross-checks against what the subject claimed.
  */
 
-export type DocCheck = { name: string; ok: boolean; severity: "info" | "warn" | "fail"; detail?: string };
+export type DocCheck = {
+  name: string;
+  ok: boolean;
+  severity: "info" | "warn" | "fail";
+  detail?: string | undefined;
+};
 
 export const CANADIAN_REGIONS: Record<string, string> = {
   AB: "Alberta",
