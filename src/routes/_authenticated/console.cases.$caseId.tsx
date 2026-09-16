@@ -70,6 +70,14 @@ function CaseDetail() {
     },
   });
 
+  const runOwnership = useMutation({
+    mutationFn: () => ownership({ data: { caseId } }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["case", caseId] });
+      void queryClient.invalidateQueries({ queryKey: ["audit"] });
+    },
+  });
+
   const decideHit = useMutation({
     mutationFn: async ({
       id,
