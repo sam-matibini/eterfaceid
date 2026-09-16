@@ -30,6 +30,7 @@ import { Route as AuthenticatedConsoleAuditRouteImport } from './routes/_authent
 import { Route as AuthenticatedConsoleSettingsRouteImport } from './routes/_authenticated/console.settings'
 import { Route as AuthenticatedConsoleWatchlistsRouteImport } from './routes/_authenticated/console.watchlists'
 import { Route as AuthenticatedConsoleCasesCaseIdRouteImport } from './routes/_authenticated/console.cases.$caseId'
+import { Route as ApiPublicHooksRefreshWatchlistsRouteImport } from './routes/api/public/hooks/refresh-watchlists'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -143,6 +144,12 @@ const AuthenticatedConsoleCasesCaseIdRoute =
     path: '/console/cases/$caseId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicHooksRefreshWatchlistsRoute =
+  ApiPublicHooksRefreshWatchlistsRouteImport.update({
+    id: '/api/public/hooks/refresh-watchlists',
+    path: '/api/public/hooks/refresh-watchlists',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -165,6 +172,7 @@ export interface FileRoutesByFullPath {
   '/console/watchlists': typeof AuthenticatedConsoleWatchlistsRoute
   '/console/': typeof AuthenticatedConsoleIndexRoute
   '/console/cases/$caseId': typeof AuthenticatedConsoleCasesCaseIdRoute
+  '/api/public/hooks/refresh-watchlists': typeof ApiPublicHooksRefreshWatchlistsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -187,6 +195,7 @@ export interface FileRoutesByTo {
   '/console/watchlists': typeof AuthenticatedConsoleWatchlistsRoute
   '/console': typeof AuthenticatedConsoleIndexRoute
   '/console/cases/$caseId': typeof AuthenticatedConsoleCasesCaseIdRoute
+  '/api/public/hooks/refresh-watchlists': typeof ApiPublicHooksRefreshWatchlistsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -211,6 +220,7 @@ export interface FileRoutesById {
   '/_authenticated/console/watchlists': typeof AuthenticatedConsoleWatchlistsRoute
   '/_authenticated/console/': typeof AuthenticatedConsoleIndexRoute
   '/_authenticated/console/cases/$caseId': typeof AuthenticatedConsoleCasesCaseIdRoute
+  '/api/public/hooks/refresh-watchlists': typeof ApiPublicHooksRefreshWatchlistsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -235,6 +245,7 @@ export interface FileRouteTypes {
     | '/console/watchlists'
     | '/console/'
     | '/console/cases/$caseId'
+    | '/api/public/hooks/refresh-watchlists'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -257,6 +268,7 @@ export interface FileRouteTypes {
     | '/console/watchlists'
     | '/console'
     | '/console/cases/$caseId'
+    | '/api/public/hooks/refresh-watchlists'
   id:
     | '__root__'
     | '/'
@@ -280,6 +292,7 @@ export interface FileRouteTypes {
     | '/_authenticated/console/watchlists'
     | '/_authenticated/console/'
     | '/_authenticated/console/cases/$caseId'
+    | '/api/public/hooks/refresh-watchlists'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -298,6 +311,7 @@ export interface RootRouteChildren {
   SolutionsFraudRiskRoute: typeof SolutionsFraudRiskRoute
   SolutionsPersonVerificationRoute: typeof SolutionsPersonVerificationRoute
   SolutionsIndexRoute: typeof SolutionsIndexRoute
+  ApiPublicHooksRefreshWatchlistsRoute: typeof ApiPublicHooksRefreshWatchlistsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -449,6 +463,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedConsoleCasesCaseIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/hooks/refresh-watchlists': {
+      id: '/api/public/hooks/refresh-watchlists'
+      path: '/api/public/hooks/refresh-watchlists'
+      fullPath: '/api/public/hooks/refresh-watchlists'
+      preLoaderRoute: typeof ApiPublicHooksRefreshWatchlistsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -489,6 +510,7 @@ const rootRouteChildren: RootRouteChildren = {
   SolutionsFraudRiskRoute: SolutionsFraudRiskRoute,
   SolutionsPersonVerificationRoute: SolutionsPersonVerificationRoute,
   SolutionsIndexRoute: SolutionsIndexRoute,
+  ApiPublicHooksRefreshWatchlistsRoute: ApiPublicHooksRefreshWatchlistsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
