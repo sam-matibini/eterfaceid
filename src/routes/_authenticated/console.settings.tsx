@@ -9,6 +9,7 @@ import { createApiKey, revokeApiKey } from "@/lib/api-keys.functions";
 import { fetchApiKeys } from "@/lib/console";
 import { TeamPanel } from "@/components/console/team";
 import { WebhooksPanel } from "@/components/console/webhooks";
+import { NotificationsPanel } from "@/components/console/notifications";
 
 
 export const Route = createFileRoute("/_authenticated/console/settings")({
@@ -152,6 +153,8 @@ function SettingsPage() {
         </Panel>
 
         <WebhooksPanel isAdmin={isAdmin} />
+
+        <NotificationsPanel isAdmin={isAdmin} />
       </div>
     </ConsoleShell>
   );
