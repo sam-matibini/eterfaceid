@@ -49,7 +49,12 @@ async function requireAdmin(supabase: any, userId: string) {
 export const createOrganization = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
-    z.object({ name: z.string().trim().min(2, "Enter your company name").max(80) }).parse(input),
+    z
+      .object({
+        name: z.string().trim().min(2, "Enter your company name").max(80),
+        origin: z.string().trim().url().max(300).optional(),
+      })
+      .parse(input),
   )
   .handler(async ({ data, context }) => {
     const existing = await currentMembership(context.supabase, context.userId);
