@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as CareersRouteImport } from './routes/careers'
 import { Route as ComplianceRouteImport } from './routes/compliance'
+import { Route as ContactRouteImport } from './routes/contact'
 import { Route as DevelopersRouteImport } from './routes/developers'
 import { Route as IndustriesRouteImport } from './routes/industries'
 import { Route as PricingRouteImport } from './routes/pricing'
@@ -40,6 +41,11 @@ const CareersRoute = CareersRouteImport.update({
 const ComplianceRoute = ComplianceRouteImport.update({
   id: '/compliance',
   path: '/compliance',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContactRoute = ContactRouteImport.update({
+  id: '/contact',
+  path: '/contact',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DevelopersRoute = DevelopersRouteImport.update({
@@ -90,6 +96,7 @@ export interface FileRoutesByFullPath {
   '/about': typeof AboutRoute
   '/careers': typeof CareersRoute
   '/compliance': typeof ComplianceRoute
+  '/contact': typeof ContactRoute
   '/developers': typeof DevelopersRoute
   '/industries': typeof IndustriesRoute
   '/pricing': typeof PricingRoute
@@ -104,6 +111,7 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/careers': typeof CareersRoute
   '/compliance': typeof ComplianceRoute
+  '/contact': typeof ContactRoute
   '/developers': typeof DevelopersRoute
   '/industries': typeof IndustriesRoute
   '/pricing': typeof PricingRoute
@@ -119,6 +127,7 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/careers': typeof CareersRoute
   '/compliance': typeof ComplianceRoute
+  '/contact': typeof ContactRoute
   '/developers': typeof DevelopersRoute
   '/industries': typeof IndustriesRoute
   '/pricing': typeof PricingRoute
@@ -135,6 +144,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/careers'
     | '/compliance'
+    | '/contact'
     | '/developers'
     | '/industries'
     | '/pricing'
@@ -149,6 +159,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/careers'
     | '/compliance'
+    | '/contact'
     | '/developers'
     | '/industries'
     | '/pricing'
@@ -163,6 +174,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/careers'
     | '/compliance'
+    | '/contact'
     | '/developers'
     | '/industries'
     | '/pricing'
@@ -178,6 +190,7 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   CareersRoute: typeof CareersRoute
   ComplianceRoute: typeof ComplianceRoute
+  ContactRoute: typeof ContactRoute
   DevelopersRoute: typeof DevelopersRoute
   IndustriesRoute: typeof IndustriesRoute
   PricingRoute: typeof PricingRoute
@@ -216,6 +229,13 @@ declare module '@tanstack/react-router' {
       path: '/compliance'
       fullPath: '/compliance'
       preLoaderRoute: typeof ComplianceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contact': {
+      id: '/contact'
+      path: '/contact'
+      fullPath: '/contact'
+      preLoaderRoute: typeof ContactRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/developers': {
@@ -282,6 +302,7 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   CareersRoute: CareersRoute,
   ComplianceRoute: ComplianceRoute,
+  ContactRoute: ContactRoute,
   DevelopersRoute: DevelopersRoute,
   IndustriesRoute: IndustriesRoute,
   PricingRoute: PricingRoute,
