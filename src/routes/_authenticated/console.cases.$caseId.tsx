@@ -180,7 +180,21 @@ function CaseDetail() {
             </Panel>
           ) : null}
 
-          <Panel title="Screening hits">
+          <Panel
+            title="Screening hits"
+            action={
+              canWrite ? (
+                <button
+                  type="button"
+                  disabled={runScreening.isPending}
+                  onClick={() => runScreening.mutate()}
+                  className="rounded-md border border-[var(--rule)] px-3 py-1.5 text-xs transition-colors hover:bg-[var(--paper-deep)] disabled:opacity-50"
+                >
+                  {runScreening.isPending ? "Screening…" : "Run screening"}
+                </button>
+              ) : undefined
+            }
+          >
             <div className="space-y-4">
               {data.hits.map((hit) => (
                 <div key={hit.id} className="border border-[var(--rule)] px-4 py-3">
