@@ -1,9 +1,12 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
+
+export type AdminClient = SupabaseClient<Database>;
 
 export type ApiContext = {
   keyId: string;
   environment: string;
-  admin: ReturnType<typeof createClient>;
+  admin: AdminClient;
 };
 
 export async function sha256Hex(value: string) {
@@ -15,7 +18,7 @@ export async function sha256Hex(value: string) {
 }
 
 function adminClient() {
-  return createClient(process.env["SUPABASE_URL"]!, process.env["SUPABASE_SERVICE_ROLE_KEY"]!, {
+  return createClient<Database>(process.env["SUPABASE_URL"]!, process.env["SUPABASE_SERVICE_ROLE_KEY"]!, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 }
@@ -50,7 +53,7 @@ export async function authenticateApiRequest(request: Request): Promise<ApiConte
 
 /** Signs and delivers an event to every enabled webhook endpoint for the environment. */
 export async function dispatchWebhook(
-  admin: ReturnType<typeof createClient>,
+  admin: AdminClient,
   environment: string,
   event: string,
   payload: Record<string, unknown>,
