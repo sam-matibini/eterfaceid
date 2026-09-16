@@ -79,12 +79,19 @@ export function Header() {
               Company
             </Link>
             <Link
+              to={session ? "/console" : "/auth"}
+              className="text-[0.875rem] text-ink-soft transition-colors hover:text-ink"
+            >
+              {session ? "Console" : "Sign in"}
+            </Link>
+            <Link
               to="/contact"
               className="rounded-sm bg-primary px-4 py-2 text-[0.8125rem] font-medium text-primary-foreground transition-colors hover:bg-ink"
             >
               Talk to us
             </Link>
           </div>
+
 
           <button
             type="button"
