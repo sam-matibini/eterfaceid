@@ -35,7 +35,10 @@ function OnboardingPage() {
   useEffect(() => {
     const stored = window.sessionStorage.getItem("eid_invite_token");
     if (stored) setToken(stored);
+    const storedCompany = window.sessionStorage.getItem("eid_company");
+    if (storedCompany) setName(storedCompany);
   }, []);
+
 
   async function finish(run: () => Promise<unknown>) {
     setBusy(true);
@@ -43,6 +46,8 @@ function OnboardingPage() {
     try {
       await run();
       window.sessionStorage.removeItem("eid_invite_token");
+      window.sessionStorage.removeItem("eid_company");
+
       await queryClient.invalidateQueries();
       void navigate({ to: "/console", replace: true });
     } catch (err) {
