@@ -36,7 +36,7 @@ export type Database = {
           key_prefix: string
           last_used_at?: string | null
           name: string
-          org_id: string
+          org_id?: string
           revoked_at?: string | null
         }
         Update: {
@@ -82,7 +82,7 @@ export type Database = {
           entity_id?: string | null
           entity_type: string
           id?: string
-          org_id: string
+          org_id?: string
         }
         Update: {
           action?: string
@@ -135,7 +135,7 @@ export type Database = {
           id?: string
           is_ubo?: boolean
           name: string
-          org_id: string
+          org_id?: string
           ownership_pct?: number | null
           parent_owner_id?: string | null
           screening_status?: string
@@ -206,7 +206,7 @@ export type Database = {
           id?: string
           line1: string
           line2?: string | null
-          org_id: string
+          org_id?: string
           postal_code?: string | null
           region?: string | null
           result?: Database["public"]["Enums"]["check_result"]
@@ -263,7 +263,7 @@ export type Database = {
           detail?: string | null
           id?: string
           name: string
-          org_id: string
+          org_id?: string
           result?: Database["public"]["Enums"]["check_result"]
           source?: string | null
         }
@@ -320,7 +320,7 @@ export type Database = {
           created_by?: string | null
           decision_note?: string | null
           id?: string
-          org_id: string
+          org_id?: string
           reference: string
           risk_level?: Database["public"]["Enums"]["risk_level"]
           risk_score?: number
@@ -390,7 +390,7 @@ export type Database = {
           is_tor?: boolean
           is_vpn?: boolean
           languages?: string[] | null
-          org_id: string
+          org_id?: string
           platform?: string | null
           repeat_device_cases?: number
           screen?: string | null
@@ -487,7 +487,7 @@ export type Database = {
           issuing_region?: string | null
           mrz_raw?: string | null
           mrz_valid?: boolean | null
-          org_id: string
+          org_id?: string
           result?: Database["public"]["Enums"]["check_result"]
           session_id?: string | null
           storage_path?: string | null
@@ -558,7 +558,7 @@ export type Database = {
           created_at?: string
           detail?: string | null
           id?: string
-          org_id: string
+          org_id?: string
           status?: string
         }
         Update: {
@@ -741,7 +741,7 @@ export type Database = {
           created_by?: string | null
           id?: string
           jurisdiction?: string
-          org_id: string
+          org_id?: string
           payload?: Json
           reference?: string | null
           report_type: string
@@ -811,7 +811,7 @@ export type Database = {
           detail?: string | null
           id?: string
           label: string
-          org_id: string
+          org_id?: string
           source?: string
           weight?: number
         }
@@ -879,7 +879,7 @@ export type Database = {
           list_version?: string | null
           match_score?: number | null
           matched_name: string
-          org_id: string
+          org_id?: string
           reasons?: Json
           run_id?: string | null
         }
@@ -959,7 +959,7 @@ export type Database = {
           engine_version?: string
           hit_count?: number
           id?: string
-          org_id: string
+          org_id?: string
           subject_name: string
           subject_type?: Database["public"]["Enums"]["case_type"]
           threshold?: number
@@ -1026,7 +1026,7 @@ export type Database = {
           id?: string
           liveness_score?: number | null
           liveness_signals?: Json
-          org_id: string
+          org_id?: string
           quality?: Json
           result?: Database["public"]["Enums"]["check_result"]
           session_id?: string | null
@@ -1102,7 +1102,7 @@ export type Database = {
           created_at?: string
           detail?: string | null
           id?: string
-          org_id: string
+          org_id?: string
           rule_code: string
           rule_name: string
           severity?: string
@@ -1185,7 +1185,7 @@ export type Database = {
           id?: string
           method?: string
           occurred_at?: string
-          org_id: string
+          org_id?: string
           risk_score?: number
           status?: string
         }
@@ -1269,7 +1269,7 @@ export type Database = {
           created_by?: string | null
           expires_at?: string | null
           id?: string
-          org_id: string
+          org_id?: string
           status?: string
           updated_at?: string
         }
@@ -1534,7 +1534,7 @@ export type Database = {
           error_detail?: string | null
           event: string
           id?: string
-          org_id: string
+          org_id?: string
           payload?: Json
           response_code?: number | null
           status?: string
@@ -1590,7 +1590,7 @@ export type Database = {
           environment?: string
           events?: string[]
           id?: string
-          org_id: string
+          org_id?: string
           secret: string
           updated_at?: string
           url: string
