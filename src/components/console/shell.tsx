@@ -64,6 +64,11 @@ export function ConsoleShell({ children }: { children: ReactNode }) {
             ))}
           </nav>
           <div className="flex items-center gap-4 text-sm">
+            {isStaff ? (
+              <Link to="/admin" className="text-[var(--signal)] transition-opacity hover:opacity-80">
+                App admin
+              </Link>
+            ) : null}
             <span className="hidden text-muted-foreground sm:inline">
               {organization ? `${organization.name} · ` : ""}
               {user?.email}
