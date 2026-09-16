@@ -167,6 +167,18 @@ export const screenCase = createServerFn({ method: "POST" })
       } as never,
     });
 
+    const orgId = (caseRow as any).org_id as string | undefined;
+    const { recordUsage, notifyOrg } = await import("@/lib/usage.server");
+    await recordUsage(supabase as never, orgId, "screenings");
+    if (orgId && inserts.length) {
+      await notifyOrg(orgId, "screening.hit", {
+        subject: caseRow.subject_name,
+        reference: (caseRow as any).reference ?? "",
+        count: String(inserts.length),
+        link: `/console/cases/${caseRow.id}`,
+      });
+    }
+
     return {
       runId: run.id,
       candidates: entityIds.length,
