@@ -7,6 +7,8 @@ import { screenCase } from "@/lib/screening.functions";
 
 import { ConsoleShell, Panel, StatusPill } from "@/components/console/shell";
 import { VerificationPanels } from "@/components/console/verification";
+import { AddressPanel } from "@/components/console/address";
+import { computeOwnership } from "@/lib/monitoring.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { useRoles } from "@/hooks/useSession";
 import {
@@ -34,6 +36,7 @@ function CaseDetail() {
   const queryClient = useQueryClient();
   const { canWrite } = useRoles();
   const screen = useServerFn(screenCase);
+  const ownership = useServerFn(computeOwnership);
   const [note, setNote] = useState("");
 
   const { data, isLoading, error } = useQuery({
@@ -172,7 +175,21 @@ function CaseDetail() {
           </Panel>
 
           {record.case_type === "business" ? (
-            <Panel title="Ownership and control">
+            <Panel
+              title="Ownership and control"
+              action={
+                canWrite ? (
+                  <button
+                    type="button"
+                    disabled={runOwnership.isPending}
+                    onClick={() => runOwnership.mutate()}
+                    className="rounded-md border border-[var(--rule)] px-3 py-1.5 text-xs transition-colors hover:bg-[var(--paper-deep)] disabled:opacity-50"
+                  >
+                    {runOwnership.isPending ? "Calculating…" : "Compute beneficial owners"}
+                  </button>
+                ) : undefined
+              }
+            >
               <table className="w-full text-sm">
                 <tbody>
                   {data.owners.map((owner) => (
@@ -181,6 +198,12 @@ function CaseDetail() {
                       <td className="py-3 text-muted-foreground">{owner.control_role}</td>
                       <td className="py-3 text-right font-mono text-xs">
                         {owner.ownership_pct ?? "—"}%
+                        {(owner as any).effective_pct != null ? (
+                          <span className="block text-muted-foreground">
+                            effective {Number((owner as any).effective_pct).toFixed(1)}%
+                            {(owner as any).is_ubo ? " · UBO" : ""}
+                          </span>
+                        ) : null}
                       </td>
                       <td className="py-3 pl-4 text-right">
                         <StatusPill tone={owner.screening_status}>
@@ -273,6 +296,8 @@ function CaseDetail() {
           </Panel>
 
           <VerificationPanels caseId={caseId} canWrite={canWrite} />
+
+          <AddressPanel caseId={caseId} canWrite={canWrite} />
         </div>
 
         <div className="space-y-6">
