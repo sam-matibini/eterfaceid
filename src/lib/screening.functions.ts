@@ -180,7 +180,14 @@ export const screenCase = createServerFn({ method: "POST" })
 /** Ad-hoc screening from the console, not tied to a case. */
 export const screenName = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { name: string; kind?: "person" | "business"; birthDate?: string; country?: string }) => input)
+  .inputValidator(
+    (input: {
+      name: string;
+      kind?: "person" | "business" | undefined;
+      birthDate?: string | undefined;
+      country?: string | undefined;
+    }) => input,
+  )
   .handler(async ({ data, context }) => {
     const supabase = context.supabase;
     const query = normalizeName(data.name);
