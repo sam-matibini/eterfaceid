@@ -367,5 +367,21 @@ export const markReportSubmitted = createServerFn({ method: "POST" })
       entity_id: data.reportId,
       detail: { reference: data.reference },
     });
+
+    const { data: report } = await context.supabase
+      .from("regulatory_reports")
+      .select("org_id, report_type, authority, jurisdiction")
+      .eq("id", data.reportId)
+      .maybeSingle();
+    const orgId = (report as any)?.org_id as string | undefined;
+    if (orgId) {
+      const { notifyOrg } = await import("@/lib/usage.server");
+      await notifyOrg(orgId, "report.filed", {
+        report: String((report as any)?.report_type ?? "report").toUpperCase(),
+        authority: (report as any)?.authority ?? "",
+        reference: data.reference ?? "",
+        link: "/console/reports",
+      });
+    }
     return { ok: true };
   });
