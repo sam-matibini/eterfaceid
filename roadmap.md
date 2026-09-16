@@ -17,3 +17,8 @@
 - Vendor keys for the optional add-ons
 - Replace placeholder marketing content (prices, address, team, certifications)
 - Sign up with your own email so I can make you the administrator
+
+## Accounts and teams (done)
+- Companies (organizations), members with roles, email invites, onboarding screen.
+- Every record is owned by a company; access rules and the public API are company-scoped.
+- Invite emails are not sent automatically yet: the admin copies the invite link from Settings.
