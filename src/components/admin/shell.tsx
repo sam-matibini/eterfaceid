@@ -1,9 +1,12 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, type ReactNode } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
+import { usePlatformStaff } from "@/hooks/usePlatformStaff";
+
+export { usePlatformStaff };
 
 const navItems = [
   { to: "/admin", label: "Overview", exact: true },
