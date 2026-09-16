@@ -210,6 +210,174 @@ export type Database = {
         }
         Relationships: []
       }
+      device_signals: {
+        Row: {
+          case_id: string
+          claimed_country: string | null
+          created_at: string
+          detail: Json
+          fingerprint: string | null
+          id: string
+          ip_address: string | null
+          ip_country: string | null
+          is_datacenter: boolean
+          is_tor: boolean
+          is_vpn: boolean
+          languages: string[] | null
+          platform: string | null
+          repeat_device_cases: number
+          screen: string | null
+          session_id: string | null
+          timezone: string | null
+          user_agent: string | null
+          velocity_24h: number
+        }
+        Insert: {
+          case_id: string
+          claimed_country?: string | null
+          created_at?: string
+          detail?: Json
+          fingerprint?: string | null
+          id?: string
+          ip_address?: string | null
+          ip_country?: string | null
+          is_datacenter?: boolean
+          is_tor?: boolean
+          is_vpn?: boolean
+          languages?: string[] | null
+          platform?: string | null
+          repeat_device_cases?: number
+          screen?: string | null
+          session_id?: string | null
+          timezone?: string | null
+          user_agent?: string | null
+          velocity_24h?: number
+        }
+        Update: {
+          case_id?: string
+          claimed_country?: string | null
+          created_at?: string
+          detail?: Json
+          fingerprint?: string | null
+          id?: string
+          ip_address?: string | null
+          ip_country?: string | null
+          is_datacenter?: boolean
+          is_tor?: boolean
+          is_vpn?: boolean
+          languages?: string[] | null
+          platform?: string | null
+          repeat_device_cases?: number
+          screen?: string | null
+          session_id?: string | null
+          timezone?: string | null
+          user_agent?: string | null
+          velocity_24h?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "device_signals_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "device_signals_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "verification_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      documents: {
+        Row: {
+          birth_date: string | null
+          case_id: string
+          checks: Json
+          created_at: string
+          created_by: string | null
+          doc_type: string
+          document_number: string | null
+          expiry_date: string | null
+          given_names: string | null
+          id: string
+          integrity: Json
+          issue_date: string | null
+          issuing_country: string | null
+          issuing_region: string | null
+          mrz_raw: string | null
+          mrz_valid: boolean | null
+          result: Database["public"]["Enums"]["check_result"]
+          session_id: string | null
+          storage_path: string | null
+          surname: string | null
+          updated_at: string
+        }
+        Insert: {
+          birth_date?: string | null
+          case_id: string
+          checks?: Json
+          created_at?: string
+          created_by?: string | null
+          doc_type: string
+          document_number?: string | null
+          expiry_date?: string | null
+          given_names?: string | null
+          id?: string
+          integrity?: Json
+          issue_date?: string | null
+          issuing_country?: string | null
+          issuing_region?: string | null
+          mrz_raw?: string | null
+          mrz_valid?: boolean | null
+          result?: Database["public"]["Enums"]["check_result"]
+          session_id?: string | null
+          storage_path?: string | null
+          surname?: string | null
+          updated_at?: string
+        }
+        Update: {
+          birth_date?: string | null
+          case_id?: string
+          checks?: Json
+          created_at?: string
+          created_by?: string | null
+          doc_type?: string
+          document_number?: string | null
+          expiry_date?: string | null
+          given_names?: string | null
+          id?: string
+          integrity?: Json
+          issue_date?: string | null
+          issuing_country?: string | null
+          issuing_region?: string | null
+          mrz_raw?: string | null
+          mrz_valid?: boolean | null
+          result?: Database["public"]["Enums"]["check_result"]
+          session_id?: string | null
+          storage_path?: string | null
+          surname?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "verification_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       monitoring_alerts: {
         Row: {
           alert_type: string
@@ -265,6 +433,50 @@ export type Database = {
           id?: string
         }
         Relationships: []
+      }
+      risk_factors: {
+        Row: {
+          case_id: string
+          category: string
+          code: string
+          created_at: string
+          detail: string | null
+          id: string
+          label: string
+          source: string
+          weight: number
+        }
+        Insert: {
+          case_id: string
+          category: string
+          code: string
+          created_at?: string
+          detail?: string | null
+          id?: string
+          label: string
+          source?: string
+          weight?: number
+        }
+        Update: {
+          case_id?: string
+          category?: string
+          code?: string
+          created_at?: string
+          detail?: string | null
+          id?: string
+          label?: string
+          source?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "risk_factors_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       screening_hits: {
         Row: {
@@ -398,6 +610,82 @@ export type Database = {
           },
         ]
       }
+      selfies: {
+        Row: {
+          case_id: string
+          challenge: string | null
+          created_at: string
+          created_by: string | null
+          document_id: string | null
+          face_match_score: number | null
+          face_match_status: string
+          id: string
+          liveness_score: number | null
+          liveness_signals: Json
+          quality: Json
+          result: Database["public"]["Enums"]["check_result"]
+          session_id: string | null
+          storage_path: string | null
+          updated_at: string
+        }
+        Insert: {
+          case_id: string
+          challenge?: string | null
+          created_at?: string
+          created_by?: string | null
+          document_id?: string | null
+          face_match_score?: number | null
+          face_match_status?: string
+          id?: string
+          liveness_score?: number | null
+          liveness_signals?: Json
+          quality?: Json
+          result?: Database["public"]["Enums"]["check_result"]
+          session_id?: string | null
+          storage_path?: string | null
+          updated_at?: string
+        }
+        Update: {
+          case_id?: string
+          challenge?: string | null
+          created_at?: string
+          created_by?: string | null
+          document_id?: string | null
+          face_match_score?: number | null
+          face_match_status?: string
+          id?: string
+          liveness_score?: number | null
+          liveness_signals?: Json
+          quality?: Json
+          result?: Database["public"]["Enums"]["check_result"]
+          session_id?: string | null
+          storage_path?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "selfies_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selfies_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selfies_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "verification_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -418,6 +706,50 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      verification_sessions: {
+        Row: {
+          case_id: string
+          channel: string
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          case_id: string
+          channel?: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          case_id?: string
+          channel?: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "verification_sessions_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       watchlist_entities: {
         Row: {
