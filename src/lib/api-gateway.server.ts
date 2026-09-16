@@ -90,7 +90,7 @@ export async function dispatchWebhook(
     await admin.from("webhook_deliveries").insert({
       endpoint_id: endpoint.id,
       event,
-      payload: { event, data: payload },
+      payload: { event, data: payload } as never,
       status,
       response_code: responseCode,
       error_detail: errorDetail,
