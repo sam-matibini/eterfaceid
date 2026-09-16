@@ -1,5 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { CTASection, PageHero, Placeholder, Section } from "@/components/site/primitives";
+import { fetchPlans, money } from "@/lib/platform";
 
 export const Route = createFileRoute("/pricing")({
   head: () => ({
