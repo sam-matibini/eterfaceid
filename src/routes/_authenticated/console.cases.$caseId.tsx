@@ -1,6 +1,9 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
+
+import { screenCase } from "@/lib/screening.functions";
 
 import { ConsoleShell, Panel, StatusPill } from "@/components/console/shell";
 import { supabase } from "@/integrations/supabase/client";
