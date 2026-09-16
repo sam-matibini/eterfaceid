@@ -7,10 +7,11 @@ import { useRoles, useSession } from "@/hooks/useSession";
 
 const navItems = [
   { to: "/console", label: "Cases", exact: true },
-  { to: "/console/alerts", label: "Monitoring" },
-  { to: "/console/audit", label: "Audit trail" },
-  { to: "/console/settings", label: "Settings" },
+  { to: "/console/alerts", label: "Monitoring", exact: false },
+  { to: "/console/audit", label: "Audit trail", exact: false },
+  { to: "/console/settings", label: "Settings", exact: false },
 ] as const;
+
 
 export function ConsoleShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
