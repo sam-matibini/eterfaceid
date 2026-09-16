@@ -1,7 +1,9 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Menu, X } from "lucide-react";
+import { useSession } from "@/hooks/useSession";
 import { megaMenu, solutionsGroup } from "./nav-data";
+
 
 const topLevel = [
   { label: "Solutions", panel: true },
