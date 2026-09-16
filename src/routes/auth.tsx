@@ -125,9 +125,11 @@ function AuthPage() {
           {mode === "signin" ? "Sign in to the console" : "Create a console account"}
         </h1>
         <p className="mt-3 text-sm text-muted-foreground">
-          The review console is where analysts work cases, adjudicate screening hits and keep the
-          audit trail.
+          {hasInvite
+            ? "You have been invited to a team. Create your account and you will join it straight away."
+            : "The review console is where analysts work cases, adjudicate screening hits and keep the audit trail."}
         </p>
+
 
         <button
           type="button"
