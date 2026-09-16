@@ -229,6 +229,18 @@ function CaseDetail() {
                   {hit.detail ? (
                     <p className="mt-2 text-sm text-muted-foreground">{hit.detail}</p>
                   ) : null}
+                  {Array.isArray(hit.reasons) && hit.reasons.length ? (
+                    <ul className="mt-2 flex flex-wrap gap-2">
+                      {(hit.reasons as string[]).map((reason, i) => (
+                        <li
+                          key={i}
+                          className="rounded-full border border-[var(--rule)] px-2 py-0.5 text-xs text-muted-foreground"
+                        >
+                          {reason}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
                   {canWrite && hit.disposition === "open" ? (
                     <div className="mt-3 flex gap-2">
                       <button
