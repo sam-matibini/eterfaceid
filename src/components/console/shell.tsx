@@ -8,7 +8,10 @@ import { useRoles, useSession } from "@/hooks/useSession";
 const navItems = [
   { to: "/console", label: "Cases", exact: true },
   { to: "/console/watchlists", label: "Watchlists", exact: false },
+  { to: "/console/transactions", label: "Transactions", exact: false },
   { to: "/console/alerts", label: "Monitoring", exact: false },
+  { to: "/console/reports", label: "Reports", exact: false },
+  { to: "/console/compliance", label: "Coverage", exact: false },
   { to: "/console/audit", label: "Audit trail", exact: false },
   { to: "/console/settings", label: "Settings", exact: false },
 ] as const;
