@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { authenticateApiRequest, dispatchWebhook, jsonResponse } from "@/lib/api-gateway.server";
 import { evaluateTransaction, transactionRisk, type TxInput } from "@/lib/transaction-rules";
-import { normalizeName } from "@/lib/name-match";
+import { normalizeName, scoreMatch } from "@/lib/name-match";
 
 const schema = z.object({
   case_id: z.string().uuid(),
