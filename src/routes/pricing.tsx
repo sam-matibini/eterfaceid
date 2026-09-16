@@ -93,7 +93,7 @@ function Pricing() {
 
       <Section>
         <div className="grid gap-px overflow-hidden border border-rule bg-rule lg:grid-cols-3">
-          {tiers.map((t) => (
+          {displayed.map((t) => (
             <div
               key={t.name}
               className={t.featured ? "bg-paper p-8" : "bg-background p-8"}
