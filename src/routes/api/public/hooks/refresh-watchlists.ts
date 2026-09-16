@@ -12,9 +12,8 @@ export const Route = createFileRoute("/api/public/hooks/refresh-watchlists")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const provided = request.headers.get("x-cron-secret") ?? "";
-        const expected = process.env["LOVABLE_CRON_SECRET"] ?? "";
-        if (!expected || provided !== expected) {
+        const { cronRequestAllowed } = await import("@/lib/cron-secret.server");
+        if (!(await cronRequestAllowed(request))) {
           return new Response(JSON.stringify({ error: "unauthorized" }), {
             status: 401,
             headers: { "content-type": "application/json" },
