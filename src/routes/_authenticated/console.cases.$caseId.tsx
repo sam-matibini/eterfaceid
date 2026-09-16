@@ -6,6 +6,7 @@ import { useState } from "react";
 import { screenCase } from "@/lib/screening.functions";
 
 import { ConsoleShell, Panel, StatusPill } from "@/components/console/shell";
+import { VerificationPanels } from "@/components/console/verification";
 import { supabase } from "@/integrations/supabase/client";
 import { useRoles } from "@/hooks/useSession";
 import {
