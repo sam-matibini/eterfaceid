@@ -95,6 +95,37 @@ export async function fetchApiKeys() {
   return data;
 }
 
+export async function fetchWatchlistSources() {
+  const { data, error } = await supabase
+    .from("watchlist_sources")
+    .select("*")
+    .order("category")
+    .order("title");
+  if (error) throw error;
+  return data;
+}
+
+export async function fetchWatchlistVersions() {
+  const { data, error } = await supabase
+    .from("watchlist_versions")
+    .select("*, watchlist_sources(title, code)")
+    .order("started_at", { ascending: false })
+    .limit(50);
+  if (error) throw error;
+  return data;
+}
+
+export async function fetchScreeningRuns(caseId: string) {
+  const { data, error } = await supabase
+    .from("screening_runs")
+    .select("*")
+    .eq("case_id", caseId)
+    .order("created_at", { ascending: false })
+    .limit(10);
+  if (error) throw error;
+  return data;
+}
+
 export async function logAudit(
   action: string,
   entityType: string,
