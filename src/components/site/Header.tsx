@@ -17,6 +17,8 @@ export function Header() {
   const [panelOpen, setPanelOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const { session } = useSession();
+
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
