@@ -1,5 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { CheckList, CTASection, PageHero, Section } from "@/components/site/primitives";
+import { ProductFilm } from "@/components/site/ProductFilm";
+import transactionFilm from "@/assets/transaction-monitoring.mp4.asset.json";
+import transactionPoster from "@/assets/transaction-monitoring-poster.png.asset.json";
 
 export const Route = createFileRoute("/solutions/fraud-risk")({
   head: () => ({
@@ -29,6 +32,18 @@ function FraudRisk() {
         title="A verified identity is not the same as a safe one"
         lede="Documents can be genuine and the applicant still fraudulent. eterfaceID collects the surrounding signals — device, network, email, phone and behaviour — and returns them with the identity result rather than in a separate tool."
       />
+
+      <Section
+        title="See risk emerge across a sequence"
+        intro="eterfaceID evaluates individual payments and the pattern around them, then gives the analyst the reason behind every alert."
+      >
+        <ProductFilm
+          src={transactionFilm.url}
+          poster={transactionPoster.url}
+          title="Transaction monitoring in motion"
+          description="Illustrative structuring detection and alert escalation."
+        />
+      </Section>
 
       <Section title="Signals collected">
         <div className="grid gap-12 md:grid-cols-2">

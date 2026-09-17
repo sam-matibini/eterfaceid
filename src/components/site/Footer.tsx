@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { megaMenu } from "./nav-data";
+import { BrandLogo } from "./BrandLogo";
 
 export function Footer() {
   return (
@@ -7,12 +8,9 @@ export function Footer() {
       <div className="mx-auto max-w-[1180px] px-5 py-16">
         <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-5">
           <div className="lg:col-span-1">
-            <div className="flex items-baseline gap-[1px]">
-              <span className="font-display text-[1.05rem] font-extrabold text-ink">
-                eterface
-              </span>
-              <span className="font-display text-[1.05rem] font-extrabold text-signal">ID</span>
-            </div>
+            <Link to="/" aria-label="eterfaceID home">
+              <BrandLogo />
+            </Link>
             <p className="mt-3 max-w-[22ch] text-[0.82rem] leading-relaxed text-ink-soft">
               Identity, business and financial-crime checks for regulated businesses in Canada and
               abroad.

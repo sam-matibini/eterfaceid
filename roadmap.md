@@ -55,3 +55,7 @@
   a clear error code.
 - Console: Go live page. App admin: Live access queue with Approve / Decline / Suspend / Restore and
   the option to record a signed copy of the agreement.
+
+## Brand and product films (done)
+- Refined shield-and-wordmark lockup in the public header and footer.
+- Silent, looping screening and transaction-monitoring films on the homepage and relevant solution pages, with reduced-motion stills.
