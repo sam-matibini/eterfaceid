@@ -25,11 +25,131 @@ function adminClient() {
   });
 }
 
+export const CORS_HEADERS: Record<string, string> = {
+  "access-control-allow-origin": "*",
+  "access-control-allow-methods": "GET,POST,PATCH,DELETE,OPTIONS",
+  "access-control-allow-headers": "authorization,content-type,idempotency-key",
+  "access-control-max-age": "86400",
+};
+
+/** Answers a browser preflight so partner front-ends can call the API. */
+export function corsPreflight() {
+  return new Response(null, { status: 204, headers: CORS_HEADERS });
+}
+
 export function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "content-type": "application/json", "cache-control": "no-store" },
+    headers: { "content-type": "application/json", "cache-control": "no-store", ...CORS_HEADERS },
   });
+}
+
+export function apiError(error: string, message: string, status = 400) {
+  return jsonResponse({ error, message }, status);
+}
+
+/** Reads ?limit= and ?offset= with safe bounds. */
+export function paging(request: Request, defaultLimit = 50, maxLimit = 200) {
+  const url = new URL(request.url);
+  const limit = Math.min(maxLimit, Math.max(1, Number(url.searchParams.get("limit") ?? defaultLimit) || defaultLimit));
+  const offset = Math.max(0, Number(url.searchParams.get("offset") ?? 0) || 0);
+  return { limit, offset, searchParams: url.searchParams };
+}
+
+/** Parses a JSON body against a zod-like schema and returns a 422 when it fails. */
+export async function readJson<T>(
+  request: Request,
+  schema: { safeParse: (input: unknown) => { success: true; data: T } | { success: false; error: { issues: unknown } } },
+): Promise<{ ok: true; data: T } | { ok: false; response: Response }> {
+  const raw = await request.json().catch(() => null);
+  const parsed = schema.safeParse(raw);
+  if (!parsed.success) {
+    return { ok: false, response: jsonResponse({ error: "invalid_request", issues: parsed.error.issues }, 422) };
+  }
+  return { ok: true, data: parsed.data };
+}
+
+/**
+ * Replays the stored answer when the same Idempotency-Key is sent twice,
+ * so a retried create never produces a duplicate record.
+ */
+export async function withIdempotency(
+  auth: ApiContext,
+  request: Request,
+  endpoint: string,
+  run: () => Promise<Response>,
+): Promise<Response> {
+  const key = request.headers.get("idempotency-key")?.trim();
+  if (!key) return run();
+
+  const { data: existing } = await auth.admin
+    .from("api_idempotency")
+    .select("status_code, response")
+    .eq("org_id", auth.orgId)
+    .eq("idempotency_key", key)
+    .maybeSingle();
+  if (existing) {
+    return new Response(JSON.stringify((existing as any).response), {
+      status: (existing as any).status_code ?? 200,
+      headers: {
+        "content-type": "application/json",
+        "cache-control": "no-store",
+        "idempotent-replay": "true",
+        ...CORS_HEADERS,
+      },
+    });
+  }
+
+  const response = await run();
+  if (response.status < 400) {
+    const body = await response.clone().json().catch(() => ({}));
+    await auth.admin.from("api_idempotency").insert({
+      org_id: auth.orgId,
+      idempotency_key: key,
+      endpoint,
+      status_code: response.status,
+      response: body as never,
+    });
+  }
+  return response;
+}
+
+/** Loads a case that belongs to the calling company, or null. */
+export async function loadCase(auth: ApiContext, caseId: string, columns = "*") {
+  const { data } = await auth.admin
+    .from("cases")
+    .select(columns)
+    .eq("id", caseId)
+    .eq("org_id", auth.orgId)
+    .maybeSingle();
+  return (data as Record<string, unknown> | null) ?? null;
+}
+
+/** Writes an audit entry for an API-driven action. */
+export async function apiAudit(
+  auth: ApiContext,
+  action: string,
+  entityType: string,
+  entityId: string | null,
+  detail: Record<string, unknown> = {},
+) {
+  await auth.admin.from("audit_events").insert({
+    org_id: auth.orgId,
+    action,
+    entity_type: entityType,
+    entity_id: entityId,
+    detail: { ...detail, via: "api", environment: auth.environment } as never,
+  });
+}
+
+/** Counts one billable action against the company's month. Never throws. */
+export async function countUsage(auth: ApiContext, kind: "verifications" | "screenings" | "transactions") {
+  try {
+    const { recordUsage } = await import("@/lib/usage.server");
+    await recordUsage(auth.admin, auth.orgId, kind);
+  } catch {
+    /* usage counting must never block an API call */
+  }
 }
 
 /** Authenticates a request with an eterfaceID API key (Authorization: Bearer eid_...). */

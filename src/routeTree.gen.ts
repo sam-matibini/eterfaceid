@@ -26,6 +26,7 @@ import { Route as SolutionsAmlScreeningRouteImport } from './routes/solutions.am
 import { Route as SolutionsBusinessVerificationRouteImport } from './routes/solutions.business-verification'
 import { Route as SolutionsFraudRiskRouteImport } from './routes/solutions.fraud-risk'
 import { Route as SolutionsPersonVerificationRouteImport } from './routes/solutions.person-verification'
+import { Route as VerifyTokenRouteImport } from './routes/verify.$token'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as AuthenticatedAdminBillingRouteImport } from './routes/_authenticated/admin.billing'
 import { Route as AuthenticatedAdminEmailsRouteImport } from './routes/_authenticated/admin.emails'
@@ -46,10 +47,29 @@ import { Route as AuthenticatedConsoleCasesCaseIdRouteImport } from './routes/_a
 import { Route as ApiPublicHooksPlaidSyncRouteImport } from './routes/api/public/hooks/plaid-sync'
 import { Route as ApiPublicHooksRefreshWatchlistsRouteImport } from './routes/api/public/hooks/refresh-watchlists'
 import { Route as ApiPublicHooksRescreenRouteImport } from './routes/api/public/hooks/rescreen'
+import { Route as ApiPublicV1AlertsRouteImport } from './routes/api/public/v1/alerts'
 import { Route as ApiPublicV1CasesRouteImport } from './routes/api/public/v1/cases'
+import { Route as ApiPublicV1OpenapiDotjsonRouteImport } from './routes/api/public/v1/openapi[.]json'
+import { Route as ApiPublicV1PingRouteImport } from './routes/api/public/v1/ping'
+import { Route as ApiPublicV1ReportsRouteImport } from './routes/api/public/v1/reports'
 import { Route as ApiPublicV1ScreeningRouteImport } from './routes/api/public/v1/screening'
 import { Route as ApiPublicV1TransactionsRouteImport } from './routes/api/public/v1/transactions'
+import { Route as ApiPublicV1AlertsAlertIdRouteImport } from './routes/api/public/v1/alerts.$alertId'
 import { Route as ApiPublicV1CasesCaseIdRouteImport } from './routes/api/public/v1/cases.$caseId'
+import { Route as ApiPublicV1HitsHitIdRouteImport } from './routes/api/public/v1/hits.$hitId'
+import { Route as ApiPublicV1HostedTokenRouteImport } from './routes/api/public/v1/hosted.$token'
+import { Route as ApiPublicV1ReportsReportIdRouteImport } from './routes/api/public/v1/reports.$reportId'
+import { Route as ApiPublicV1CasesCaseIdAddressesRouteImport } from './routes/api/public/v1/cases.$caseId.addresses'
+import { Route as ApiPublicV1CasesCaseIdBankRouteImport } from './routes/api/public/v1/cases.$caseId.bank'
+import { Route as ApiPublicV1CasesCaseIdDecisionRouteImport } from './routes/api/public/v1/cases.$caseId.decision'
+import { Route as ApiPublicV1CasesCaseIdDocumentsRouteImport } from './routes/api/public/v1/cases.$caseId.documents'
+import { Route as ApiPublicV1CasesCaseIdHitsRouteImport } from './routes/api/public/v1/cases.$caseId.hits'
+import { Route as ApiPublicV1CasesCaseIdOwnersRouteImport } from './routes/api/public/v1/cases.$caseId.owners'
+import { Route as ApiPublicV1CasesCaseIdOwnershipRouteImport } from './routes/api/public/v1/cases.$caseId.ownership'
+import { Route as ApiPublicV1CasesCaseIdRiskRouteImport } from './routes/api/public/v1/cases.$caseId.risk'
+import { Route as ApiPublicV1CasesCaseIdScreenRouteImport } from './routes/api/public/v1/cases.$caseId.screen'
+import { Route as ApiPublicV1CasesCaseIdSelfiesRouteImport } from './routes/api/public/v1/cases.$caseId.selfies'
+import { Route as ApiPublicV1CasesCaseIdVerificationSessionsRouteImport } from './routes/api/public/v1/cases.$caseId.verification-sessions'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -137,6 +157,11 @@ const SolutionsPersonVerificationRoute =
     path: '/solutions/person-verification',
     getParentRoute: () => rootRouteImport,
   } as any)
+const VerifyTokenRoute = VerifyTokenRouteImport.update({
+  id: '/verify/$token',
+  path: '/verify/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   id: '/admin/',
   path: '/admin/',
@@ -252,9 +277,30 @@ const ApiPublicHooksRescreenRoute = ApiPublicHooksRescreenRouteImport.update({
   path: '/api/public/hooks/rescreen',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicV1AlertsRoute = ApiPublicV1AlertsRouteImport.update({
+  id: '/api/public/v1/alerts',
+  path: '/api/public/v1/alerts',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicV1CasesRoute = ApiPublicV1CasesRouteImport.update({
   id: '/api/public/v1/cases',
   path: '/api/public/v1/cases',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicV1OpenapiDotjsonRoute =
+  ApiPublicV1OpenapiDotjsonRouteImport.update({
+    id: '/api/public/v1/openapi.json',
+    path: '/api/public/v1/openapi.json',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicV1PingRoute = ApiPublicV1PingRouteImport.update({
+  id: '/api/public/v1/ping',
+  path: '/api/public/v1/ping',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicV1ReportsRoute = ApiPublicV1ReportsRouteImport.update({
+  id: '/api/public/v1/reports',
+  path: '/api/public/v1/reports',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicV1ScreeningRoute = ApiPublicV1ScreeningRouteImport.update({
@@ -267,11 +313,99 @@ const ApiPublicV1TransactionsRoute = ApiPublicV1TransactionsRouteImport.update({
   path: '/api/public/v1/transactions',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicV1AlertsAlertIdRoute =
+  ApiPublicV1AlertsAlertIdRouteImport.update({
+    id: '/$alertId',
+    path: '/$alertId',
+    getParentRoute: () => ApiPublicV1AlertsRoute,
+  } as any)
 const ApiPublicV1CasesCaseIdRoute = ApiPublicV1CasesCaseIdRouteImport.update({
   id: '/$caseId',
   path: '/$caseId',
   getParentRoute: () => ApiPublicV1CasesRoute,
 } as any)
+const ApiPublicV1HitsHitIdRoute = ApiPublicV1HitsHitIdRouteImport.update({
+  id: '/api/public/v1/hits/$hitId',
+  path: '/api/public/v1/hits/$hitId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicV1HostedTokenRoute = ApiPublicV1HostedTokenRouteImport.update({
+  id: '/api/public/v1/hosted/$token',
+  path: '/api/public/v1/hosted/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicV1ReportsReportIdRoute =
+  ApiPublicV1ReportsReportIdRouteImport.update({
+    id: '/$reportId',
+    path: '/$reportId',
+    getParentRoute: () => ApiPublicV1ReportsRoute,
+  } as any)
+const ApiPublicV1CasesCaseIdAddressesRoute =
+  ApiPublicV1CasesCaseIdAddressesRouteImport.update({
+    id: '/addresses',
+    path: '/addresses',
+    getParentRoute: () => ApiPublicV1CasesCaseIdRoute,
+  } as any)
+const ApiPublicV1CasesCaseIdBankRoute =
+  ApiPublicV1CasesCaseIdBankRouteImport.update({
+    id: '/bank',
+    path: '/bank',
+    getParentRoute: () => ApiPublicV1CasesCaseIdRoute,
+  } as any)
+const ApiPublicV1CasesCaseIdDecisionRoute =
+  ApiPublicV1CasesCaseIdDecisionRouteImport.update({
+    id: '/decision',
+    path: '/decision',
+    getParentRoute: () => ApiPublicV1CasesCaseIdRoute,
+  } as any)
+const ApiPublicV1CasesCaseIdDocumentsRoute =
+  ApiPublicV1CasesCaseIdDocumentsRouteImport.update({
+    id: '/documents',
+    path: '/documents',
+    getParentRoute: () => ApiPublicV1CasesCaseIdRoute,
+  } as any)
+const ApiPublicV1CasesCaseIdHitsRoute =
+  ApiPublicV1CasesCaseIdHitsRouteImport.update({
+    id: '/hits',
+    path: '/hits',
+    getParentRoute: () => ApiPublicV1CasesCaseIdRoute,
+  } as any)
+const ApiPublicV1CasesCaseIdOwnersRoute =
+  ApiPublicV1CasesCaseIdOwnersRouteImport.update({
+    id: '/owners',
+    path: '/owners',
+    getParentRoute: () => ApiPublicV1CasesCaseIdRoute,
+  } as any)
+const ApiPublicV1CasesCaseIdOwnershipRoute =
+  ApiPublicV1CasesCaseIdOwnershipRouteImport.update({
+    id: '/ownership',
+    path: '/ownership',
+    getParentRoute: () => ApiPublicV1CasesCaseIdRoute,
+  } as any)
+const ApiPublicV1CasesCaseIdRiskRoute =
+  ApiPublicV1CasesCaseIdRiskRouteImport.update({
+    id: '/risk',
+    path: '/risk',
+    getParentRoute: () => ApiPublicV1CasesCaseIdRoute,
+  } as any)
+const ApiPublicV1CasesCaseIdScreenRoute =
+  ApiPublicV1CasesCaseIdScreenRouteImport.update({
+    id: '/screen',
+    path: '/screen',
+    getParentRoute: () => ApiPublicV1CasesCaseIdRoute,
+  } as any)
+const ApiPublicV1CasesCaseIdSelfiesRoute =
+  ApiPublicV1CasesCaseIdSelfiesRouteImport.update({
+    id: '/selfies',
+    path: '/selfies',
+    getParentRoute: () => ApiPublicV1CasesCaseIdRoute,
+  } as any)
+const ApiPublicV1CasesCaseIdVerificationSessionsRoute =
+  ApiPublicV1CasesCaseIdVerificationSessionsRouteImport.update({
+    id: '/verification-sessions',
+    path: '/verification-sessions',
+    getParentRoute: () => ApiPublicV1CasesCaseIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -289,6 +423,7 @@ export interface FileRoutesByFullPath {
   '/solutions/business-verification': typeof SolutionsBusinessVerificationRoute
   '/solutions/fraud-risk': typeof SolutionsFraudRiskRoute
   '/solutions/person-verification': typeof SolutionsPersonVerificationRoute
+  '/verify/$token': typeof VerifyTokenRoute
   '/solutions/': typeof SolutionsIndexRoute
   '/admin/billing': typeof AuthenticatedAdminBillingRoute
   '/admin/emails': typeof AuthenticatedAdminEmailsRoute
@@ -310,10 +445,29 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/plaid-sync': typeof ApiPublicHooksPlaidSyncRoute
   '/api/public/hooks/refresh-watchlists': typeof ApiPublicHooksRefreshWatchlistsRoute
   '/api/public/hooks/rescreen': typeof ApiPublicHooksRescreenRoute
+  '/api/public/v1/alerts': typeof ApiPublicV1AlertsRouteWithChildren
   '/api/public/v1/cases': typeof ApiPublicV1CasesRouteWithChildren
+  '/api/public/v1/openapi.json': typeof ApiPublicV1OpenapiDotjsonRoute
+  '/api/public/v1/ping': typeof ApiPublicV1PingRoute
+  '/api/public/v1/reports': typeof ApiPublicV1ReportsRouteWithChildren
   '/api/public/v1/screening': typeof ApiPublicV1ScreeningRoute
   '/api/public/v1/transactions': typeof ApiPublicV1TransactionsRoute
-  '/api/public/v1/cases/$caseId': typeof ApiPublicV1CasesCaseIdRoute
+  '/api/public/v1/alerts/$alertId': typeof ApiPublicV1AlertsAlertIdRoute
+  '/api/public/v1/cases/$caseId': typeof ApiPublicV1CasesCaseIdRouteWithChildren
+  '/api/public/v1/hits/$hitId': typeof ApiPublicV1HitsHitIdRoute
+  '/api/public/v1/hosted/$token': typeof ApiPublicV1HostedTokenRoute
+  '/api/public/v1/reports/$reportId': typeof ApiPublicV1ReportsReportIdRoute
+  '/api/public/v1/cases/$caseId/addresses': typeof ApiPublicV1CasesCaseIdAddressesRoute
+  '/api/public/v1/cases/$caseId/bank': typeof ApiPublicV1CasesCaseIdBankRoute
+  '/api/public/v1/cases/$caseId/decision': typeof ApiPublicV1CasesCaseIdDecisionRoute
+  '/api/public/v1/cases/$caseId/documents': typeof ApiPublicV1CasesCaseIdDocumentsRoute
+  '/api/public/v1/cases/$caseId/hits': typeof ApiPublicV1CasesCaseIdHitsRoute
+  '/api/public/v1/cases/$caseId/owners': typeof ApiPublicV1CasesCaseIdOwnersRoute
+  '/api/public/v1/cases/$caseId/ownership': typeof ApiPublicV1CasesCaseIdOwnershipRoute
+  '/api/public/v1/cases/$caseId/risk': typeof ApiPublicV1CasesCaseIdRiskRoute
+  '/api/public/v1/cases/$caseId/screen': typeof ApiPublicV1CasesCaseIdScreenRoute
+  '/api/public/v1/cases/$caseId/selfies': typeof ApiPublicV1CasesCaseIdSelfiesRoute
+  '/api/public/v1/cases/$caseId/verification-sessions': typeof ApiPublicV1CasesCaseIdVerificationSessionsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -331,6 +485,7 @@ export interface FileRoutesByTo {
   '/solutions/business-verification': typeof SolutionsBusinessVerificationRoute
   '/solutions/fraud-risk': typeof SolutionsFraudRiskRoute
   '/solutions/person-verification': typeof SolutionsPersonVerificationRoute
+  '/verify/$token': typeof VerifyTokenRoute
   '/solutions': typeof SolutionsIndexRoute
   '/admin/billing': typeof AuthenticatedAdminBillingRoute
   '/admin/emails': typeof AuthenticatedAdminEmailsRoute
@@ -352,10 +507,29 @@ export interface FileRoutesByTo {
   '/api/public/hooks/plaid-sync': typeof ApiPublicHooksPlaidSyncRoute
   '/api/public/hooks/refresh-watchlists': typeof ApiPublicHooksRefreshWatchlistsRoute
   '/api/public/hooks/rescreen': typeof ApiPublicHooksRescreenRoute
+  '/api/public/v1/alerts': typeof ApiPublicV1AlertsRouteWithChildren
   '/api/public/v1/cases': typeof ApiPublicV1CasesRouteWithChildren
+  '/api/public/v1/openapi.json': typeof ApiPublicV1OpenapiDotjsonRoute
+  '/api/public/v1/ping': typeof ApiPublicV1PingRoute
+  '/api/public/v1/reports': typeof ApiPublicV1ReportsRouteWithChildren
   '/api/public/v1/screening': typeof ApiPublicV1ScreeningRoute
   '/api/public/v1/transactions': typeof ApiPublicV1TransactionsRoute
-  '/api/public/v1/cases/$caseId': typeof ApiPublicV1CasesCaseIdRoute
+  '/api/public/v1/alerts/$alertId': typeof ApiPublicV1AlertsAlertIdRoute
+  '/api/public/v1/cases/$caseId': typeof ApiPublicV1CasesCaseIdRouteWithChildren
+  '/api/public/v1/hits/$hitId': typeof ApiPublicV1HitsHitIdRoute
+  '/api/public/v1/hosted/$token': typeof ApiPublicV1HostedTokenRoute
+  '/api/public/v1/reports/$reportId': typeof ApiPublicV1ReportsReportIdRoute
+  '/api/public/v1/cases/$caseId/addresses': typeof ApiPublicV1CasesCaseIdAddressesRoute
+  '/api/public/v1/cases/$caseId/bank': typeof ApiPublicV1CasesCaseIdBankRoute
+  '/api/public/v1/cases/$caseId/decision': typeof ApiPublicV1CasesCaseIdDecisionRoute
+  '/api/public/v1/cases/$caseId/documents': typeof ApiPublicV1CasesCaseIdDocumentsRoute
+  '/api/public/v1/cases/$caseId/hits': typeof ApiPublicV1CasesCaseIdHitsRoute
+  '/api/public/v1/cases/$caseId/owners': typeof ApiPublicV1CasesCaseIdOwnersRoute
+  '/api/public/v1/cases/$caseId/ownership': typeof ApiPublicV1CasesCaseIdOwnershipRoute
+  '/api/public/v1/cases/$caseId/risk': typeof ApiPublicV1CasesCaseIdRiskRoute
+  '/api/public/v1/cases/$caseId/screen': typeof ApiPublicV1CasesCaseIdScreenRoute
+  '/api/public/v1/cases/$caseId/selfies': typeof ApiPublicV1CasesCaseIdSelfiesRoute
+  '/api/public/v1/cases/$caseId/verification-sessions': typeof ApiPublicV1CasesCaseIdVerificationSessionsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -375,6 +549,7 @@ export interface FileRoutesById {
   '/solutions/business-verification': typeof SolutionsBusinessVerificationRoute
   '/solutions/fraud-risk': typeof SolutionsFraudRiskRoute
   '/solutions/person-verification': typeof SolutionsPersonVerificationRoute
+  '/verify/$token': typeof VerifyTokenRoute
   '/solutions/': typeof SolutionsIndexRoute
   '/_authenticated/admin/billing': typeof AuthenticatedAdminBillingRoute
   '/_authenticated/admin/emails': typeof AuthenticatedAdminEmailsRoute
@@ -396,10 +571,29 @@ export interface FileRoutesById {
   '/api/public/hooks/plaid-sync': typeof ApiPublicHooksPlaidSyncRoute
   '/api/public/hooks/refresh-watchlists': typeof ApiPublicHooksRefreshWatchlistsRoute
   '/api/public/hooks/rescreen': typeof ApiPublicHooksRescreenRoute
+  '/api/public/v1/alerts': typeof ApiPublicV1AlertsRouteWithChildren
   '/api/public/v1/cases': typeof ApiPublicV1CasesRouteWithChildren
+  '/api/public/v1/openapi.json': typeof ApiPublicV1OpenapiDotjsonRoute
+  '/api/public/v1/ping': typeof ApiPublicV1PingRoute
+  '/api/public/v1/reports': typeof ApiPublicV1ReportsRouteWithChildren
   '/api/public/v1/screening': typeof ApiPublicV1ScreeningRoute
   '/api/public/v1/transactions': typeof ApiPublicV1TransactionsRoute
-  '/api/public/v1/cases/$caseId': typeof ApiPublicV1CasesCaseIdRoute
+  '/api/public/v1/alerts/$alertId': typeof ApiPublicV1AlertsAlertIdRoute
+  '/api/public/v1/cases/$caseId': typeof ApiPublicV1CasesCaseIdRouteWithChildren
+  '/api/public/v1/hits/$hitId': typeof ApiPublicV1HitsHitIdRoute
+  '/api/public/v1/hosted/$token': typeof ApiPublicV1HostedTokenRoute
+  '/api/public/v1/reports/$reportId': typeof ApiPublicV1ReportsReportIdRoute
+  '/api/public/v1/cases/$caseId/addresses': typeof ApiPublicV1CasesCaseIdAddressesRoute
+  '/api/public/v1/cases/$caseId/bank': typeof ApiPublicV1CasesCaseIdBankRoute
+  '/api/public/v1/cases/$caseId/decision': typeof ApiPublicV1CasesCaseIdDecisionRoute
+  '/api/public/v1/cases/$caseId/documents': typeof ApiPublicV1CasesCaseIdDocumentsRoute
+  '/api/public/v1/cases/$caseId/hits': typeof ApiPublicV1CasesCaseIdHitsRoute
+  '/api/public/v1/cases/$caseId/owners': typeof ApiPublicV1CasesCaseIdOwnersRoute
+  '/api/public/v1/cases/$caseId/ownership': typeof ApiPublicV1CasesCaseIdOwnershipRoute
+  '/api/public/v1/cases/$caseId/risk': typeof ApiPublicV1CasesCaseIdRiskRoute
+  '/api/public/v1/cases/$caseId/screen': typeof ApiPublicV1CasesCaseIdScreenRoute
+  '/api/public/v1/cases/$caseId/selfies': typeof ApiPublicV1CasesCaseIdSelfiesRoute
+  '/api/public/v1/cases/$caseId/verification-sessions': typeof ApiPublicV1CasesCaseIdVerificationSessionsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -419,6 +613,7 @@ export interface FileRouteTypes {
     | '/solutions/business-verification'
     | '/solutions/fraud-risk'
     | '/solutions/person-verification'
+    | '/verify/$token'
     | '/solutions/'
     | '/admin/billing'
     | '/admin/emails'
@@ -440,10 +635,29 @@ export interface FileRouteTypes {
     | '/api/public/hooks/plaid-sync'
     | '/api/public/hooks/refresh-watchlists'
     | '/api/public/hooks/rescreen'
+    | '/api/public/v1/alerts'
     | '/api/public/v1/cases'
+    | '/api/public/v1/openapi.json'
+    | '/api/public/v1/ping'
+    | '/api/public/v1/reports'
     | '/api/public/v1/screening'
     | '/api/public/v1/transactions'
+    | '/api/public/v1/alerts/$alertId'
     | '/api/public/v1/cases/$caseId'
+    | '/api/public/v1/hits/$hitId'
+    | '/api/public/v1/hosted/$token'
+    | '/api/public/v1/reports/$reportId'
+    | '/api/public/v1/cases/$caseId/addresses'
+    | '/api/public/v1/cases/$caseId/bank'
+    | '/api/public/v1/cases/$caseId/decision'
+    | '/api/public/v1/cases/$caseId/documents'
+    | '/api/public/v1/cases/$caseId/hits'
+    | '/api/public/v1/cases/$caseId/owners'
+    | '/api/public/v1/cases/$caseId/ownership'
+    | '/api/public/v1/cases/$caseId/risk'
+    | '/api/public/v1/cases/$caseId/screen'
+    | '/api/public/v1/cases/$caseId/selfies'
+    | '/api/public/v1/cases/$caseId/verification-sessions'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -461,6 +675,7 @@ export interface FileRouteTypes {
     | '/solutions/business-verification'
     | '/solutions/fraud-risk'
     | '/solutions/person-verification'
+    | '/verify/$token'
     | '/solutions'
     | '/admin/billing'
     | '/admin/emails'
@@ -482,10 +697,29 @@ export interface FileRouteTypes {
     | '/api/public/hooks/plaid-sync'
     | '/api/public/hooks/refresh-watchlists'
     | '/api/public/hooks/rescreen'
+    | '/api/public/v1/alerts'
     | '/api/public/v1/cases'
+    | '/api/public/v1/openapi.json'
+    | '/api/public/v1/ping'
+    | '/api/public/v1/reports'
     | '/api/public/v1/screening'
     | '/api/public/v1/transactions'
+    | '/api/public/v1/alerts/$alertId'
     | '/api/public/v1/cases/$caseId'
+    | '/api/public/v1/hits/$hitId'
+    | '/api/public/v1/hosted/$token'
+    | '/api/public/v1/reports/$reportId'
+    | '/api/public/v1/cases/$caseId/addresses'
+    | '/api/public/v1/cases/$caseId/bank'
+    | '/api/public/v1/cases/$caseId/decision'
+    | '/api/public/v1/cases/$caseId/documents'
+    | '/api/public/v1/cases/$caseId/hits'
+    | '/api/public/v1/cases/$caseId/owners'
+    | '/api/public/v1/cases/$caseId/ownership'
+    | '/api/public/v1/cases/$caseId/risk'
+    | '/api/public/v1/cases/$caseId/screen'
+    | '/api/public/v1/cases/$caseId/selfies'
+    | '/api/public/v1/cases/$caseId/verification-sessions'
   id:
     | '__root__'
     | '/'
@@ -504,6 +738,7 @@ export interface FileRouteTypes {
     | '/solutions/business-verification'
     | '/solutions/fraud-risk'
     | '/solutions/person-verification'
+    | '/verify/$token'
     | '/solutions/'
     | '/_authenticated/admin/billing'
     | '/_authenticated/admin/emails'
@@ -525,10 +760,29 @@ export interface FileRouteTypes {
     | '/api/public/hooks/plaid-sync'
     | '/api/public/hooks/refresh-watchlists'
     | '/api/public/hooks/rescreen'
+    | '/api/public/v1/alerts'
     | '/api/public/v1/cases'
+    | '/api/public/v1/openapi.json'
+    | '/api/public/v1/ping'
+    | '/api/public/v1/reports'
     | '/api/public/v1/screening'
     | '/api/public/v1/transactions'
+    | '/api/public/v1/alerts/$alertId'
     | '/api/public/v1/cases/$caseId'
+    | '/api/public/v1/hits/$hitId'
+    | '/api/public/v1/hosted/$token'
+    | '/api/public/v1/reports/$reportId'
+    | '/api/public/v1/cases/$caseId/addresses'
+    | '/api/public/v1/cases/$caseId/bank'
+    | '/api/public/v1/cases/$caseId/decision'
+    | '/api/public/v1/cases/$caseId/documents'
+    | '/api/public/v1/cases/$caseId/hits'
+    | '/api/public/v1/cases/$caseId/owners'
+    | '/api/public/v1/cases/$caseId/ownership'
+    | '/api/public/v1/cases/$caseId/risk'
+    | '/api/public/v1/cases/$caseId/screen'
+    | '/api/public/v1/cases/$caseId/selfies'
+    | '/api/public/v1/cases/$caseId/verification-sessions'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -547,13 +801,20 @@ export interface RootRouteChildren {
   SolutionsBusinessVerificationRoute: typeof SolutionsBusinessVerificationRoute
   SolutionsFraudRiskRoute: typeof SolutionsFraudRiskRoute
   SolutionsPersonVerificationRoute: typeof SolutionsPersonVerificationRoute
+  VerifyTokenRoute: typeof VerifyTokenRoute
   SolutionsIndexRoute: typeof SolutionsIndexRoute
   ApiPublicHooksPlaidSyncRoute: typeof ApiPublicHooksPlaidSyncRoute
   ApiPublicHooksRefreshWatchlistsRoute: typeof ApiPublicHooksRefreshWatchlistsRoute
   ApiPublicHooksRescreenRoute: typeof ApiPublicHooksRescreenRoute
+  ApiPublicV1AlertsRoute: typeof ApiPublicV1AlertsRouteWithChildren
   ApiPublicV1CasesRoute: typeof ApiPublicV1CasesRouteWithChildren
+  ApiPublicV1OpenapiDotjsonRoute: typeof ApiPublicV1OpenapiDotjsonRoute
+  ApiPublicV1PingRoute: typeof ApiPublicV1PingRoute
+  ApiPublicV1ReportsRoute: typeof ApiPublicV1ReportsRouteWithChildren
   ApiPublicV1ScreeningRoute: typeof ApiPublicV1ScreeningRoute
   ApiPublicV1TransactionsRoute: typeof ApiPublicV1TransactionsRoute
+  ApiPublicV1HitsHitIdRoute: typeof ApiPublicV1HitsHitIdRoute
+  ApiPublicV1HostedTokenRoute: typeof ApiPublicV1HostedTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -675,6 +936,13 @@ declare module '@tanstack/react-router' {
       path: '/solutions/person-verification'
       fullPath: '/solutions/person-verification'
       preLoaderRoute: typeof SolutionsPersonVerificationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/verify/$token': {
+      id: '/verify/$token'
+      path: '/verify/$token'
+      fullPath: '/verify/$token'
+      preLoaderRoute: typeof VerifyTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/admin/': {
@@ -817,11 +1085,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksRescreenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/v1/alerts': {
+      id: '/api/public/v1/alerts'
+      path: '/api/public/v1/alerts'
+      fullPath: '/api/public/v1/alerts'
+      preLoaderRoute: typeof ApiPublicV1AlertsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/v1/cases': {
       id: '/api/public/v1/cases'
       path: '/api/public/v1/cases'
       fullPath: '/api/public/v1/cases'
       preLoaderRoute: typeof ApiPublicV1CasesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/v1/openapi.json': {
+      id: '/api/public/v1/openapi.json'
+      path: '/api/public/v1/openapi.json'
+      fullPath: '/api/public/v1/openapi.json'
+      preLoaderRoute: typeof ApiPublicV1OpenapiDotjsonRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/v1/ping': {
+      id: '/api/public/v1/ping'
+      path: '/api/public/v1/ping'
+      fullPath: '/api/public/v1/ping'
+      preLoaderRoute: typeof ApiPublicV1PingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/v1/reports': {
+      id: '/api/public/v1/reports'
+      path: '/api/public/v1/reports'
+      fullPath: '/api/public/v1/reports'
+      preLoaderRoute: typeof ApiPublicV1ReportsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/v1/screening': {
@@ -838,12 +1134,117 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicV1TransactionsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/v1/alerts/$alertId': {
+      id: '/api/public/v1/alerts/$alertId'
+      path: '/$alertId'
+      fullPath: '/api/public/v1/alerts/$alertId'
+      preLoaderRoute: typeof ApiPublicV1AlertsAlertIdRouteImport
+      parentRoute: typeof ApiPublicV1AlertsRoute
+    }
     '/api/public/v1/cases/$caseId': {
       id: '/api/public/v1/cases/$caseId'
       path: '/$caseId'
       fullPath: '/api/public/v1/cases/$caseId'
       preLoaderRoute: typeof ApiPublicV1CasesCaseIdRouteImport
       parentRoute: typeof ApiPublicV1CasesRoute
+    }
+    '/api/public/v1/hits/$hitId': {
+      id: '/api/public/v1/hits/$hitId'
+      path: '/api/public/v1/hits/$hitId'
+      fullPath: '/api/public/v1/hits/$hitId'
+      preLoaderRoute: typeof ApiPublicV1HitsHitIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/v1/hosted/$token': {
+      id: '/api/public/v1/hosted/$token'
+      path: '/api/public/v1/hosted/$token'
+      fullPath: '/api/public/v1/hosted/$token'
+      preLoaderRoute: typeof ApiPublicV1HostedTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/v1/reports/$reportId': {
+      id: '/api/public/v1/reports/$reportId'
+      path: '/$reportId'
+      fullPath: '/api/public/v1/reports/$reportId'
+      preLoaderRoute: typeof ApiPublicV1ReportsReportIdRouteImport
+      parentRoute: typeof ApiPublicV1ReportsRoute
+    }
+    '/api/public/v1/cases/$caseId/addresses': {
+      id: '/api/public/v1/cases/$caseId/addresses'
+      path: '/addresses'
+      fullPath: '/api/public/v1/cases/$caseId/addresses'
+      preLoaderRoute: typeof ApiPublicV1CasesCaseIdAddressesRouteImport
+      parentRoute: typeof ApiPublicV1CasesCaseIdRoute
+    }
+    '/api/public/v1/cases/$caseId/bank': {
+      id: '/api/public/v1/cases/$caseId/bank'
+      path: '/bank'
+      fullPath: '/api/public/v1/cases/$caseId/bank'
+      preLoaderRoute: typeof ApiPublicV1CasesCaseIdBankRouteImport
+      parentRoute: typeof ApiPublicV1CasesCaseIdRoute
+    }
+    '/api/public/v1/cases/$caseId/decision': {
+      id: '/api/public/v1/cases/$caseId/decision'
+      path: '/decision'
+      fullPath: '/api/public/v1/cases/$caseId/decision'
+      preLoaderRoute: typeof ApiPublicV1CasesCaseIdDecisionRouteImport
+      parentRoute: typeof ApiPublicV1CasesCaseIdRoute
+    }
+    '/api/public/v1/cases/$caseId/documents': {
+      id: '/api/public/v1/cases/$caseId/documents'
+      path: '/documents'
+      fullPath: '/api/public/v1/cases/$caseId/documents'
+      preLoaderRoute: typeof ApiPublicV1CasesCaseIdDocumentsRouteImport
+      parentRoute: typeof ApiPublicV1CasesCaseIdRoute
+    }
+    '/api/public/v1/cases/$caseId/hits': {
+      id: '/api/public/v1/cases/$caseId/hits'
+      path: '/hits'
+      fullPath: '/api/public/v1/cases/$caseId/hits'
+      preLoaderRoute: typeof ApiPublicV1CasesCaseIdHitsRouteImport
+      parentRoute: typeof ApiPublicV1CasesCaseIdRoute
+    }
+    '/api/public/v1/cases/$caseId/owners': {
+      id: '/api/public/v1/cases/$caseId/owners'
+      path: '/owners'
+      fullPath: '/api/public/v1/cases/$caseId/owners'
+      preLoaderRoute: typeof ApiPublicV1CasesCaseIdOwnersRouteImport
+      parentRoute: typeof ApiPublicV1CasesCaseIdRoute
+    }
+    '/api/public/v1/cases/$caseId/ownership': {
+      id: '/api/public/v1/cases/$caseId/ownership'
+      path: '/ownership'
+      fullPath: '/api/public/v1/cases/$caseId/ownership'
+      preLoaderRoute: typeof ApiPublicV1CasesCaseIdOwnershipRouteImport
+      parentRoute: typeof ApiPublicV1CasesCaseIdRoute
+    }
+    '/api/public/v1/cases/$caseId/risk': {
+      id: '/api/public/v1/cases/$caseId/risk'
+      path: '/risk'
+      fullPath: '/api/public/v1/cases/$caseId/risk'
+      preLoaderRoute: typeof ApiPublicV1CasesCaseIdRiskRouteImport
+      parentRoute: typeof ApiPublicV1CasesCaseIdRoute
+    }
+    '/api/public/v1/cases/$caseId/screen': {
+      id: '/api/public/v1/cases/$caseId/screen'
+      path: '/screen'
+      fullPath: '/api/public/v1/cases/$caseId/screen'
+      preLoaderRoute: typeof ApiPublicV1CasesCaseIdScreenRouteImport
+      parentRoute: typeof ApiPublicV1CasesCaseIdRoute
+    }
+    '/api/public/v1/cases/$caseId/selfies': {
+      id: '/api/public/v1/cases/$caseId/selfies'
+      path: '/selfies'
+      fullPath: '/api/public/v1/cases/$caseId/selfies'
+      preLoaderRoute: typeof ApiPublicV1CasesCaseIdSelfiesRouteImport
+      parentRoute: typeof ApiPublicV1CasesCaseIdRoute
+    }
+    '/api/public/v1/cases/$caseId/verification-sessions': {
+      id: '/api/public/v1/cases/$caseId/verification-sessions'
+      path: '/verification-sessions'
+      fullPath: '/api/public/v1/cases/$caseId/verification-sessions'
+      preLoaderRoute: typeof ApiPublicV1CasesCaseIdVerificationSessionsRouteImport
+      parentRoute: typeof ApiPublicV1CasesCaseIdRoute
     }
   }
 }
@@ -894,16 +1295,73 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
+interface ApiPublicV1AlertsRouteChildren {
+  ApiPublicV1AlertsAlertIdRoute: typeof ApiPublicV1AlertsAlertIdRoute
+}
+
+const ApiPublicV1AlertsRouteChildren: ApiPublicV1AlertsRouteChildren = {
+  ApiPublicV1AlertsAlertIdRoute: ApiPublicV1AlertsAlertIdRoute,
+}
+
+const ApiPublicV1AlertsRouteWithChildren =
+  ApiPublicV1AlertsRoute._addFileChildren(ApiPublicV1AlertsRouteChildren)
+
+interface ApiPublicV1CasesCaseIdRouteChildren {
+  ApiPublicV1CasesCaseIdAddressesRoute: typeof ApiPublicV1CasesCaseIdAddressesRoute
+  ApiPublicV1CasesCaseIdBankRoute: typeof ApiPublicV1CasesCaseIdBankRoute
+  ApiPublicV1CasesCaseIdDecisionRoute: typeof ApiPublicV1CasesCaseIdDecisionRoute
+  ApiPublicV1CasesCaseIdDocumentsRoute: typeof ApiPublicV1CasesCaseIdDocumentsRoute
+  ApiPublicV1CasesCaseIdHitsRoute: typeof ApiPublicV1CasesCaseIdHitsRoute
+  ApiPublicV1CasesCaseIdOwnersRoute: typeof ApiPublicV1CasesCaseIdOwnersRoute
+  ApiPublicV1CasesCaseIdOwnershipRoute: typeof ApiPublicV1CasesCaseIdOwnershipRoute
+  ApiPublicV1CasesCaseIdRiskRoute: typeof ApiPublicV1CasesCaseIdRiskRoute
+  ApiPublicV1CasesCaseIdScreenRoute: typeof ApiPublicV1CasesCaseIdScreenRoute
+  ApiPublicV1CasesCaseIdSelfiesRoute: typeof ApiPublicV1CasesCaseIdSelfiesRoute
+  ApiPublicV1CasesCaseIdVerificationSessionsRoute: typeof ApiPublicV1CasesCaseIdVerificationSessionsRoute
+}
+
+const ApiPublicV1CasesCaseIdRouteChildren: ApiPublicV1CasesCaseIdRouteChildren =
+  {
+    ApiPublicV1CasesCaseIdAddressesRoute: ApiPublicV1CasesCaseIdAddressesRoute,
+    ApiPublicV1CasesCaseIdBankRoute: ApiPublicV1CasesCaseIdBankRoute,
+    ApiPublicV1CasesCaseIdDecisionRoute: ApiPublicV1CasesCaseIdDecisionRoute,
+    ApiPublicV1CasesCaseIdDocumentsRoute: ApiPublicV1CasesCaseIdDocumentsRoute,
+    ApiPublicV1CasesCaseIdHitsRoute: ApiPublicV1CasesCaseIdHitsRoute,
+    ApiPublicV1CasesCaseIdOwnersRoute: ApiPublicV1CasesCaseIdOwnersRoute,
+    ApiPublicV1CasesCaseIdOwnershipRoute: ApiPublicV1CasesCaseIdOwnershipRoute,
+    ApiPublicV1CasesCaseIdRiskRoute: ApiPublicV1CasesCaseIdRiskRoute,
+    ApiPublicV1CasesCaseIdScreenRoute: ApiPublicV1CasesCaseIdScreenRoute,
+    ApiPublicV1CasesCaseIdSelfiesRoute: ApiPublicV1CasesCaseIdSelfiesRoute,
+    ApiPublicV1CasesCaseIdVerificationSessionsRoute:
+      ApiPublicV1CasesCaseIdVerificationSessionsRoute,
+  }
+
+const ApiPublicV1CasesCaseIdRouteWithChildren =
+  ApiPublicV1CasesCaseIdRoute._addFileChildren(
+    ApiPublicV1CasesCaseIdRouteChildren,
+  )
+
 interface ApiPublicV1CasesRouteChildren {
-  ApiPublicV1CasesCaseIdRoute: typeof ApiPublicV1CasesCaseIdRoute
+  ApiPublicV1CasesCaseIdRoute: typeof ApiPublicV1CasesCaseIdRouteWithChildren
 }
 
 const ApiPublicV1CasesRouteChildren: ApiPublicV1CasesRouteChildren = {
-  ApiPublicV1CasesCaseIdRoute: ApiPublicV1CasesCaseIdRoute,
+  ApiPublicV1CasesCaseIdRoute: ApiPublicV1CasesCaseIdRouteWithChildren,
 }
 
 const ApiPublicV1CasesRouteWithChildren =
   ApiPublicV1CasesRoute._addFileChildren(ApiPublicV1CasesRouteChildren)
+
+interface ApiPublicV1ReportsRouteChildren {
+  ApiPublicV1ReportsReportIdRoute: typeof ApiPublicV1ReportsReportIdRoute
+}
+
+const ApiPublicV1ReportsRouteChildren: ApiPublicV1ReportsRouteChildren = {
+  ApiPublicV1ReportsReportIdRoute: ApiPublicV1ReportsReportIdRoute,
+}
+
+const ApiPublicV1ReportsRouteWithChildren =
+  ApiPublicV1ReportsRoute._addFileChildren(ApiPublicV1ReportsRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -921,13 +1379,20 @@ const rootRouteChildren: RootRouteChildren = {
   SolutionsBusinessVerificationRoute: SolutionsBusinessVerificationRoute,
   SolutionsFraudRiskRoute: SolutionsFraudRiskRoute,
   SolutionsPersonVerificationRoute: SolutionsPersonVerificationRoute,
+  VerifyTokenRoute: VerifyTokenRoute,
   SolutionsIndexRoute: SolutionsIndexRoute,
   ApiPublicHooksPlaidSyncRoute: ApiPublicHooksPlaidSyncRoute,
   ApiPublicHooksRefreshWatchlistsRoute: ApiPublicHooksRefreshWatchlistsRoute,
   ApiPublicHooksRescreenRoute: ApiPublicHooksRescreenRoute,
+  ApiPublicV1AlertsRoute: ApiPublicV1AlertsRouteWithChildren,
   ApiPublicV1CasesRoute: ApiPublicV1CasesRouteWithChildren,
+  ApiPublicV1OpenapiDotjsonRoute: ApiPublicV1OpenapiDotjsonRoute,
+  ApiPublicV1PingRoute: ApiPublicV1PingRoute,
+  ApiPublicV1ReportsRoute: ApiPublicV1ReportsRouteWithChildren,
   ApiPublicV1ScreeningRoute: ApiPublicV1ScreeningRoute,
   ApiPublicV1TransactionsRoute: ApiPublicV1TransactionsRoute,
+  ApiPublicV1HitsHitIdRoute: ApiPublicV1HitsHitIdRoute,
+  ApiPublicV1HostedTokenRoute: ApiPublicV1HostedTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

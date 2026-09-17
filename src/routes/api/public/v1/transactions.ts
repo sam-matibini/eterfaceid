@@ -1,7 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 
-import { authenticateApiRequest, dispatchWebhook, jsonResponse } from "@/lib/api-gateway.server";
+import {
+  authenticateApiRequest,
+  corsPreflight,
+  countUsage,
+  dispatchWebhook,
+  jsonResponse,
+  paging,
+} from "@/lib/api-gateway.server";
 import { evaluateTransaction, transactionRisk, type TxInput } from "@/lib/transaction-rules";
 import { normalizeName, scoreMatch } from "@/lib/name-match";
 
@@ -21,6 +28,25 @@ const schema = z.object({
 export const Route = createFileRoute("/api/public/v1/transactions")({
   server: {
     handlers: {
+      OPTIONS: async () => corsPreflight(),
+      GET: async ({ request }) => {
+        const auth = await authenticateApiRequest(request);
+        if (auth instanceof Response) return auth;
+        const { limit, offset, searchParams } = paging(request);
+        let query = auth.admin
+          .from("transactions")
+          .select(
+            "id, case_id, external_id, direction, method, amount, currency, amount_cad, counterparty_name, counterparty_country, occurred_at, channel, risk_score, status",
+          )
+          .eq("org_id", auth.orgId)
+          .order("occurred_at", { ascending: false })
+          .range(offset, offset + limit - 1);
+        const caseId = searchParams.get("case_id");
+        if (caseId) query = query.eq("case_id", caseId);
+        const { data, error } = await query;
+        if (error) return jsonResponse({ error: "query_failed", message: error.message }, 500);
+        return jsonResponse({ data, paging: { limit, offset, count: data?.length ?? 0 } });
+      },
       POST: async ({ request }) => {
         const auth = await authenticateApiRequest(request);
         if (auth instanceof Response) return auth;
@@ -123,6 +149,16 @@ export const Route = createFileRoute("/api/public/v1/transactions")({
             rules: alerts.map((a) => a.code),
           });
         }
+
+        if (alerts.some((a) => a.severity === "high")) {
+          await auth.admin.from("monitoring_alerts").insert({
+            case_id: body.case_id,
+            org_id: auth.orgId,
+            alert_type: "transaction",
+            detail: alerts.filter((a) => a.severity === "high").map((a) => a.name).join("; "),
+          } as never);
+        }
+        await countUsage(auth, "transactions");
 
         return jsonResponse(
           { data: { id: (inserted as any).id, risk_score: score, status, alerts } },

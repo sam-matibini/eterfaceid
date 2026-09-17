@@ -138,7 +138,8 @@ function RootComponent() {
     pathname.startsWith("/admin") ||
     pathname.startsWith("/auth") ||
     pathname.startsWith("/onboarding") ||
-    pathname.startsWith("/invite");
+    pathname.startsWith("/invite") ||
+    pathname.startsWith("/verify");
 
 
   useEffect(() => {

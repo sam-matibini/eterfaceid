@@ -14,6 +14,44 @@ export type Database = {
   }
   public: {
     Tables: {
+      api_idempotency: {
+        Row: {
+          created_at: string
+          endpoint: string
+          id: string
+          idempotency_key: string
+          org_id: string
+          response: Json
+          status_code: number
+        }
+        Insert: {
+          created_at?: string
+          endpoint: string
+          id?: string
+          idempotency_key: string
+          org_id: string
+          response?: Json
+          status_code?: number
+        }
+        Update: {
+          created_at?: string
+          endpoint?: string
+          id?: string
+          idempotency_key?: string
+          org_id?: string
+          response?: Json
+          status_code?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_idempotency_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       api_keys: {
         Row: {
           created_at: string
@@ -1905,8 +1943,11 @@ export type Database = {
           expires_at: string | null
           id: string
           org_id: string
+          redirect_url: string | null
           status: string
+          token_hash: string | null
           updated_at: string
+          used_at: string | null
         }
         Insert: {
           case_id: string
@@ -1917,8 +1958,11 @@ export type Database = {
           expires_at?: string | null
           id?: string
           org_id?: string
+          redirect_url?: string | null
           status?: string
+          token_hash?: string | null
           updated_at?: string
+          used_at?: string | null
         }
         Update: {
           case_id?: string
@@ -1929,8 +1973,11 @@ export type Database = {
           expires_at?: string | null
           id?: string
           org_id?: string
+          redirect_url?: string | null
           status?: string
+          token_hash?: string | null
           updated_at?: string
+          used_at?: string | null
         }
         Relationships: [
           {

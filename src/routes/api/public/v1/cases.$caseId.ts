@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { authenticateApiRequest, jsonResponse } from "@/lib/api-gateway.server";
+import { authenticateApiRequest, corsPreflight, jsonResponse } from "@/lib/api-gateway.server";
 
 export const Route = createFileRoute("/api/public/v1/cases/$caseId")({
   server: {
     handlers: {
+      OPTIONS: async () => corsPreflight(),
       GET: async ({ request, params }) => {
         const auth = await authenticateApiRequest(request);
         if (auth instanceof Response) return auth;
