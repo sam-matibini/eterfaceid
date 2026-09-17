@@ -70,6 +70,7 @@ export const Route = createFileRoute("/api/public/v1/cases")({
         });
         await dispatchWebhook(auth.admin, auth.orgId, auth.environment, "case.created", data as Record<string, unknown>);
         return jsonResponse({ data }, 201);
+        });
       },
     },
   },
