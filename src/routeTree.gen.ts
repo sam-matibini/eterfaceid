@@ -57,6 +57,7 @@ import { Route as ApiPublicV1CasesCaseIdRouteImport } from './routes/api/public/
 import { Route as ApiPublicV1HitsHitIdRouteImport } from './routes/api/public/v1/hits.$hitId'
 import { Route as ApiPublicV1ReportsReportIdRouteImport } from './routes/api/public/v1/reports.$reportId'
 import { Route as ApiPublicV1CasesCaseIdAddressesRouteImport } from './routes/api/public/v1/cases.$caseId.addresses'
+import { Route as ApiPublicV1CasesCaseIdBankRouteImport } from './routes/api/public/v1/cases.$caseId.bank'
 import { Route as ApiPublicV1CasesCaseIdDecisionRouteImport } from './routes/api/public/v1/cases.$caseId.decision'
 import { Route as ApiPublicV1CasesCaseIdDocumentsRouteImport } from './routes/api/public/v1/cases.$caseId.documents'
 import { Route as ApiPublicV1CasesCaseIdHitsRouteImport } from './routes/api/public/v1/cases.$caseId.hits'
@@ -326,6 +327,12 @@ const ApiPublicV1CasesCaseIdAddressesRoute =
     path: '/addresses',
     getParentRoute: () => ApiPublicV1CasesCaseIdRoute,
   } as any)
+const ApiPublicV1CasesCaseIdBankRoute =
+  ApiPublicV1CasesCaseIdBankRouteImport.update({
+    id: '/bank',
+    path: '/bank',
+    getParentRoute: () => ApiPublicV1CasesCaseIdRoute,
+  } as any)
 const ApiPublicV1CasesCaseIdDecisionRoute =
   ApiPublicV1CasesCaseIdDecisionRouteImport.update({
     id: '/decision',
@@ -429,6 +436,7 @@ export interface FileRoutesByFullPath {
   '/api/public/v1/hits/$hitId': typeof ApiPublicV1HitsHitIdRoute
   '/api/public/v1/reports/$reportId': typeof ApiPublicV1ReportsReportIdRoute
   '/api/public/v1/cases/$caseId/addresses': typeof ApiPublicV1CasesCaseIdAddressesRoute
+  '/api/public/v1/cases/$caseId/bank': typeof ApiPublicV1CasesCaseIdBankRoute
   '/api/public/v1/cases/$caseId/decision': typeof ApiPublicV1CasesCaseIdDecisionRoute
   '/api/public/v1/cases/$caseId/documents': typeof ApiPublicV1CasesCaseIdDocumentsRoute
   '/api/public/v1/cases/$caseId/hits': typeof ApiPublicV1CasesCaseIdHitsRoute
@@ -487,6 +495,7 @@ export interface FileRoutesByTo {
   '/api/public/v1/hits/$hitId': typeof ApiPublicV1HitsHitIdRoute
   '/api/public/v1/reports/$reportId': typeof ApiPublicV1ReportsReportIdRoute
   '/api/public/v1/cases/$caseId/addresses': typeof ApiPublicV1CasesCaseIdAddressesRoute
+  '/api/public/v1/cases/$caseId/bank': typeof ApiPublicV1CasesCaseIdBankRoute
   '/api/public/v1/cases/$caseId/decision': typeof ApiPublicV1CasesCaseIdDecisionRoute
   '/api/public/v1/cases/$caseId/documents': typeof ApiPublicV1CasesCaseIdDocumentsRoute
   '/api/public/v1/cases/$caseId/hits': typeof ApiPublicV1CasesCaseIdHitsRoute
@@ -547,6 +556,7 @@ export interface FileRoutesById {
   '/api/public/v1/hits/$hitId': typeof ApiPublicV1HitsHitIdRoute
   '/api/public/v1/reports/$reportId': typeof ApiPublicV1ReportsReportIdRoute
   '/api/public/v1/cases/$caseId/addresses': typeof ApiPublicV1CasesCaseIdAddressesRoute
+  '/api/public/v1/cases/$caseId/bank': typeof ApiPublicV1CasesCaseIdBankRoute
   '/api/public/v1/cases/$caseId/decision': typeof ApiPublicV1CasesCaseIdDecisionRoute
   '/api/public/v1/cases/$caseId/documents': typeof ApiPublicV1CasesCaseIdDocumentsRoute
   '/api/public/v1/cases/$caseId/hits': typeof ApiPublicV1CasesCaseIdHitsRoute
@@ -607,6 +617,7 @@ export interface FileRouteTypes {
     | '/api/public/v1/hits/$hitId'
     | '/api/public/v1/reports/$reportId'
     | '/api/public/v1/cases/$caseId/addresses'
+    | '/api/public/v1/cases/$caseId/bank'
     | '/api/public/v1/cases/$caseId/decision'
     | '/api/public/v1/cases/$caseId/documents'
     | '/api/public/v1/cases/$caseId/hits'
@@ -665,6 +676,7 @@ export interface FileRouteTypes {
     | '/api/public/v1/hits/$hitId'
     | '/api/public/v1/reports/$reportId'
     | '/api/public/v1/cases/$caseId/addresses'
+    | '/api/public/v1/cases/$caseId/bank'
     | '/api/public/v1/cases/$caseId/decision'
     | '/api/public/v1/cases/$caseId/documents'
     | '/api/public/v1/cases/$caseId/hits'
@@ -724,6 +736,7 @@ export interface FileRouteTypes {
     | '/api/public/v1/hits/$hitId'
     | '/api/public/v1/reports/$reportId'
     | '/api/public/v1/cases/$caseId/addresses'
+    | '/api/public/v1/cases/$caseId/bank'
     | '/api/public/v1/cases/$caseId/decision'
     | '/api/public/v1/cases/$caseId/documents'
     | '/api/public/v1/cases/$caseId/hits'
@@ -1102,6 +1115,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicV1CasesCaseIdAddressesRouteImport
       parentRoute: typeof ApiPublicV1CasesCaseIdRoute
     }
+    '/api/public/v1/cases/$caseId/bank': {
+      id: '/api/public/v1/cases/$caseId/bank'
+      path: '/bank'
+      fullPath: '/api/public/v1/cases/$caseId/bank'
+      preLoaderRoute: typeof ApiPublicV1CasesCaseIdBankRouteImport
+      parentRoute: typeof ApiPublicV1CasesCaseIdRoute
+    }
     '/api/public/v1/cases/$caseId/decision': {
       id: '/api/public/v1/cases/$caseId/decision'
       path: '/decision'
@@ -1227,6 +1247,7 @@ const ApiPublicV1AlertsRouteWithChildren =
 
 interface ApiPublicV1CasesCaseIdRouteChildren {
   ApiPublicV1CasesCaseIdAddressesRoute: typeof ApiPublicV1CasesCaseIdAddressesRoute
+  ApiPublicV1CasesCaseIdBankRoute: typeof ApiPublicV1CasesCaseIdBankRoute
   ApiPublicV1CasesCaseIdDecisionRoute: typeof ApiPublicV1CasesCaseIdDecisionRoute
   ApiPublicV1CasesCaseIdDocumentsRoute: typeof ApiPublicV1CasesCaseIdDocumentsRoute
   ApiPublicV1CasesCaseIdHitsRoute: typeof ApiPublicV1CasesCaseIdHitsRoute
@@ -1241,6 +1262,7 @@ interface ApiPublicV1CasesCaseIdRouteChildren {
 const ApiPublicV1CasesCaseIdRouteChildren: ApiPublicV1CasesCaseIdRouteChildren =
   {
     ApiPublicV1CasesCaseIdAddressesRoute: ApiPublicV1CasesCaseIdAddressesRoute,
+    ApiPublicV1CasesCaseIdBankRoute: ApiPublicV1CasesCaseIdBankRoute,
     ApiPublicV1CasesCaseIdDecisionRoute: ApiPublicV1CasesCaseIdDecisionRoute,
     ApiPublicV1CasesCaseIdDocumentsRoute: ApiPublicV1CasesCaseIdDocumentsRoute,
     ApiPublicV1CasesCaseIdHitsRoute: ApiPublicV1CasesCaseIdHitsRoute,
