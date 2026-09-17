@@ -1,7 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 
-import { authenticateApiRequest, dispatchWebhook, jsonResponse } from "@/lib/api-gateway.server";
+import {
+  authenticateApiRequest,
+  corsPreflight,
+  countUsage,
+  dispatchWebhook,
+  jsonResponse,
+  paging,
+} from "@/lib/api-gateway.server";
 import { evaluateTransaction, transactionRisk, type TxInput } from "@/lib/transaction-rules";
 import { normalizeName, scoreMatch } from "@/lib/name-match";
 
@@ -142,6 +149,16 @@ export const Route = createFileRoute("/api/public/v1/transactions")({
             rules: alerts.map((a) => a.code),
           });
         }
+
+        if (alerts.some((a) => a.severity === "high")) {
+          await auth.admin.from("monitoring_alerts").insert({
+            case_id: body.case_id,
+            org_id: auth.orgId,
+            alert_type: "transaction",
+            detail: alerts.filter((a) => a.severity === "high").map((a) => a.name).join("; "),
+          } as never);
+        }
+        await countUsage(auth, "transactions");
 
         return jsonResponse(
           { data: { id: (inserted as any).id, risk_score: score, status, alerts } },
