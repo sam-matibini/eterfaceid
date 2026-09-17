@@ -56,6 +56,7 @@ import { Route as ApiPublicV1CasesCaseIdDecisionRouteImport } from './routes/api
 import { Route as ApiPublicV1CasesCaseIdDocumentsRouteImport } from './routes/api/public/v1/cases.$caseId.documents'
 import { Route as ApiPublicV1CasesCaseIdHitsRouteImport } from './routes/api/public/v1/cases.$caseId.hits'
 import { Route as ApiPublicV1CasesCaseIdScreenRouteImport } from './routes/api/public/v1/cases.$caseId.screen'
+import { Route as ApiPublicV1CasesCaseIdSelfiesRouteImport } from './routes/api/public/v1/cases.$caseId.selfies'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -312,6 +313,12 @@ const ApiPublicV1CasesCaseIdScreenRoute =
     path: '/screen',
     getParentRoute: () => ApiPublicV1CasesCaseIdRoute,
   } as any)
+const ApiPublicV1CasesCaseIdSelfiesRoute =
+  ApiPublicV1CasesCaseIdSelfiesRouteImport.update({
+    id: '/selfies',
+    path: '/selfies',
+    getParentRoute: () => ApiPublicV1CasesCaseIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -360,6 +367,7 @@ export interface FileRoutesByFullPath {
   '/api/public/v1/cases/$caseId/documents': typeof ApiPublicV1CasesCaseIdDocumentsRoute
   '/api/public/v1/cases/$caseId/hits': typeof ApiPublicV1CasesCaseIdHitsRoute
   '/api/public/v1/cases/$caseId/screen': typeof ApiPublicV1CasesCaseIdScreenRoute
+  '/api/public/v1/cases/$caseId/selfies': typeof ApiPublicV1CasesCaseIdSelfiesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -408,6 +416,7 @@ export interface FileRoutesByTo {
   '/api/public/v1/cases/$caseId/documents': typeof ApiPublicV1CasesCaseIdDocumentsRoute
   '/api/public/v1/cases/$caseId/hits': typeof ApiPublicV1CasesCaseIdHitsRoute
   '/api/public/v1/cases/$caseId/screen': typeof ApiPublicV1CasesCaseIdScreenRoute
+  '/api/public/v1/cases/$caseId/selfies': typeof ApiPublicV1CasesCaseIdSelfiesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -458,6 +467,7 @@ export interface FileRoutesById {
   '/api/public/v1/cases/$caseId/documents': typeof ApiPublicV1CasesCaseIdDocumentsRoute
   '/api/public/v1/cases/$caseId/hits': typeof ApiPublicV1CasesCaseIdHitsRoute
   '/api/public/v1/cases/$caseId/screen': typeof ApiPublicV1CasesCaseIdScreenRoute
+  '/api/public/v1/cases/$caseId/selfies': typeof ApiPublicV1CasesCaseIdSelfiesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -508,6 +518,7 @@ export interface FileRouteTypes {
     | '/api/public/v1/cases/$caseId/documents'
     | '/api/public/v1/cases/$caseId/hits'
     | '/api/public/v1/cases/$caseId/screen'
+    | '/api/public/v1/cases/$caseId/selfies'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -556,6 +567,7 @@ export interface FileRouteTypes {
     | '/api/public/v1/cases/$caseId/documents'
     | '/api/public/v1/cases/$caseId/hits'
     | '/api/public/v1/cases/$caseId/screen'
+    | '/api/public/v1/cases/$caseId/selfies'
   id:
     | '__root__'
     | '/'
@@ -605,6 +617,7 @@ export interface FileRouteTypes {
     | '/api/public/v1/cases/$caseId/documents'
     | '/api/public/v1/cases/$caseId/hits'
     | '/api/public/v1/cases/$caseId/screen'
+    | '/api/public/v1/cases/$caseId/selfies'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -965,6 +978,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicV1CasesCaseIdScreenRouteImport
       parentRoute: typeof ApiPublicV1CasesCaseIdRoute
     }
+    '/api/public/v1/cases/$caseId/selfies': {
+      id: '/api/public/v1/cases/$caseId/selfies'
+      path: '/selfies'
+      fullPath: '/api/public/v1/cases/$caseId/selfies'
+      preLoaderRoute: typeof ApiPublicV1CasesCaseIdSelfiesRouteImport
+      parentRoute: typeof ApiPublicV1CasesCaseIdRoute
+    }
   }
 }
 
@@ -1019,6 +1039,7 @@ interface ApiPublicV1CasesCaseIdRouteChildren {
   ApiPublicV1CasesCaseIdDocumentsRoute: typeof ApiPublicV1CasesCaseIdDocumentsRoute
   ApiPublicV1CasesCaseIdHitsRoute: typeof ApiPublicV1CasesCaseIdHitsRoute
   ApiPublicV1CasesCaseIdScreenRoute: typeof ApiPublicV1CasesCaseIdScreenRoute
+  ApiPublicV1CasesCaseIdSelfiesRoute: typeof ApiPublicV1CasesCaseIdSelfiesRoute
 }
 
 const ApiPublicV1CasesCaseIdRouteChildren: ApiPublicV1CasesCaseIdRouteChildren =
@@ -1027,6 +1048,7 @@ const ApiPublicV1CasesCaseIdRouteChildren: ApiPublicV1CasesCaseIdRouteChildren =
     ApiPublicV1CasesCaseIdDocumentsRoute: ApiPublicV1CasesCaseIdDocumentsRoute,
     ApiPublicV1CasesCaseIdHitsRoute: ApiPublicV1CasesCaseIdHitsRoute,
     ApiPublicV1CasesCaseIdScreenRoute: ApiPublicV1CasesCaseIdScreenRoute,
+    ApiPublicV1CasesCaseIdSelfiesRoute: ApiPublicV1CasesCaseIdSelfiesRoute,
   }
 
 const ApiPublicV1CasesCaseIdRouteWithChildren =
