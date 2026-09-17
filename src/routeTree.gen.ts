@@ -43,6 +43,7 @@ import { Route as AuthenticatedConsoleWatchlistsRouteImport } from './routes/_au
 import { Route as AuthenticatedAdminCompaniesOrgIdRouteImport } from './routes/_authenticated/admin.companies.$orgId'
 import { Route as AuthenticatedAdminInvoicesInvoiceIdRouteImport } from './routes/_authenticated/admin.invoices.$invoiceId'
 import { Route as AuthenticatedConsoleCasesCaseIdRouteImport } from './routes/_authenticated/console.cases.$caseId'
+import { Route as ApiPublicHooksPlaidSyncRouteImport } from './routes/api/public/hooks/plaid-sync'
 import { Route as ApiPublicHooksRefreshWatchlistsRouteImport } from './routes/api/public/hooks/refresh-watchlists'
 import { Route as ApiPublicHooksRescreenRouteImport } from './routes/api/public/hooks/rescreen'
 import { Route as ApiPublicV1CasesRouteImport } from './routes/api/public/v1/cases'
@@ -235,6 +236,11 @@ const AuthenticatedConsoleCasesCaseIdRoute =
     path: '/console/cases/$caseId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicHooksPlaidSyncRoute = ApiPublicHooksPlaidSyncRouteImport.update({
+  id: '/api/public/hooks/plaid-sync',
+  path: '/api/public/hooks/plaid-sync',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicHooksRefreshWatchlistsRoute =
   ApiPublicHooksRefreshWatchlistsRouteImport.update({
     id: '/api/public/hooks/refresh-watchlists',
@@ -301,6 +307,7 @@ export interface FileRoutesByFullPath {
   '/admin/companies/$orgId': typeof AuthenticatedAdminCompaniesOrgIdRoute
   '/admin/invoices/$invoiceId': typeof AuthenticatedAdminInvoicesInvoiceIdRoute
   '/console/cases/$caseId': typeof AuthenticatedConsoleCasesCaseIdRoute
+  '/api/public/hooks/plaid-sync': typeof ApiPublicHooksPlaidSyncRoute
   '/api/public/hooks/refresh-watchlists': typeof ApiPublicHooksRefreshWatchlistsRoute
   '/api/public/hooks/rescreen': typeof ApiPublicHooksRescreenRoute
   '/api/public/v1/cases': typeof ApiPublicV1CasesRouteWithChildren
@@ -342,6 +349,7 @@ export interface FileRoutesByTo {
   '/admin/companies/$orgId': typeof AuthenticatedAdminCompaniesOrgIdRoute
   '/admin/invoices/$invoiceId': typeof AuthenticatedAdminInvoicesInvoiceIdRoute
   '/console/cases/$caseId': typeof AuthenticatedConsoleCasesCaseIdRoute
+  '/api/public/hooks/plaid-sync': typeof ApiPublicHooksPlaidSyncRoute
   '/api/public/hooks/refresh-watchlists': typeof ApiPublicHooksRefreshWatchlistsRoute
   '/api/public/hooks/rescreen': typeof ApiPublicHooksRescreenRoute
   '/api/public/v1/cases': typeof ApiPublicV1CasesRouteWithChildren
@@ -385,6 +393,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/companies/$orgId': typeof AuthenticatedAdminCompaniesOrgIdRoute
   '/_authenticated/admin/invoices/$invoiceId': typeof AuthenticatedAdminInvoicesInvoiceIdRoute
   '/_authenticated/console/cases/$caseId': typeof AuthenticatedConsoleCasesCaseIdRoute
+  '/api/public/hooks/plaid-sync': typeof ApiPublicHooksPlaidSyncRoute
   '/api/public/hooks/refresh-watchlists': typeof ApiPublicHooksRefreshWatchlistsRoute
   '/api/public/hooks/rescreen': typeof ApiPublicHooksRescreenRoute
   '/api/public/v1/cases': typeof ApiPublicV1CasesRouteWithChildren
@@ -428,6 +437,7 @@ export interface FileRouteTypes {
     | '/admin/companies/$orgId'
     | '/admin/invoices/$invoiceId'
     | '/console/cases/$caseId'
+    | '/api/public/hooks/plaid-sync'
     | '/api/public/hooks/refresh-watchlists'
     | '/api/public/hooks/rescreen'
     | '/api/public/v1/cases'
@@ -469,6 +479,7 @@ export interface FileRouteTypes {
     | '/admin/companies/$orgId'
     | '/admin/invoices/$invoiceId'
     | '/console/cases/$caseId'
+    | '/api/public/hooks/plaid-sync'
     | '/api/public/hooks/refresh-watchlists'
     | '/api/public/hooks/rescreen'
     | '/api/public/v1/cases'
@@ -511,6 +522,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/companies/$orgId'
     | '/_authenticated/admin/invoices/$invoiceId'
     | '/_authenticated/console/cases/$caseId'
+    | '/api/public/hooks/plaid-sync'
     | '/api/public/hooks/refresh-watchlists'
     | '/api/public/hooks/rescreen'
     | '/api/public/v1/cases'
@@ -536,6 +548,7 @@ export interface RootRouteChildren {
   SolutionsFraudRiskRoute: typeof SolutionsFraudRiskRoute
   SolutionsPersonVerificationRoute: typeof SolutionsPersonVerificationRoute
   SolutionsIndexRoute: typeof SolutionsIndexRoute
+  ApiPublicHooksPlaidSyncRoute: typeof ApiPublicHooksPlaidSyncRoute
   ApiPublicHooksRefreshWatchlistsRoute: typeof ApiPublicHooksRefreshWatchlistsRoute
   ApiPublicHooksRescreenRoute: typeof ApiPublicHooksRescreenRoute
   ApiPublicV1CasesRoute: typeof ApiPublicV1CasesRouteWithChildren
@@ -783,6 +796,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedConsoleCasesCaseIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/hooks/plaid-sync': {
+      id: '/api/public/hooks/plaid-sync'
+      path: '/api/public/hooks/plaid-sync'
+      fullPath: '/api/public/hooks/plaid-sync'
+      preLoaderRoute: typeof ApiPublicHooksPlaidSyncRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/refresh-watchlists': {
       id: '/api/public/hooks/refresh-watchlists'
       path: '/api/public/hooks/refresh-watchlists'
@@ -902,6 +922,7 @@ const rootRouteChildren: RootRouteChildren = {
   SolutionsFraudRiskRoute: SolutionsFraudRiskRoute,
   SolutionsPersonVerificationRoute: SolutionsPersonVerificationRoute,
   SolutionsIndexRoute: SolutionsIndexRoute,
+  ApiPublicHooksPlaidSyncRoute: ApiPublicHooksPlaidSyncRoute,
   ApiPublicHooksRefreshWatchlistsRoute: ApiPublicHooksRefreshWatchlistsRoute,
   ApiPublicHooksRescreenRoute: ApiPublicHooksRescreenRoute,
   ApiPublicV1CasesRoute: ApiPublicV1CasesRouteWithChildren,
