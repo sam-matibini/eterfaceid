@@ -59,3 +59,7 @@
 ## Brand and product films (done)
 - Refined shield-and-wordmark lockup in the public header and footer.
 - Silent, looping screening and transaction-monitoring films on the homepage and relevant solution pages, with reduced-motion stills.
+
+## Authentic product imagery (done)
+- Documentary-style scenes for person verification, business verification and continuous screening.
+- Images appear on the homepage and their corresponding solution pages with responsive crops and descriptive text.

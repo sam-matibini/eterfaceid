@@ -6,6 +6,7 @@ import {
   PageHero,
   Section,
 } from "@/components/site/primitives";
+import verifyPeopleImage from "@/assets/verify-people-workflow.jpg";
 
 export const Route = createFileRoute("/solutions/person-verification")({
   head: () => ({
@@ -37,6 +38,22 @@ function PersonVerification() {
       />
 
       <Section title="What gets checked">
+        <figure className="mb-12 grid overflow-hidden border border-rule bg-paper md:grid-cols-[1.35fr_0.65fr]">
+          <div className="aspect-[3/2] overflow-hidden md:aspect-auto md:min-h-[24rem]">
+            <img
+              src={verifyPeopleImage}
+              alt="Customer completing identity verification with a passport and smartphone"
+              width={1536}
+              height={1024}
+              loading="lazy"
+              className="size-full object-cover"
+            />
+          </div>
+          <figcaption className="flex flex-col justify-end border-t border-rule p-7 md:border-l md:border-t-0">
+            <p className="text-[1.15rem] font-semibold leading-snug text-ink">A familiar flow, backed by defensible evidence</p>
+            <p className="mt-3 text-[0.88rem] leading-[1.7] text-ink-soft">The customer captures their identity document and face while eterfaceID checks authenticity, presence and matching data.</p>
+          </figcaption>
+        </figure>
         <div className="grid gap-12 md:grid-cols-2">
           <div>
             <h3 className="text-[0.72rem] font-semibold uppercase tracking-[0.14em] text-ink-soft">

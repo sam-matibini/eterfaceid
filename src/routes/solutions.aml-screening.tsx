@@ -9,6 +9,7 @@ import {
 import { ProductFilm } from "@/components/site/ProductFilm";
 import screeningFilm from "@/assets/screening-workflow.mp4.asset.json";
 import screeningPoster from "@/assets/screening-workflow-poster.png.asset.json";
+import continuousScreeningImage from "@/assets/continuous-screening-workflow.jpg";
 
 export const Route = createFileRoute("/solutions/aml-screening")({
   head: () => ({
@@ -40,12 +41,24 @@ function AmlScreening() {
       />
 
       <Section>
-        <ProductFilm
-          src={screeningFilm.url}
-          poster={screeningPoster.url}
-          title="From customer record to explained match"
-          description="An illustrative live screening sequence using realistic example data."
-        />
+        <div className="grid gap-6 lg:grid-cols-2 lg:items-stretch">
+          <figure className="flex overflow-hidden border border-rule bg-paper">
+            <img
+              src={continuousScreeningImage}
+              alt="Compliance analyst reviewing continuous sanctions and monitoring results"
+              width={1536}
+              height={1024}
+              loading="lazy"
+              className="size-full object-cover"
+            />
+          </figure>
+          <ProductFilm
+            src={screeningFilm.url}
+            poster={screeningPoster.url}
+            title="From customer record to explained match"
+            description="An illustrative live screening sequence using realistic example data."
+          />
+        </div>
       </Section>
 
       <Section title="Sources screened">
