@@ -26,6 +26,7 @@ import { Route as SolutionsAmlScreeningRouteImport } from './routes/solutions.am
 import { Route as SolutionsBusinessVerificationRouteImport } from './routes/solutions.business-verification'
 import { Route as SolutionsFraudRiskRouteImport } from './routes/solutions.fraud-risk'
 import { Route as SolutionsPersonVerificationRouteImport } from './routes/solutions.person-verification'
+import { Route as VerifyTokenRouteImport } from './routes/verify.$token'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as AuthenticatedAdminBillingRouteImport } from './routes/_authenticated/admin.billing'
 import { Route as AuthenticatedAdminEmailsRouteImport } from './routes/_authenticated/admin.emails'
@@ -155,6 +156,11 @@ const SolutionsPersonVerificationRoute =
     path: '/solutions/person-verification',
     getParentRoute: () => rootRouteImport,
   } as any)
+const VerifyTokenRoute = VerifyTokenRouteImport.update({
+  id: '/verify/$token',
+  path: '/verify/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   id: '/admin/',
   path: '/admin/',
@@ -410,6 +416,7 @@ export interface FileRoutesByFullPath {
   '/solutions/business-verification': typeof SolutionsBusinessVerificationRoute
   '/solutions/fraud-risk': typeof SolutionsFraudRiskRoute
   '/solutions/person-verification': typeof SolutionsPersonVerificationRoute
+  '/verify/$token': typeof VerifyTokenRoute
   '/solutions/': typeof SolutionsIndexRoute
   '/admin/billing': typeof AuthenticatedAdminBillingRoute
   '/admin/emails': typeof AuthenticatedAdminEmailsRoute
@@ -470,6 +477,7 @@ export interface FileRoutesByTo {
   '/solutions/business-verification': typeof SolutionsBusinessVerificationRoute
   '/solutions/fraud-risk': typeof SolutionsFraudRiskRoute
   '/solutions/person-verification': typeof SolutionsPersonVerificationRoute
+  '/verify/$token': typeof VerifyTokenRoute
   '/solutions': typeof SolutionsIndexRoute
   '/admin/billing': typeof AuthenticatedAdminBillingRoute
   '/admin/emails': typeof AuthenticatedAdminEmailsRoute
@@ -532,6 +540,7 @@ export interface FileRoutesById {
   '/solutions/business-verification': typeof SolutionsBusinessVerificationRoute
   '/solutions/fraud-risk': typeof SolutionsFraudRiskRoute
   '/solutions/person-verification': typeof SolutionsPersonVerificationRoute
+  '/verify/$token': typeof VerifyTokenRoute
   '/solutions/': typeof SolutionsIndexRoute
   '/_authenticated/admin/billing': typeof AuthenticatedAdminBillingRoute
   '/_authenticated/admin/emails': typeof AuthenticatedAdminEmailsRoute
@@ -594,6 +603,7 @@ export interface FileRouteTypes {
     | '/solutions/business-verification'
     | '/solutions/fraud-risk'
     | '/solutions/person-verification'
+    | '/verify/$token'
     | '/solutions/'
     | '/admin/billing'
     | '/admin/emails'
@@ -654,6 +664,7 @@ export interface FileRouteTypes {
     | '/solutions/business-verification'
     | '/solutions/fraud-risk'
     | '/solutions/person-verification'
+    | '/verify/$token'
     | '/solutions'
     | '/admin/billing'
     | '/admin/emails'
@@ -715,6 +726,7 @@ export interface FileRouteTypes {
     | '/solutions/business-verification'
     | '/solutions/fraud-risk'
     | '/solutions/person-verification'
+    | '/verify/$token'
     | '/solutions/'
     | '/_authenticated/admin/billing'
     | '/_authenticated/admin/emails'
@@ -776,6 +788,7 @@ export interface RootRouteChildren {
   SolutionsBusinessVerificationRoute: typeof SolutionsBusinessVerificationRoute
   SolutionsFraudRiskRoute: typeof SolutionsFraudRiskRoute
   SolutionsPersonVerificationRoute: typeof SolutionsPersonVerificationRoute
+  VerifyTokenRoute: typeof VerifyTokenRoute
   SolutionsIndexRoute: typeof SolutionsIndexRoute
   ApiPublicHooksPlaidSyncRoute: typeof ApiPublicHooksPlaidSyncRoute
   ApiPublicHooksRefreshWatchlistsRoute: typeof ApiPublicHooksRefreshWatchlistsRoute
@@ -909,6 +922,13 @@ declare module '@tanstack/react-router' {
       path: '/solutions/person-verification'
       fullPath: '/solutions/person-verification'
       preLoaderRoute: typeof SolutionsPersonVerificationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/verify/$token': {
+      id: '/verify/$token'
+      path: '/verify/$token'
+      fullPath: '/verify/$token'
+      preLoaderRoute: typeof VerifyTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/admin/': {
@@ -1338,6 +1358,7 @@ const rootRouteChildren: RootRouteChildren = {
   SolutionsBusinessVerificationRoute: SolutionsBusinessVerificationRoute,
   SolutionsFraudRiskRoute: SolutionsFraudRiskRoute,
   SolutionsPersonVerificationRoute: SolutionsPersonVerificationRoute,
+  VerifyTokenRoute: VerifyTokenRoute,
   SolutionsIndexRoute: SolutionsIndexRoute,
   ApiPublicHooksPlaidSyncRoute: ApiPublicHooksPlaidSyncRoute,
   ApiPublicHooksRefreshWatchlistsRoute: ApiPublicHooksRefreshWatchlistsRoute,
