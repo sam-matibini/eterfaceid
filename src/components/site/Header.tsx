@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { Menu, X } from "lucide-react";
 import { useSession } from "@/hooks/useSession";
 import { megaMenu, solutionsGroup } from "./nav-data";
+import { BrandLogo } from "./BrandLogo";
 
 
 const topLevel = [
@@ -39,13 +40,8 @@ export function Header() {
         className="mx-auto max-w-[1180px] px-5"
       >
         <div className="flex h-16 items-center justify-between gap-6">
-          <Link to="/" className="flex items-baseline gap-[1px]">
-            <span className="font-display text-[1.15rem] font-extrabold tracking-tight text-ink">
-              eterface
-            </span>
-            <span className="font-display text-[1.15rem] font-extrabold tracking-tight text-signal">
-              ID
-            </span>
+          <Link to="/" aria-label="eterfaceID home">
+            <BrandLogo />
           </Link>
 
           <nav className="hidden items-center gap-7 lg:flex" aria-label="Main">
