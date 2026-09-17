@@ -66,7 +66,7 @@ const applicationInput = z.object({
  * screening of every owner against the sanctions and PEP lists (50% rule).
  */
 async function verifyApplicant(admin: any, input: z.infer<typeof applicationInput>) {
-  const checks: Array<{ name: string; ok: boolean; severity: "info" | "warn" | "fail"; detail?: string }> = [];
+  const checks: Array<{ name: string; ok: boolean; severity: "info" | "warn" | "fail"; detail?: string | undefined }> = [];
 
   checks.push({
     name: "Registered business name",
