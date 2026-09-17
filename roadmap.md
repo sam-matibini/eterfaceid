@@ -63,3 +63,7 @@
 ## Authentic product imagery (done)
 - Documentary-style scenes for person verification, business verification and continuous screening.
 - Images appear on the homepage and their corresponding solution pages with responsive crops and descriptive text.
+
+## Real-time Fintech monitoring film (done)
+- Ten-second documentary-style film showing a Fintech compliance team monitoring live activity in the AI and Open Banking era.
+- Branded captions explain why continuous monitoring matters; the film appears on the homepage and Industries page with a reduced-motion poster.
