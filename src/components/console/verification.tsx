@@ -11,6 +11,7 @@ import {
   submitDocument,
   submitSelfie,
 } from "@/lib/verification.functions";
+import { BankPanel } from "@/components/console/bank";
 
 type DocCheckRow = { name: string; ok: boolean; severity: string; detail?: string };
 
@@ -347,6 +348,8 @@ export function VerificationPanels({ caseId, canWrite }: { caseId: string; canWr
           </p>
         ) : null}
       </Panel>
+
+      <BankPanel caseId={caseId} canWrite={canWrite} claimedEmail={email} claimedPhone={phone} />
     </>
   );
 }
