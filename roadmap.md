@@ -9,7 +9,6 @@
 - Phase 3d — transaction monitoring with FINTRAC/FinCEN/FATF rules, beneficial-ownership calculation (25% UBO, OFAC 50% rule), address and age verification, regulatory report packages (STR/LCTR/EFTR/SAR/CTR/FIU), regulatory coverage page, public REST API v1 (cases, screening, transactions) and signed webhooks
 
 ## Next
-- Brand refinement — replace the text-only site marks with a shield-and-wordmark lockup; add short screening and transaction-monitoring product films to the public site.
 - Phase 3e — optional add-ons when keys arrive: Plaid (built, waiting on credentials), Interac, Twilio/Telesign, IP/email reputation
 - API notepad — track and add new APIs; entries live in App admin > Integrations; connecting a listed API needs its keys (secure store, never shown)
 - Nightly automatic list refresh (endpoint built at /api/public/hooks/refresh-watchlists; needs the schedule switched on after publish)
@@ -56,3 +55,7 @@
   a clear error code.
 - Console: Go live page. App admin: Live access queue with Approve / Decline / Suspend / Restore and
   the option to record a signed copy of the agreement.
+
+## Brand and product films (done)
+- Refined shield-and-wordmark lockup in the public header and footer.
+- Silent, looping screening and transaction-monitoring films on the homepage and relevant solution pages, with reduced-motion stills.

@@ -1,6 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Container, CTASection, Section } from "@/components/site/primitives";
 import { solutionsGroup } from "@/components/site/nav-data";
+import { ProductFilm } from "@/components/site/ProductFilm";
+import screeningFilm from "@/assets/screening-workflow.mp4.asset.json";
+import screeningPoster from "@/assets/screening-workflow-poster.png.asset.json";
+import transactionFilm from "@/assets/transaction-monitoring.mp4.asset.json";
+import transactionPoster from "@/assets/transaction-monitoring-poster.png.asset.json";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -83,31 +88,19 @@ function Home() {
             </div>
           </div>
 
-          <div className="rounded-sm border border-rule bg-paper p-6">
-            <p className="text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-ink-soft">
-              A single verification record
-            </p>
-            <dl className="mt-5 divide-y divide-rule text-[0.85rem]">
-              {[
-                ["Document", "Passport — authentic, MRZ matched"],
-                ["Liveness", "Passed, active challenge"],
-                ["Face match", "0.94 similarity to document portrait"],
-                ["Address", "Matched to two independent sources"],
-                ["Phone", "Carrier-confirmed, held 4 years"],
-                ["Sanctions", "No match across 1,400+ sources"],
-                ["PEP", "No match"],
-                ["Device risk", "Low — no emulator or proxy signals"],
-              ].map(([k, v]) => (
-                <div key={k} className="flex items-start justify-between gap-6 py-2.5">
-                  <dt className="text-ink-soft">{k}</dt>
-                  <dd className="text-right font-mono text-[0.78rem] text-ink">{v}</dd>
-                </div>
-              ))}
-            </dl>
-            <p className="mt-5 border-t border-rule pt-4 text-[0.75rem] leading-relaxed text-ink-soft">
-              Illustrative record. Every field carries its source, timestamp and the reviewer who
-              adjudicated it.
-            </p>
+          <div className="space-y-4">
+            <ProductFilm
+              src={screeningFilm.url}
+              poster={screeningPoster.url}
+              title="Screening in motion"
+              description="Lists resolve and a reviewable match is explained."
+            />
+            <ProductFilm
+              src={transactionFilm.url}
+              poster={transactionPoster.url}
+              title="Monitoring in motion"
+              description="A suspicious pattern becomes an analyst alert."
+            />
           </div>
         </Container>
       </section>

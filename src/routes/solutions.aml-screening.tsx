@@ -6,6 +6,9 @@ import {
   PageHero,
   Section,
 } from "@/components/site/primitives";
+import { ProductFilm } from "@/components/site/ProductFilm";
+import screeningFilm from "@/assets/screening-workflow.mp4.asset.json";
+import screeningPoster from "@/assets/screening-workflow-poster.png.asset.json";
 
 export const Route = createFileRoute("/solutions/aml-screening")({
   head: () => ({
@@ -35,6 +38,15 @@ function AmlScreening() {
         title="Screen once at onboarding. Keep screening for as long as they stay."
         lede="A clean result on day one means nothing on day four hundred. eterfaceID rescreens your entire book against refreshed lists and alerts you only when something genuinely changed."
       />
+
+      <Section>
+        <ProductFilm
+          src={screeningFilm.url}
+          poster={screeningPoster.url}
+          title="From customer record to explained match"
+          description="An illustrative live screening sequence using realistic example data."
+        />
+      </Section>
 
       <Section title="Sources screened">
         <CheckList
