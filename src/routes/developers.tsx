@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { CTASection, PageHero, Section } from "@/components/site/primitives";
-import { API_BASE_PATH, API_GROUPS, ERROR_CODES, WEBHOOK_EVENTS } from "@/lib/api-spec";
+import { API_BASE_PATH, API_GROUPS, ERROR_CODES, SANDBOX_TEST_VALUES, WEBHOOK_EVENTS } from "@/lib/api-spec";
 
 export const Route = createFileRoute("/developers")({
   head: () => ({
@@ -124,6 +124,46 @@ function Developers() {
           ))}
         </div>
       </Section>
+
+      <Section
+        title="Sandbox and live keys"
+        intro="Build against sandbox for free; live keys are issued once your business is verified and the agreement is signed."
+      >
+        <div className="grid gap-4 lg:grid-cols-2">
+          <div className="rounded-lg border border-border bg-card p-5">
+            <h3 className="text-sm font-semibold">Sandbox — eid_test_…</h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Available the moment you create an account, unlimited and never billed. Sandbox keys never
+              query the real sanctions and watchlists and never open a real bank connection: results are
+              simulated so you can test every branch of your code. Use these names to drive the outcome:
+            </p>
+            <ul className="mt-3 space-y-1 text-sm">
+              {SANDBOX_TEST_VALUES.map((v) => (
+                <li key={v.value}>
+                  <code className="font-mono text-xs">{v.value}</code>{" "}
+                  <span className="text-muted-foreground">— {v.effect}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="rounded-lg border border-border bg-card p-5">
+            <h3 className="text-sm font-semibold">Live — eid_live_…</h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Live keys reach the real lists, real bank connections and your billable usage. Before they can
+              be created, an administrator completes <strong>Go live</strong> in the console: business
+              details and beneficial owners are submitted and verified, the commercial agreement is signed,
+              and an eterfaceID reviewer confirms.
+            </p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              A live call is refused with a clear error code when access is not approved, the agreement is
+              missing, the account is suspended, or the month&apos;s included volume is used up. Each key is
+              also limited to 120 calls a minute.
+            </p>
+          </div>
+        </div>
+      </Section>
+
+
 
       {API_GROUPS.map((group) => (
         <Section key={group.name} title={group.name} intro={group.blurb}>
