@@ -26,9 +26,14 @@ export const Route = createFileRoute("/_authenticated/admin/integrations")({
 function IntegrationsPage() {
   const queryClient = useQueryClient();
   const integrations = useQuery({ queryKey: ["integrations"], queryFn: fetchIntegrations });
+  const notepad = useQuery({ queryKey: ["api-notepad"], queryFn: fetchApiNotepad });
   const toggle = useServerFn(setIntegrationEnabled);
   const test = useServerFn(sendTestEmail);
+  const saveEntry = useServerFn(saveApiNotepadEntry);
+  const removeEntry = useServerFn(deleteApiNotepadEntry);
   const [testTo, setTestTo] = useState("");
+  const [editing, setEditing] = useState<ApiNotepadEntry | null>(null);
+  const [form, setForm] = useState({ title: "", purpose: "", status: "idea" as ApiNotepadEntry["status"], notes: "" });
 
   const switching = useMutation({
     mutationFn: async (input: { provider: string; enabled: boolean }) => toggle({ data: input }),
@@ -42,6 +47,31 @@ function IntegrationsPage() {
       void queryClient.invalidateQueries({ queryKey: ["email-log"] });
     },
   });
+
+  const savingEntry = useMutation({
+    mutationFn: async (input: { id?: string; title: string; purpose: string; status: string; notes: string }) =>
+      saveEntry({ data: input }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["api-notepad"] });
+      setEditing(null);
+      setForm({ title: "", purpose: "", status: "idea", notes: "" });
+    },
+  });
+
+  const deletingEntry = useMutation({
+    mutationFn: async (id: string) => removeEntry({ data: { id } }),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["api-notepad"] }),
+  });
+
+  function startEdit(entry: ApiNotepadEntry) {
+    setEditing(entry);
+    setForm({
+      title: entry.title,
+      purpose: entry.purpose ?? "",
+      status: entry.status,
+      notes: entry.notes ?? "",
+    });
+  }
 
   return (
     <AdminShell>
