@@ -51,6 +51,7 @@ import { Route as ApiPublicV1PingRouteImport } from './routes/api/public/v1/ping
 import { Route as ApiPublicV1ScreeningRouteImport } from './routes/api/public/v1/screening'
 import { Route as ApiPublicV1TransactionsRouteImport } from './routes/api/public/v1/transactions'
 import { Route as ApiPublicV1CasesCaseIdRouteImport } from './routes/api/public/v1/cases.$caseId'
+import { Route as ApiPublicV1HitsHitIdRouteImport } from './routes/api/public/v1/hits.$hitId'
 import { Route as ApiPublicV1CasesCaseIdDecisionRouteImport } from './routes/api/public/v1/cases.$caseId.decision'
 import { Route as ApiPublicV1CasesCaseIdHitsRouteImport } from './routes/api/public/v1/cases.$caseId.hits'
 import { Route as ApiPublicV1CasesCaseIdScreenRouteImport } from './routes/api/public/v1/cases.$caseId.screen'
@@ -281,6 +282,11 @@ const ApiPublicV1CasesCaseIdRoute = ApiPublicV1CasesCaseIdRouteImport.update({
   path: '/$caseId',
   getParentRoute: () => ApiPublicV1CasesRoute,
 } as any)
+const ApiPublicV1HitsHitIdRoute = ApiPublicV1HitsHitIdRouteImport.update({
+  id: '/api/public/v1/hits/$hitId',
+  path: '/api/public/v1/hits/$hitId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicV1CasesCaseIdDecisionRoute =
   ApiPublicV1CasesCaseIdDecisionRouteImport.update({
     id: '/decision',
@@ -342,6 +348,7 @@ export interface FileRoutesByFullPath {
   '/api/public/v1/screening': typeof ApiPublicV1ScreeningRoute
   '/api/public/v1/transactions': typeof ApiPublicV1TransactionsRoute
   '/api/public/v1/cases/$caseId': typeof ApiPublicV1CasesCaseIdRouteWithChildren
+  '/api/public/v1/hits/$hitId': typeof ApiPublicV1HitsHitIdRoute
   '/api/public/v1/cases/$caseId/decision': typeof ApiPublicV1CasesCaseIdDecisionRoute
   '/api/public/v1/cases/$caseId/hits': typeof ApiPublicV1CasesCaseIdHitsRoute
   '/api/public/v1/cases/$caseId/screen': typeof ApiPublicV1CasesCaseIdScreenRoute
@@ -388,6 +395,7 @@ export interface FileRoutesByTo {
   '/api/public/v1/screening': typeof ApiPublicV1ScreeningRoute
   '/api/public/v1/transactions': typeof ApiPublicV1TransactionsRoute
   '/api/public/v1/cases/$caseId': typeof ApiPublicV1CasesCaseIdRouteWithChildren
+  '/api/public/v1/hits/$hitId': typeof ApiPublicV1HitsHitIdRoute
   '/api/public/v1/cases/$caseId/decision': typeof ApiPublicV1CasesCaseIdDecisionRoute
   '/api/public/v1/cases/$caseId/hits': typeof ApiPublicV1CasesCaseIdHitsRoute
   '/api/public/v1/cases/$caseId/screen': typeof ApiPublicV1CasesCaseIdScreenRoute
@@ -436,6 +444,7 @@ export interface FileRoutesById {
   '/api/public/v1/screening': typeof ApiPublicV1ScreeningRoute
   '/api/public/v1/transactions': typeof ApiPublicV1TransactionsRoute
   '/api/public/v1/cases/$caseId': typeof ApiPublicV1CasesCaseIdRouteWithChildren
+  '/api/public/v1/hits/$hitId': typeof ApiPublicV1HitsHitIdRoute
   '/api/public/v1/cases/$caseId/decision': typeof ApiPublicV1CasesCaseIdDecisionRoute
   '/api/public/v1/cases/$caseId/hits': typeof ApiPublicV1CasesCaseIdHitsRoute
   '/api/public/v1/cases/$caseId/screen': typeof ApiPublicV1CasesCaseIdScreenRoute
@@ -484,6 +493,7 @@ export interface FileRouteTypes {
     | '/api/public/v1/screening'
     | '/api/public/v1/transactions'
     | '/api/public/v1/cases/$caseId'
+    | '/api/public/v1/hits/$hitId'
     | '/api/public/v1/cases/$caseId/decision'
     | '/api/public/v1/cases/$caseId/hits'
     | '/api/public/v1/cases/$caseId/screen'
@@ -530,6 +540,7 @@ export interface FileRouteTypes {
     | '/api/public/v1/screening'
     | '/api/public/v1/transactions'
     | '/api/public/v1/cases/$caseId'
+    | '/api/public/v1/hits/$hitId'
     | '/api/public/v1/cases/$caseId/decision'
     | '/api/public/v1/cases/$caseId/hits'
     | '/api/public/v1/cases/$caseId/screen'
@@ -577,6 +588,7 @@ export interface FileRouteTypes {
     | '/api/public/v1/screening'
     | '/api/public/v1/transactions'
     | '/api/public/v1/cases/$caseId'
+    | '/api/public/v1/hits/$hitId'
     | '/api/public/v1/cases/$caseId/decision'
     | '/api/public/v1/cases/$caseId/hits'
     | '/api/public/v1/cases/$caseId/screen'
@@ -606,6 +618,7 @@ export interface RootRouteChildren {
   ApiPublicV1PingRoute: typeof ApiPublicV1PingRoute
   ApiPublicV1ScreeningRoute: typeof ApiPublicV1ScreeningRoute
   ApiPublicV1TransactionsRoute: typeof ApiPublicV1TransactionsRoute
+  ApiPublicV1HitsHitIdRoute: typeof ApiPublicV1HitsHitIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -904,6 +917,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicV1CasesCaseIdRouteImport
       parentRoute: typeof ApiPublicV1CasesRoute
     }
+    '/api/public/v1/hits/$hitId': {
+      id: '/api/public/v1/hits/$hitId'
+      path: '/api/public/v1/hits/$hitId'
+      fullPath: '/api/public/v1/hits/$hitId'
+      preLoaderRoute: typeof ApiPublicV1HitsHitIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/v1/cases/$caseId/decision': {
       id: '/api/public/v1/cases/$caseId/decision'
       path: '/decision'
@@ -1027,6 +1047,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicV1PingRoute: ApiPublicV1PingRoute,
   ApiPublicV1ScreeningRoute: ApiPublicV1ScreeningRoute,
   ApiPublicV1TransactionsRoute: ApiPublicV1TransactionsRoute,
+  ApiPublicV1HitsHitIdRoute: ApiPublicV1HitsHitIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
