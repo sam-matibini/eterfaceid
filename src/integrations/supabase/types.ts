@@ -1055,6 +1055,145 @@ export type Database = {
         }
         Relationships: []
       }
+      plaid_identity_results: {
+        Row: {
+          bank_addresses: Json
+          bank_emails: string[]
+          bank_names: string[]
+          bank_phones: string[]
+          case_id: string
+          comparisons: Json
+          created_at: string
+          created_by: string | null
+          id: string
+          institution_name: string | null
+          item_id: string | null
+          org_id: string
+          result: Database["public"]["Enums"]["check_result"]
+        }
+        Insert: {
+          bank_addresses?: Json
+          bank_emails?: string[]
+          bank_names?: string[]
+          bank_phones?: string[]
+          case_id: string
+          comparisons?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          institution_name?: string | null
+          item_id?: string | null
+          org_id: string
+          result?: Database["public"]["Enums"]["check_result"]
+        }
+        Update: {
+          bank_addresses?: Json
+          bank_emails?: string[]
+          bank_names?: string[]
+          bank_phones?: string[]
+          case_id?: string
+          comparisons?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          institution_name?: string | null
+          item_id?: string | null
+          org_id?: string
+          result?: Database["public"]["Enums"]["check_result"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plaid_identity_results_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plaid_identity_results_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "plaid_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plaid_identity_results_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plaid_items: {
+        Row: {
+          access_token: string
+          case_id: string
+          created_at: string
+          created_by: string | null
+          cursor: string | null
+          environment: string
+          id: string
+          institution_id: string | null
+          institution_name: string | null
+          item_id: string
+          last_error: string | null
+          last_synced_at: string | null
+          org_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          access_token: string
+          case_id: string
+          created_at?: string
+          created_by?: string | null
+          cursor?: string | null
+          environment?: string
+          id?: string
+          institution_id?: string | null
+          institution_name?: string | null
+          item_id: string
+          last_error?: string | null
+          last_synced_at?: string | null
+          org_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string
+          case_id?: string
+          created_at?: string
+          created_by?: string | null
+          cursor?: string | null
+          environment?: string
+          id?: string
+          institution_id?: string | null
+          institution_name?: string | null
+          item_id?: string
+          last_error?: string | null
+          last_synced_at?: string | null
+          org_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plaid_items_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plaid_items_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       plans: {
         Row: {
           blurb: string | null
