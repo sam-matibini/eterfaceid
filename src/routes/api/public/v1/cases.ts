@@ -20,17 +20,24 @@ const createSchema = z.object({
 export const Route = createFileRoute("/api/public/v1/cases")({
   server: {
     handlers: {
+      OPTIONS: async () => corsPreflight(),
       GET: async ({ request }) => {
         const auth = await authenticateApiRequest(request);
         if (auth instanceof Response) return auth;
-        const { data, error } = await auth.admin
+        const { limit, offset, searchParams } = paging(request);
+        let query = auth.admin
           .from("cases")
           .select("id, reference, case_type, subject_name, country, status, risk_level, risk_score, created_at")
           .eq("org_id", auth.orgId)
           .order("created_at", { ascending: false })
-          .limit(100);
+          .range(offset, offset + limit - 1);
+        const status = searchParams.get("status");
+        const caseType = searchParams.get("case_type");
+        if (status) query = query.eq("status", status as never);
+        if (caseType) query = query.eq("case_type", caseType as never);
+        const { data, error } = await query;
         if (error) return jsonResponse({ error: "query_failed", message: error.message }, 500);
-        return jsonResponse({ data });
+        return jsonResponse({ data, paging: { limit, offset, count: data?.length ?? 0 } });
       },
       POST: async ({ request }) => {
         const auth = await authenticateApiRequest(request);
@@ -39,6 +46,7 @@ export const Route = createFileRoute("/api/public/v1/cases")({
         if (!parsed.success) {
           return jsonResponse({ error: "invalid_request", issues: parsed.error.issues }, 422);
         }
+        return withIdempotency(auth, request, "cases", async () => {
         const reference = parsed.data.reference ?? `API-${Date.now().toString(36).toUpperCase()}`;
         const { data, error } = await auth.admin
           .from("cases")
