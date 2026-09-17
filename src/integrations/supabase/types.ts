@@ -129,6 +129,38 @@ export type Database = {
         }
         Relationships: []
       }
+      api_rate_counters: {
+        Row: {
+          bucket: string
+          created_at: string
+          hits: number
+          id: string
+          key_id: string
+        }
+        Insert: {
+          bucket: string
+          created_at?: string
+          hits?: number
+          id?: string
+          key_id: string
+        }
+        Update: {
+          bucket?: string
+          created_at?: string
+          hits?: number
+          id?: string
+          key_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_rate_counters_key_id_fkey"
+            columns: ["key_id"]
+            isOneToOne: false
+            referencedRelation: "api_keys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       app_settings: {
         Row: {
           address_line1: string | null
@@ -960,6 +992,157 @@ export type Database = {
           },
         ]
       }
+      org_applications: {
+        Row: {
+          address_line1: string | null
+          city: string | null
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          country: string | null
+          created_at: string
+          expected_volume: number | null
+          id: string
+          legal_name: string
+          org_id: string
+          owners: Json
+          postal_code: string | null
+          region: string | null
+          registration_number: string | null
+          reviewed_at: string | null
+          reviewer_id: string | null
+          reviewer_note: string | null
+          status: string
+          submitted_by: string | null
+          updated_at: string
+          use_case: string | null
+          verification: Json
+          verification_result: Database["public"]["Enums"]["check_result"]
+          website: string | null
+        }
+        Insert: {
+          address_line1?: string | null
+          city?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          country?: string | null
+          created_at?: string
+          expected_volume?: number | null
+          id?: string
+          legal_name: string
+          org_id: string
+          owners?: Json
+          postal_code?: string | null
+          region?: string | null
+          registration_number?: string | null
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          reviewer_note?: string | null
+          status?: string
+          submitted_by?: string | null
+          updated_at?: string
+          use_case?: string | null
+          verification?: Json
+          verification_result?: Database["public"]["Enums"]["check_result"]
+          website?: string | null
+        }
+        Update: {
+          address_line1?: string | null
+          city?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          country?: string | null
+          created_at?: string
+          expected_volume?: number | null
+          id?: string
+          legal_name?: string
+          org_id?: string
+          owners?: Json
+          postal_code?: string | null
+          region?: string | null
+          registration_number?: string | null
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          reviewer_note?: string | null
+          status?: string
+          submitted_by?: string | null
+          updated_at?: string
+          use_case?: string | null
+          verification?: Json
+          verification_result?: Database["public"]["Enums"]["check_result"]
+          website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_applications_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      org_contracts: {
+        Row: {
+          accepted_at: string
+          accepted_by: string | null
+          accepted_email: string | null
+          accepted_ip: string | null
+          accepted_name: string | null
+          created_at: string
+          document_path: string | null
+          id: string
+          method: string
+          note: string | null
+          org_id: string
+          recorded_by: string | null
+          status: string
+          version: string
+        }
+        Insert: {
+          accepted_at?: string
+          accepted_by?: string | null
+          accepted_email?: string | null
+          accepted_ip?: string | null
+          accepted_name?: string | null
+          created_at?: string
+          document_path?: string | null
+          id?: string
+          method?: string
+          note?: string | null
+          org_id: string
+          recorded_by?: string | null
+          status?: string
+          version?: string
+        }
+        Update: {
+          accepted_at?: string
+          accepted_by?: string | null
+          accepted_email?: string | null
+          accepted_ip?: string | null
+          accepted_name?: string | null
+          created_at?: string
+          document_path?: string | null
+          id?: string
+          method?: string
+          note?: string | null
+          org_id?: string
+          recorded_by?: string | null
+          status?: string
+          version?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_contracts_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       org_subscriptions: {
         Row: {
           created_at: string
@@ -1101,6 +1284,8 @@ export type Database = {
           created_at: string
           created_by: string | null
           id: string
+          live_access: string
+          live_approved_at: string | null
           name: string
           slug: string
           updated_at: string
@@ -1109,6 +1294,8 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          live_access?: string
+          live_approved_at?: string | null
           name: string
           slug: string
           updated_at?: string
@@ -1117,6 +1304,8 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
+          live_access?: string
+          live_approved_at?: string | null
           name?: string
           slug?: string
           updated_at?: string
@@ -2317,6 +2506,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      bump_rate: { Args: { _bucket: string; _key: string }; Returns: number }
       bump_usage: {
         Args: { _amount?: number; _kind: string; _org: string }
         Returns: undefined

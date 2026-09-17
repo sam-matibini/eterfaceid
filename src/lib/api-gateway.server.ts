@@ -7,8 +7,10 @@ export type ApiContext = {
   keyId: string;
   orgId: string;
   environment: string;
+  sandbox: boolean;
   admin: AdminClient;
 };
+
 
 
 export async function sha256Hex(value: string) {
@@ -142,8 +144,9 @@ export async function apiAudit(
   });
 }
 
-/** Counts one billable action against the company's month. Never throws. */
+/** Counts one billable action against the company's month. Sandbox is never billed. */
 export async function countUsage(auth: ApiContext, kind: "verifications" | "screenings" | "transactions") {
+  if (auth.sandbox) return;
   try {
     const { recordUsage } = await import("@/lib/usage.server");
     await recordUsage(auth.admin, auth.orgId, kind);
@@ -152,7 +155,13 @@ export async function countUsage(auth: ApiContext, kind: "verifications" | "scre
   }
 }
 
-/** Authenticates a request with an eterfaceID API key (Authorization: Bearer eid_...). */
+const RATE_LIMIT_PER_MINUTE = 120;
+
+/**
+ * Authenticates a request with an eterfaceID API key and checks the company is
+ * entitled to use it: live access approved, a signed agreement on file, an
+ * active subscription and room left in the month's allowance.
+ */
 export async function authenticateApiRequest(request: Request): Promise<ApiContext | Response> {
   const header = request.headers.get("authorization") ?? "";
   const token = header.toLowerCase().startsWith("bearer ") ? header.slice(7).trim() : "";
@@ -166,17 +175,121 @@ export async function authenticateApiRequest(request: Request): Promise<ApiConte
     .select("id, environment, revoked_at, org_id")
     .eq("key_hash", hash)
     .maybeSingle();
-  if (!key) return jsonResponse({ error: "invalid_api_key" }, 401);
-  if ((key as any).revoked_at) return jsonResponse({ error: "revoked_api_key" }, 401);
+  if (!key) return jsonResponse({ error: "invalid_api_key", message: "This key is not recognised." }, 401);
+  if ((key as any).revoked_at) {
+    return jsonResponse({ error: "revoked_api_key", message: "This key has been revoked." }, 401);
+  }
 
-  await admin.from("api_keys").update({ last_used_at: new Date().toISOString() }).eq("id", (key as any).id);
-  return {
-    keyId: (key as any).id as string,
-    orgId: (key as any).org_id as string,
-    environment: (key as any).environment as string,
-    admin,
-  };
+  const keyId = (key as any).id as string;
+  const orgId = (key as any).org_id as string;
+  const environment = (key as any).environment as string;
+  const sandbox = environment !== "live";
+
+  // Burst protection — applies to every key, sandbox included.
+  try {
+    const bucket = new Date().toISOString().slice(0, 16); // per minute
+    const { data: hits } = await admin.rpc("bump_rate" as never, { _key: keyId, _bucket: bucket } as never);
+    if (typeof hits === "number" && hits > RATE_LIMIT_PER_MINUTE) {
+      return jsonResponse(
+        {
+          error: "rate_limited",
+          message: `Too many requests. This key allows ${RATE_LIMIT_PER_MINUTE} calls per minute.`,
+        },
+        429,
+      );
+    }
+  } catch {
+    /* never block on the counter itself */
+  }
+
+  if (!sandbox) {
+    const entitlement = await checkLiveEntitlement(admin, orgId);
+    if (entitlement) return entitlement;
+  }
+
+  await admin.from("api_keys").update({ last_used_at: new Date().toISOString() }).eq("id", keyId);
+  return { keyId, orgId, environment, sandbox, admin };
 }
+
+/** Returns an error response when a live key may not be used, otherwise null. */
+async function checkLiveEntitlement(admin: AdminClient, orgId: string): Promise<Response | null> {
+  const { data: org } = await admin
+    .from("organizations")
+    .select("live_access")
+    .eq("id", orgId)
+    .maybeSingle();
+  const access = (org as any)?.live_access ?? "locked";
+  if (access === "suspended") {
+    return jsonResponse(
+      { error: "live_access_suspended", message: "Live access for this account is suspended. Contact eterfaceID." },
+      403,
+    );
+  }
+  if (access !== "approved") {
+    return jsonResponse(
+      {
+        error: "live_access_required",
+        message: "Live access has not been approved for this account yet. Complete Go live in the console.",
+      },
+      403,
+    );
+  }
+
+  const { data: contract } = await admin
+    .from("org_contracts")
+    .select("id")
+    .eq("org_id", orgId)
+    .eq("status", "accepted")
+    .limit(1)
+    .maybeSingle();
+  if (!contract) {
+    return jsonResponse(
+      { error: "contract_required", message: "The commercial agreement has not been signed for this account." },
+      403,
+    );
+  }
+
+  const { data: sub } = await admin
+    .from("org_subscriptions")
+    .select("status, included_volume_override, plans(included_volume)")
+    .eq("org_id", orgId)
+    .maybeSingle();
+  const status = (sub as any)?.status ?? "trial";
+  if (status === "suspended" || status === "cancelled") {
+    return jsonResponse(
+      { error: "account_inactive", message: `This account is ${status}. Contact eterfaceID to restore access.` },
+      402,
+    );
+  }
+
+  const included =
+    (sub as any)?.included_volume_override ?? (sub as any)?.plans?.included_volume ?? (status === "trial" ? 100 : 0);
+  if (included > 0) {
+    const period = new Date().toISOString().slice(0, 7);
+    const { data: usage } = await admin
+      .from("usage_counters")
+      .select("verifications, screenings, transactions")
+      .eq("org_id", orgId)
+      .eq("period", period)
+      .maybeSingle();
+    const used =
+      Number((usage as any)?.verifications ?? 0) +
+      Number((usage as any)?.screenings ?? 0) +
+      Number((usage as any)?.transactions ?? 0);
+    if (used >= included) {
+      return jsonResponse(
+        {
+          error: "quota_exceeded",
+          message: `This account has used its ${included} included checks for ${period}. Upgrade the plan to continue.`,
+        },
+        402,
+      );
+    }
+  }
+
+  return null;
+}
+
 
 
 /** Signs and delivers an event to every enabled webhook endpoint for the environment. */

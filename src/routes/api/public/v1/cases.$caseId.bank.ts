@@ -50,8 +50,19 @@ export const Route = createFileRoute("/api/public/v1/cases/$caseId/bank")({
         if (auth instanceof Response) return auth;
         const parsed = await readJson(request, schema);
         if (!parsed.ok) return parsed.response;
-        const record = await loadCase(auth, params.caseId, "id");
+        const record = await loadCase(auth, params.caseId, "id, subject_name");
         if (!record) return jsonResponse({ error: "not_found", message: "Unknown case" }, 404);
+
+        if (auth.sandbox) {
+          const { sandboxLinkToken, sandboxBankIdentity } = await import("@/lib/sandbox.server");
+          if (!parsed.data.public_token) {
+            return jsonResponse({ data: { ...sandboxLinkToken(), environment: "sandbox" } });
+          }
+          const identity = sandboxBankIdentity(String((record as any).subject_name ?? ""));
+          await apiAudit(auth, "bank.linked", "case", params.caseId, { sandbox: true });
+          return jsonResponse({ data: { sandbox: true, item_id: `sandbox-item-${params.caseId}`, identity } });
+        }
+
 
         if (!(await plaidEnabled(auth))) {
           return jsonResponse(

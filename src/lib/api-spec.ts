@@ -230,11 +230,27 @@ export const ERROR_CODES: { code: string; status: number; meaning: string }[] = 
   { code: "missing_api_key", status: 401, meaning: "No key was sent in the Authorization header." },
   { code: "invalid_api_key", status: 401, meaning: "The key does not exist." },
   { code: "revoked_api_key", status: 401, meaning: "The key was revoked in the console." },
+  { code: "live_access_required", status: 403, meaning: "Live access has not been approved for this account yet." },
+  { code: "live_access_suspended", status: 403, meaning: "Live access for this account is suspended." },
+  { code: "contract_required", status: 403, meaning: "The commercial agreement has not been signed." },
+  { code: "account_inactive", status: 402, meaning: "The account is suspended or cancelled." },
+  { code: "quota_exceeded", status: 402, meaning: "The month's included volume has been used up. Upgrade the plan." },
+  { code: "rate_limited", status: 429, meaning: "More than 120 calls in one minute on this key." },
   { code: "invalid_request", status: 422, meaning: "The body failed validation; the issues are listed." },
   { code: "not_found", status: 404, meaning: "No such record for your company." },
   { code: "integration_disabled", status: 409, meaning: "That add-on is switched off." },
   { code: "query_failed", status: 500, meaning: "Something went wrong on our side." },
 ];
+
+/** Sandbox keys (`eid_test_…`) never touch the real lists — these names drive the result. */
+export const SANDBOX_TEST_VALUES: { value: string; effect: string }[] = [
+  { value: "test-sanctioned", effect: "Screening returns a high-confidence sanctions match and a high risk score." },
+  { value: "test-pep", effect: "Screening returns a politically exposed person match and a medium risk score." },
+  { value: "test-review", effect: "Bank-confirmed identity comes back as a close, not exact, match." },
+  { value: "test-fail", effect: "Bank-confirmed identity comes back as different." },
+  { value: "any other name", effect: "Clean result, no matches." },
+];
+
 
 /** Builds the OpenAPI 3.1 document served at /api/public/v1/openapi.json. */
 export function buildOpenApi(serverUrl: string) {

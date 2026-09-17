@@ -28,6 +28,7 @@ import { Route as SolutionsFraudRiskRouteImport } from './routes/solutions.fraud
 import { Route as SolutionsPersonVerificationRouteImport } from './routes/solutions.person-verification'
 import { Route as VerifyTokenRouteImport } from './routes/verify.$token'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
+import { Route as AuthenticatedAdminApplicationsRouteImport } from './routes/_authenticated/admin.applications'
 import { Route as AuthenticatedAdminBillingRouteImport } from './routes/_authenticated/admin.billing'
 import { Route as AuthenticatedAdminEmailsRouteImport } from './routes/_authenticated/admin.emails'
 import { Route as AuthenticatedAdminIntegrationsRouteImport } from './routes/_authenticated/admin.integrations'
@@ -37,6 +38,7 @@ import { Route as AuthenticatedConsoleIndexRouteImport } from './routes/_authent
 import { Route as AuthenticatedConsoleAlertsRouteImport } from './routes/_authenticated/console.alerts'
 import { Route as AuthenticatedConsoleAuditRouteImport } from './routes/_authenticated/console.audit'
 import { Route as AuthenticatedConsoleComplianceRouteImport } from './routes/_authenticated/console.compliance'
+import { Route as AuthenticatedConsoleGoLiveRouteImport } from './routes/_authenticated/console.go-live'
 import { Route as AuthenticatedConsoleReportsRouteImport } from './routes/_authenticated/console.reports'
 import { Route as AuthenticatedConsoleSettingsRouteImport } from './routes/_authenticated/console.settings'
 import { Route as AuthenticatedConsoleTransactionsRouteImport } from './routes/_authenticated/console.transactions'
@@ -167,6 +169,12 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   path: '/admin/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAdminApplicationsRoute =
+  AuthenticatedAdminApplicationsRouteImport.update({
+    id: '/admin/applications',
+    path: '/admin/applications',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAdminBillingRoute =
   AuthenticatedAdminBillingRouteImport.update({
     id: '/admin/billing',
@@ -217,6 +225,12 @@ const AuthenticatedConsoleComplianceRoute =
   AuthenticatedConsoleComplianceRouteImport.update({
     id: '/console/compliance',
     path: '/console/compliance',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedConsoleGoLiveRoute =
+  AuthenticatedConsoleGoLiveRouteImport.update({
+    id: '/console/go-live',
+    path: '/console/go-live',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedConsoleReportsRoute =
@@ -425,6 +439,7 @@ export interface FileRoutesByFullPath {
   '/solutions/person-verification': typeof SolutionsPersonVerificationRoute
   '/verify/$token': typeof VerifyTokenRoute
   '/solutions/': typeof SolutionsIndexRoute
+  '/admin/applications': typeof AuthenticatedAdminApplicationsRoute
   '/admin/billing': typeof AuthenticatedAdminBillingRoute
   '/admin/emails': typeof AuthenticatedAdminEmailsRoute
   '/admin/integrations': typeof AuthenticatedAdminIntegrationsRoute
@@ -433,6 +448,7 @@ export interface FileRoutesByFullPath {
   '/console/alerts': typeof AuthenticatedConsoleAlertsRoute
   '/console/audit': typeof AuthenticatedConsoleAuditRoute
   '/console/compliance': typeof AuthenticatedConsoleComplianceRoute
+  '/console/go-live': typeof AuthenticatedConsoleGoLiveRoute
   '/console/reports': typeof AuthenticatedConsoleReportsRoute
   '/console/settings': typeof AuthenticatedConsoleSettingsRoute
   '/console/transactions': typeof AuthenticatedConsoleTransactionsRoute
@@ -487,6 +503,7 @@ export interface FileRoutesByTo {
   '/solutions/person-verification': typeof SolutionsPersonVerificationRoute
   '/verify/$token': typeof VerifyTokenRoute
   '/solutions': typeof SolutionsIndexRoute
+  '/admin/applications': typeof AuthenticatedAdminApplicationsRoute
   '/admin/billing': typeof AuthenticatedAdminBillingRoute
   '/admin/emails': typeof AuthenticatedAdminEmailsRoute
   '/admin/integrations': typeof AuthenticatedAdminIntegrationsRoute
@@ -495,6 +512,7 @@ export interface FileRoutesByTo {
   '/console/alerts': typeof AuthenticatedConsoleAlertsRoute
   '/console/audit': typeof AuthenticatedConsoleAuditRoute
   '/console/compliance': typeof AuthenticatedConsoleComplianceRoute
+  '/console/go-live': typeof AuthenticatedConsoleGoLiveRoute
   '/console/reports': typeof AuthenticatedConsoleReportsRoute
   '/console/settings': typeof AuthenticatedConsoleSettingsRoute
   '/console/transactions': typeof AuthenticatedConsoleTransactionsRoute
@@ -551,6 +569,7 @@ export interface FileRoutesById {
   '/solutions/person-verification': typeof SolutionsPersonVerificationRoute
   '/verify/$token': typeof VerifyTokenRoute
   '/solutions/': typeof SolutionsIndexRoute
+  '/_authenticated/admin/applications': typeof AuthenticatedAdminApplicationsRoute
   '/_authenticated/admin/billing': typeof AuthenticatedAdminBillingRoute
   '/_authenticated/admin/emails': typeof AuthenticatedAdminEmailsRoute
   '/_authenticated/admin/integrations': typeof AuthenticatedAdminIntegrationsRoute
@@ -559,6 +578,7 @@ export interface FileRoutesById {
   '/_authenticated/console/alerts': typeof AuthenticatedConsoleAlertsRoute
   '/_authenticated/console/audit': typeof AuthenticatedConsoleAuditRoute
   '/_authenticated/console/compliance': typeof AuthenticatedConsoleComplianceRoute
+  '/_authenticated/console/go-live': typeof AuthenticatedConsoleGoLiveRoute
   '/_authenticated/console/reports': typeof AuthenticatedConsoleReportsRoute
   '/_authenticated/console/settings': typeof AuthenticatedConsoleSettingsRoute
   '/_authenticated/console/transactions': typeof AuthenticatedConsoleTransactionsRoute
@@ -615,6 +635,7 @@ export interface FileRouteTypes {
     | '/solutions/person-verification'
     | '/verify/$token'
     | '/solutions/'
+    | '/admin/applications'
     | '/admin/billing'
     | '/admin/emails'
     | '/admin/integrations'
@@ -623,6 +644,7 @@ export interface FileRouteTypes {
     | '/console/alerts'
     | '/console/audit'
     | '/console/compliance'
+    | '/console/go-live'
     | '/console/reports'
     | '/console/settings'
     | '/console/transactions'
@@ -677,6 +699,7 @@ export interface FileRouteTypes {
     | '/solutions/person-verification'
     | '/verify/$token'
     | '/solutions'
+    | '/admin/applications'
     | '/admin/billing'
     | '/admin/emails'
     | '/admin/integrations'
@@ -685,6 +708,7 @@ export interface FileRouteTypes {
     | '/console/alerts'
     | '/console/audit'
     | '/console/compliance'
+    | '/console/go-live'
     | '/console/reports'
     | '/console/settings'
     | '/console/transactions'
@@ -740,6 +764,7 @@ export interface FileRouteTypes {
     | '/solutions/person-verification'
     | '/verify/$token'
     | '/solutions/'
+    | '/_authenticated/admin/applications'
     | '/_authenticated/admin/billing'
     | '/_authenticated/admin/emails'
     | '/_authenticated/admin/integrations'
@@ -748,6 +773,7 @@ export interface FileRouteTypes {
     | '/_authenticated/console/alerts'
     | '/_authenticated/console/audit'
     | '/_authenticated/console/compliance'
+    | '/_authenticated/console/go-live'
     | '/_authenticated/console/reports'
     | '/_authenticated/console/settings'
     | '/_authenticated/console/transactions'
@@ -952,6 +978,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/applications': {
+      id: '/_authenticated/admin/applications'
+      path: '/admin/applications'
+      fullPath: '/admin/applications'
+      preLoaderRoute: typeof AuthenticatedAdminApplicationsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin/billing': {
       id: '/_authenticated/admin/billing'
       path: '/admin/billing'
@@ -1013,6 +1046,13 @@ declare module '@tanstack/react-router' {
       path: '/console/compliance'
       fullPath: '/console/compliance'
       preLoaderRoute: typeof AuthenticatedConsoleComplianceRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/console/go-live': {
+      id: '/_authenticated/console/go-live'
+      path: '/console/go-live'
+      fullPath: '/console/go-live'
+      preLoaderRoute: typeof AuthenticatedConsoleGoLiveRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/console/reports': {
@@ -1251,6 +1291,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
+  AuthenticatedAdminApplicationsRoute: typeof AuthenticatedAdminApplicationsRoute
   AuthenticatedAdminBillingRoute: typeof AuthenticatedAdminBillingRoute
   AuthenticatedAdminEmailsRoute: typeof AuthenticatedAdminEmailsRoute
   AuthenticatedAdminIntegrationsRoute: typeof AuthenticatedAdminIntegrationsRoute
@@ -1259,6 +1300,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedConsoleAlertsRoute: typeof AuthenticatedConsoleAlertsRoute
   AuthenticatedConsoleAuditRoute: typeof AuthenticatedConsoleAuditRoute
   AuthenticatedConsoleComplianceRoute: typeof AuthenticatedConsoleComplianceRoute
+  AuthenticatedConsoleGoLiveRoute: typeof AuthenticatedConsoleGoLiveRoute
   AuthenticatedConsoleReportsRoute: typeof AuthenticatedConsoleReportsRoute
   AuthenticatedConsoleSettingsRoute: typeof AuthenticatedConsoleSettingsRoute
   AuthenticatedConsoleTransactionsRoute: typeof AuthenticatedConsoleTransactionsRoute
@@ -1272,6 +1314,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
+  AuthenticatedAdminApplicationsRoute: AuthenticatedAdminApplicationsRoute,
   AuthenticatedAdminBillingRoute: AuthenticatedAdminBillingRoute,
   AuthenticatedAdminEmailsRoute: AuthenticatedAdminEmailsRoute,
   AuthenticatedAdminIntegrationsRoute: AuthenticatedAdminIntegrationsRoute,
@@ -1280,6 +1323,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedConsoleAlertsRoute: AuthenticatedConsoleAlertsRoute,
   AuthenticatedConsoleAuditRoute: AuthenticatedConsoleAuditRoute,
   AuthenticatedConsoleComplianceRoute: AuthenticatedConsoleComplianceRoute,
+  AuthenticatedConsoleGoLiveRoute: AuthenticatedConsoleGoLiveRoute,
   AuthenticatedConsoleReportsRoute: AuthenticatedConsoleReportsRoute,
   AuthenticatedConsoleSettingsRoute: AuthenticatedConsoleSettingsRoute,
   AuthenticatedConsoleTransactionsRoute: AuthenticatedConsoleTransactionsRoute,

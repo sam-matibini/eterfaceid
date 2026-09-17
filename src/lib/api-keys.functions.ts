@@ -32,6 +32,31 @@ export const createApiKey = createServerFn({ method: "POST" })
     if (!membership) throw new Error("You are not part of a team yet");
     if (membership.role !== "admin") throw new Error("Only administrators can create API keys");
 
+    if (data.environment === "live") {
+      const { data: org } = await context.supabase
+        .from("organizations")
+        .select("live_access")
+        .eq("id", membership.org_id)
+        .maybeSingle();
+      const access = (org as { live_access?: string } | null)?.live_access ?? "locked";
+      if (access === "suspended") {
+        throw new Error("Live access for this account is suspended. Contact eterfaceID.");
+      }
+      if (access !== "approved") {
+        throw new Error("Live access is not approved yet. Complete Go live first, then we will review it.");
+      }
+      const { data: contract } = await context.supabase
+        .from("org_contracts")
+        .select("id")
+        .eq("org_id", membership.org_id)
+        .eq("status", "accepted")
+        .limit(1)
+        .maybeSingle();
+      if (!contract) throw new Error("The commercial agreement must be signed before live keys can be created.");
+    }
+
+
+
 
     const raw = Array.from(crypto.getRandomValues(new Uint8Array(24)))
       .map((b) => b.toString(16).padStart(2, "0"))
