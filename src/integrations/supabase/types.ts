@@ -61,6 +61,36 @@ export type Database = {
           },
         ]
       }
+      api_notepad: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          purpose: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          purpose?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          purpose?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       app_settings: {
         Row: {
           address_line1: string | null
