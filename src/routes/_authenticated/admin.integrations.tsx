@@ -49,8 +49,13 @@ function IntegrationsPage() {
   });
 
   const savingEntry = useMutation({
-    mutationFn: async (input: { id?: string; title: string; purpose: string; status: string; notes: string }) =>
-      saveEntry({ data: input }),
+    mutationFn: async (input: {
+      id?: string;
+      title: string;
+      purpose?: string;
+      status: string;
+      notes?: string;
+    }) => saveEntry({ data: input }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["api-notepad"] });
       setEditing(null);
