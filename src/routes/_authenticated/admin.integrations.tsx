@@ -144,6 +144,111 @@ function IntegrationsPage() {
           </p>
         </Panel>
       </div>
+
+      <div className="mt-8">
+        <Panel title="API wish list">
+          <p className="text-sm text-muted-foreground">
+            APIs you want to add to the platform. Record them here; connecting one needs its keys, which always go
+            into the secure store and are never shown.
+          </p>
+
+          <form
+            className="mt-4 grid gap-3 md:grid-cols-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!form.title.trim()) return;
+              savingEntry.mutate({
+                id: editing?.id,
+                title: form.title.trim(),
+                purpose: form.purpose.trim() || undefined,
+                status: form.status,
+                notes: form.notes.trim() || undefined,
+              });
+            }}
+          >
+            <input
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+              placeholder="API name (e.g. Interac verification)"
+              className={inputClass}
+            />
+            <select
+              value={form.status}
+              onChange={(e) => setForm({ ...form, status: e.target.value as ApiNotepadEntry["status"] })}
+              className={inputClass}
+            >
+              <option value="idea">Idea</option>
+              <option value="keys_needed">Waiting on keys</option>
+              <option value="connecting">Connecting</option>
+              <option value="live">Live</option>
+            </select>
+            <input
+              value={form.purpose}
+              onChange={(e) => setForm({ ...form, purpose: e.target.value })}
+              placeholder="What it is for"
+              className={`${inputClass} md:col-span-2`}
+            />
+            <textarea
+              value={form.notes}
+              onChange={(e) => setForm({ ...form, notes: e.target.value })}
+              placeholder="Notes — where the key comes from, monthly cost, anything else"
+              rows={2}
+              className={`${inputClass} md:col-span-2`}
+            />
+            <div className="flex items-center gap-2 md:col-span-2">
+              <button type="submit" className={buttonClass} disabled={savingEntry.isPending}>
+                {editing ? "Save changes" : "Add to wish list"}
+              </button>
+              {editing ? (
+                <button
+                  type="button"
+                  className={ghostButtonClass}
+                  onClick={() => {
+                    setEditing(null);
+                    setForm({ title: "", purpose: "", status: "idea", notes: "" });
+                  }}
+                >
+                  Cancel
+                </button>
+              ) : null}
+            </div>
+          </form>
+          {savingEntry.isError ? (
+            <p className="mt-2 text-sm text-[var(--signal)]">{(savingEntry.error as Error).message}</p>
+          ) : null}
+
+          <div className="mt-6 space-y-4 text-sm">
+            {(notepad.data ?? []).length === 0 ? (
+              <p className="text-muted-foreground">Nothing recorded yet.</p>
+            ) : null}
+            {(notepad.data ?? []).map((entry: ApiNotepadEntry) => (
+              <div key={entry.id} className="border-b border-[var(--rule)]/60 pb-4 last:border-0">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <div className="font-medium">{entry.title}</div>
+                    {entry.purpose ? <div className="text-xs text-muted-foreground">{entry.purpose}</div> : null}
+                    {entry.notes ? <div className="mt-1 text-xs text-muted-foreground">{entry.notes}</div> : null}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <StatusPill tone={entry.status === "live" ? "approved" : "pending"}>{entry.status}</StatusPill>
+                    <button type="button" className={ghostButtonClass} onClick={() => startEdit(entry)}>
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      className={ghostButtonClass}
+                      onClick={() => deletingEntry.mutate(entry.id)}
+                      disabled={deletingEntry.isPending}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Panel>
+      </div>
     </AdminShell>
   );
 }
