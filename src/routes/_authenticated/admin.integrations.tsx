@@ -163,11 +163,11 @@ function IntegrationsPage() {
               e.preventDefault();
               if (!form.title.trim()) return;
               savingEntry.mutate({
-                ...(editing?.id ? { id: editing.id } : {}),
+                id: editing?.id,
                 title: form.title.trim(),
-                purpose: form.purpose.trim() || undefined,
+                purpose: form.purpose.trim() || null,
                 status: form.status,
-                notes: form.notes.trim() || undefined,
+                notes: form.notes.trim() || null,
               });
             }}
           >
