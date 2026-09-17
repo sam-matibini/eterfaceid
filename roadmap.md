@@ -43,3 +43,15 @@
 - Safe retries with an Idempotency-Key header, paging on every list, browser-callable (CORS), usage counted per company.
 - Signed webhooks: case.created, case.decision, verification.completed, screening.hit, transaction.flagged, report.filed.
 - Full reference on the public Developers page plus a machine-readable file at /api/public/v1/openapi.json for Postman or client generation.
+
+## Sandbox and live API access (done)
+- Sandbox keys (`eid_test_…`) work immediately, are unlimited, free, and never touch the real
+  sanctions lists or a real bank connection — results are simulated from the subject name.
+- Live keys (`eid_live_…`) can only be created once the company has completed Go live: business
+  details and beneficial owners verified by our own engine, the commercial agreement signed, and an
+  eterfaceID reviewer's approval.
+- Every API call is checked before any work: unapproved or suspended live access, missing agreement,
+  inactive account, used-up monthly allowance, and more than 120 calls a minute are all refused with
+  a clear error code.
+- Console: Go live page. App admin: Live access queue with Approve / Decline / Suspend / Restore and
+  the option to record a signed copy of the agreement.
