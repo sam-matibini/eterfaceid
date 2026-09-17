@@ -10,7 +10,9 @@ export { usePlatformStaff };
 
 const navItems = [
   { to: "/admin", label: "Overview", exact: true },
+  { to: "/admin/applications", label: "Live access", exact: false },
   { to: "/admin/plans", label: "Plans & pricing", exact: false },
+
   { to: "/admin/billing", label: "Billing", exact: false },
   { to: "/admin/owner", label: "Company details", exact: false },
   { to: "/admin/integrations", label: "Integrations", exact: false },
