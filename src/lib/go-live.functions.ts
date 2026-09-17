@@ -81,14 +81,14 @@ async function verifyApplicant(admin: any, input: z.infer<typeof applicationInpu
     detail: input.registration_number ?? "missing",
   });
 
-  const address = validateAddress({
+  const addressChecks = validateAddress({
     line1: input.address_line1 ?? "",
     city: input.city ?? "",
     region: input.region ?? "",
     postalCode: input.postal_code ?? "",
     country: input.country ?? "",
   });
-  for (const c of address.checks) checks.push(c);
+  for (const c of addressChecks) checks.push(c);
 
   checks.push({
     name: "Contact email",
@@ -153,7 +153,7 @@ async function verifyApplicant(admin: any, input: z.infer<typeof applicationInpu
 
   const ownerWithFlags = owners.map((o) => ({
     ...o,
-    screening_status: sanctionedNames.includes(o.name) ? "sanctioned" : "clear",
+    screening_status: sanctionedNames.includes(o.name) ? "hit" : "clear",
   }));
   const rule = fiftyPercentRule(ownerWithFlags, computed);
   if (rule.blocked) {
