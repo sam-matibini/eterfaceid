@@ -47,6 +47,7 @@ import { Route as ApiPublicHooksPlaidSyncRouteImport } from './routes/api/public
 import { Route as ApiPublicHooksRefreshWatchlistsRouteImport } from './routes/api/public/hooks/refresh-watchlists'
 import { Route as ApiPublicHooksRescreenRouteImport } from './routes/api/public/hooks/rescreen'
 import { Route as ApiPublicV1CasesRouteImport } from './routes/api/public/v1/cases'
+import { Route as ApiPublicV1PingRouteImport } from './routes/api/public/v1/ping'
 import { Route as ApiPublicV1ScreeningRouteImport } from './routes/api/public/v1/screening'
 import { Route as ApiPublicV1TransactionsRouteImport } from './routes/api/public/v1/transactions'
 import { Route as ApiPublicV1CasesCaseIdRouteImport } from './routes/api/public/v1/cases.$caseId'
@@ -257,6 +258,11 @@ const ApiPublicV1CasesRoute = ApiPublicV1CasesRouteImport.update({
   path: '/api/public/v1/cases',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicV1PingRoute = ApiPublicV1PingRouteImport.update({
+  id: '/api/public/v1/ping',
+  path: '/api/public/v1/ping',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicV1ScreeningRoute = ApiPublicV1ScreeningRouteImport.update({
   id: '/api/public/v1/screening',
   path: '/api/public/v1/screening',
@@ -311,6 +317,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/refresh-watchlists': typeof ApiPublicHooksRefreshWatchlistsRoute
   '/api/public/hooks/rescreen': typeof ApiPublicHooksRescreenRoute
   '/api/public/v1/cases': typeof ApiPublicV1CasesRouteWithChildren
+  '/api/public/v1/ping': typeof ApiPublicV1PingRoute
   '/api/public/v1/screening': typeof ApiPublicV1ScreeningRoute
   '/api/public/v1/transactions': typeof ApiPublicV1TransactionsRoute
   '/api/public/v1/cases/$caseId': typeof ApiPublicV1CasesCaseIdRoute
@@ -353,6 +360,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/refresh-watchlists': typeof ApiPublicHooksRefreshWatchlistsRoute
   '/api/public/hooks/rescreen': typeof ApiPublicHooksRescreenRoute
   '/api/public/v1/cases': typeof ApiPublicV1CasesRouteWithChildren
+  '/api/public/v1/ping': typeof ApiPublicV1PingRoute
   '/api/public/v1/screening': typeof ApiPublicV1ScreeningRoute
   '/api/public/v1/transactions': typeof ApiPublicV1TransactionsRoute
   '/api/public/v1/cases/$caseId': typeof ApiPublicV1CasesCaseIdRoute
@@ -397,6 +405,7 @@ export interface FileRoutesById {
   '/api/public/hooks/refresh-watchlists': typeof ApiPublicHooksRefreshWatchlistsRoute
   '/api/public/hooks/rescreen': typeof ApiPublicHooksRescreenRoute
   '/api/public/v1/cases': typeof ApiPublicV1CasesRouteWithChildren
+  '/api/public/v1/ping': typeof ApiPublicV1PingRoute
   '/api/public/v1/screening': typeof ApiPublicV1ScreeningRoute
   '/api/public/v1/transactions': typeof ApiPublicV1TransactionsRoute
   '/api/public/v1/cases/$caseId': typeof ApiPublicV1CasesCaseIdRoute
@@ -441,6 +450,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/refresh-watchlists'
     | '/api/public/hooks/rescreen'
     | '/api/public/v1/cases'
+    | '/api/public/v1/ping'
     | '/api/public/v1/screening'
     | '/api/public/v1/transactions'
     | '/api/public/v1/cases/$caseId'
@@ -483,6 +493,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/refresh-watchlists'
     | '/api/public/hooks/rescreen'
     | '/api/public/v1/cases'
+    | '/api/public/v1/ping'
     | '/api/public/v1/screening'
     | '/api/public/v1/transactions'
     | '/api/public/v1/cases/$caseId'
@@ -526,6 +537,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/refresh-watchlists'
     | '/api/public/hooks/rescreen'
     | '/api/public/v1/cases'
+    | '/api/public/v1/ping'
     | '/api/public/v1/screening'
     | '/api/public/v1/transactions'
     | '/api/public/v1/cases/$caseId'
@@ -552,6 +564,7 @@ export interface RootRouteChildren {
   ApiPublicHooksRefreshWatchlistsRoute: typeof ApiPublicHooksRefreshWatchlistsRoute
   ApiPublicHooksRescreenRoute: typeof ApiPublicHooksRescreenRoute
   ApiPublicV1CasesRoute: typeof ApiPublicV1CasesRouteWithChildren
+  ApiPublicV1PingRoute: typeof ApiPublicV1PingRoute
   ApiPublicV1ScreeningRoute: typeof ApiPublicV1ScreeningRoute
   ApiPublicV1TransactionsRoute: typeof ApiPublicV1TransactionsRoute
 }
@@ -824,6 +837,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicV1CasesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/v1/ping': {
+      id: '/api/public/v1/ping'
+      path: '/api/public/v1/ping'
+      fullPath: '/api/public/v1/ping'
+      preLoaderRoute: typeof ApiPublicV1PingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/v1/screening': {
       id: '/api/public/v1/screening'
       path: '/api/public/v1/screening'
@@ -926,6 +946,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksRefreshWatchlistsRoute: ApiPublicHooksRefreshWatchlistsRoute,
   ApiPublicHooksRescreenRoute: ApiPublicHooksRescreenRoute,
   ApiPublicV1CasesRoute: ApiPublicV1CasesRouteWithChildren,
+  ApiPublicV1PingRoute: ApiPublicV1PingRoute,
   ApiPublicV1ScreeningRoute: ApiPublicV1ScreeningRoute,
   ApiPublicV1TransactionsRoute: ApiPublicV1TransactionsRoute,
 }
