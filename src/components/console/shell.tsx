@@ -14,7 +14,9 @@ const navItems = [
   { to: "/console/reports", label: "Reports", exact: false },
   { to: "/console/compliance", label: "Coverage", exact: false },
   { to: "/console/audit", label: "Audit trail", exact: false },
+  { to: "/console/go-live", label: "Go live", exact: false },
   { to: "/console/settings", label: "Settings", exact: false },
+
 ] as const;
 
 
@@ -125,13 +127,16 @@ export function Panel({
   title,
   action,
   children,
+  className,
 }: {
   title: string;
   action?: ReactNode;
   children: ReactNode;
+  className?: string;
 }) {
   return (
-    <section className="border border-[var(--rule)] bg-background">
+    <section className={`border border-[var(--rule)] bg-background${className ? ` ${className}` : ""}`}>
+
       <div className="flex items-center justify-between gap-4 border-b border-[var(--rule)] px-5 py-3">
         <h2 className="font-display text-sm font-semibold uppercase tracking-widest text-muted-foreground">
           {title}
