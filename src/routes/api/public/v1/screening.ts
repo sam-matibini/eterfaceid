@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 
-import { authenticateApiRequest, dispatchWebhook, jsonResponse } from "@/lib/api-gateway.server";
+import { authenticateApiRequest, corsPreflight, dispatchWebhook, jsonResponse } from "@/lib/api-gateway.server";
 import { normalizeName, scoreMatch, ENGINE_VERSION } from "@/lib/name-match";
 
 const schema = z.object({
@@ -16,6 +16,7 @@ const schema = z.object({
 export const Route = createFileRoute("/api/public/v1/screening")({
   server: {
     handlers: {
+      OPTIONS: async () => corsPreflight(),
       POST: async ({ request }) => {
         const auth = await authenticateApiRequest(request);
         if (auth instanceof Response) return auth;
