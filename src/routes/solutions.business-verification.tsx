@@ -6,6 +6,7 @@ import {
   PageHero,
   Section,
 } from "@/components/site/primitives";
+import verifyBusinessImage from "@/assets/verify-business-workflow.jpg";
 
 export const Route = createFileRoute("/solutions/business-verification")({
   head: () => ({
@@ -37,20 +38,37 @@ function BusinessVerification() {
       />
 
       <Section title="Entity checks">
-        <CheckList
-          items={[
-            "Federal and provincial registry confirmation",
-            "Legal name, operating names and registration number",
-            "Incorporation date and jurisdiction",
-            "Operating status, dissolution and strike-off flags",
-            "Registered and operating addresses",
-            "Business type and industry classification",
-            "Tax and business numbers where available",
-            "Filing history and annual return currency",
-            "International registry coverage",
-            "Document upload fallback for unregistered entities",
-          ]}
-        />
+        <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
+          <figure className="overflow-hidden border border-rule bg-paper">
+            <div className="aspect-[3/2] overflow-hidden">
+              <img
+                src={verifyBusinessImage}
+                alt="Business professionals reviewing registration and ownership information"
+                width={1536}
+                height={1024}
+                loading="lazy"
+                className="size-full object-cover"
+              />
+            </div>
+            <figcaption className="border-t border-rule px-5 py-4 text-[0.82rem] leading-relaxed text-ink-soft">
+              Confirm the company, its standing and the people behind it from one review record.
+            </figcaption>
+          </figure>
+          <CheckList
+            items={[
+              "Federal and provincial registry confirmation",
+              "Legal name, operating names and registration number",
+              "Incorporation date and jurisdiction",
+              "Operating status, dissolution and strike-off flags",
+              "Registered and operating addresses",
+              "Business type and industry classification",
+              "Tax and business numbers where available",
+              "Filing history and annual return currency",
+              "International registry coverage",
+              "Document upload fallback for unregistered entities",
+            ]}
+          />
+        </div>
       </Section>
 
       <Section title="Ownership and control" className="bg-paper">

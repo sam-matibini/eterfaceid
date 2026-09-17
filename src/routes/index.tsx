@@ -6,6 +6,9 @@ import screeningFilm from "@/assets/screening-workflow.mp4.asset.json";
 import screeningPoster from "@/assets/screening-workflow-poster.png.asset.json";
 import transactionFilm from "@/assets/transaction-monitoring.mp4.asset.json";
 import transactionPoster from "@/assets/transaction-monitoring-poster.png.asset.json";
+import verifyPeopleImage from "@/assets/verify-people-workflow.jpg";
+import verifyBusinessImage from "@/assets/verify-business-workflow.jpg";
+import continuousScreeningImage from "@/assets/continuous-screening-workflow.jpg";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -33,18 +36,24 @@ const pillars = [
     title: "Know the person on the other side",
     body: "Government ID and passport capture, name, date of birth and address checks, phone and email validation, selfie with liveness, and face-to-ID matching — run as one request or composed step by step.",
     to: "/solutions/person-verification",
+    image: verifyPeopleImage,
+    alt: "Customer completing identity verification with a passport and smartphone",
   },
   {
     kicker: "Verify businesses",
     title: "Know the entity and who controls it",
     body: "Registry lookups across federal and provincial sources, operating status, directors and officers, and beneficial ownership traced through to the natural persons behind the structure.",
     to: "/solutions/business-verification",
+    image: verifyBusinessImage,
+    alt: "Business professionals reviewing company registration and ownership information",
   },
   {
     kicker: "Screen continuously",
     title: "Catch the list hit before your regulator does",
     body: "Sanctions, PEP and RCA, government and law-enforcement watchlists, and adverse media — screened at onboarding and rescreened for as long as the relationship lasts.",
     to: "/solutions/aml-screening",
+    image: continuousScreeningImage,
+    alt: "Compliance analyst reviewing continuous screening and monitoring results",
   },
 ];
 
@@ -111,16 +120,28 @@ function Home() {
             <Link
               key={p.kicker}
               to={p.to}
-              className="group bg-background p-8 transition-colors hover:bg-paper"
+              className="group flex min-w-0 flex-col bg-background transition-colors hover:bg-paper"
             >
-              <p className="text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-signal">
-                {p.kicker}
-              </p>
-              <h2 className="mt-4 text-[1.2rem] font-semibold leading-snug text-ink">{p.title}</h2>
-              <p className="mt-3 text-[0.9rem] leading-[1.7] text-ink-soft">{p.body}</p>
-              <span className="mt-5 inline-block text-[0.82rem] font-medium text-ink group-hover:text-signal">
-                Explore &rarr;
-              </span>
+              <div className="aspect-[3/2] overflow-hidden">
+                <img
+                  src={p.image}
+                  alt={p.alt}
+                  width={1536}
+                  height={1024}
+                  loading="lazy"
+                  className="size-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.025]"
+                />
+              </div>
+              <div className="flex flex-1 flex-col p-7">
+                <p className="text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-signal">
+                  {p.kicker}
+                </p>
+                <h2 className="mt-4 text-[1.2rem] font-semibold leading-snug text-ink">{p.title}</h2>
+                <p className="mt-3 text-[0.9rem] leading-[1.7] text-ink-soft">{p.body}</p>
+                <span className="mt-auto pt-5 text-[0.82rem] font-medium text-ink group-hover:text-signal">
+                  Explore &rarr;
+                </span>
+              </div>
             </Link>
           ))}
         </div>
