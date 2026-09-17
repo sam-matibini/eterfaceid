@@ -263,6 +263,45 @@ export const setIntegrationEnabled = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+const notepadInput = z.object({
+  id: z.string().uuid().optional(),
+  title: z.string().trim().min(2).max(120),
+  purpose: z.string().trim().max(500).nullish(),
+  status: z.enum(["idea", "keys_needed", "connecting", "live"]),
+  notes: z.string().trim().max(2000).nullish(),
+});
+
+export const saveApiNotepadEntry = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => notepadInput.parse(input))
+  .handler(async ({ data, context }) => {
+    await requireStaff(context.supabase, context.userId);
+    const { id, ...fields } = data;
+    const payload = Object.fromEntries(Object.entries(fields).filter(([, v]) => v !== undefined));
+    if (id) {
+      const { error } = await context.supabase.from("api_notepad").update(payload as never).eq("id", id);
+      if (error) throw new Error(error.message);
+      return { id };
+    }
+    const { data: row, error } = await context.supabase
+      .from("api_notepad")
+      .insert(payload as never)
+      .select("id")
+      .single();
+    if (error) throw new Error(error.message);
+    return { id: row.id as string };
+  });
+
+export const deleteApiNotepadEntry = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    await requireStaff(context.supabase, context.userId);
+    const { error } = await context.supabase.from("api_notepad").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 export const sendTestEmail = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ to: z.string().trim().email().max(200) }).parse(input))
