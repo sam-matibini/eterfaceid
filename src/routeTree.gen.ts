@@ -49,6 +49,7 @@ import { Route as ApiPublicHooksRefreshWatchlistsRouteImport } from './routes/ap
 import { Route as ApiPublicHooksRescreenRouteImport } from './routes/api/public/hooks/rescreen'
 import { Route as ApiPublicV1AlertsRouteImport } from './routes/api/public/v1/alerts'
 import { Route as ApiPublicV1CasesRouteImport } from './routes/api/public/v1/cases'
+import { Route as ApiPublicV1OpenapiDotjsonRouteImport } from './routes/api/public/v1/openapi[.]json'
 import { Route as ApiPublicV1PingRouteImport } from './routes/api/public/v1/ping'
 import { Route as ApiPublicV1ReportsRouteImport } from './routes/api/public/v1/reports'
 import { Route as ApiPublicV1ScreeningRouteImport } from './routes/api/public/v1/screening'
@@ -286,6 +287,12 @@ const ApiPublicV1CasesRoute = ApiPublicV1CasesRouteImport.update({
   path: '/api/public/v1/cases',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicV1OpenapiDotjsonRoute =
+  ApiPublicV1OpenapiDotjsonRouteImport.update({
+    id: '/api/public/v1/openapi.json',
+    path: '/api/public/v1/openapi.json',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicV1PingRoute = ApiPublicV1PingRouteImport.update({
   id: '/api/public/v1/ping',
   path: '/api/public/v1/ping',
@@ -440,6 +447,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/rescreen': typeof ApiPublicHooksRescreenRoute
   '/api/public/v1/alerts': typeof ApiPublicV1AlertsRouteWithChildren
   '/api/public/v1/cases': typeof ApiPublicV1CasesRouteWithChildren
+  '/api/public/v1/openapi.json': typeof ApiPublicV1OpenapiDotjsonRoute
   '/api/public/v1/ping': typeof ApiPublicV1PingRoute
   '/api/public/v1/reports': typeof ApiPublicV1ReportsRouteWithChildren
   '/api/public/v1/screening': typeof ApiPublicV1ScreeningRoute
@@ -501,6 +509,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/rescreen': typeof ApiPublicHooksRescreenRoute
   '/api/public/v1/alerts': typeof ApiPublicV1AlertsRouteWithChildren
   '/api/public/v1/cases': typeof ApiPublicV1CasesRouteWithChildren
+  '/api/public/v1/openapi.json': typeof ApiPublicV1OpenapiDotjsonRoute
   '/api/public/v1/ping': typeof ApiPublicV1PingRoute
   '/api/public/v1/reports': typeof ApiPublicV1ReportsRouteWithChildren
   '/api/public/v1/screening': typeof ApiPublicV1ScreeningRoute
@@ -564,6 +573,7 @@ export interface FileRoutesById {
   '/api/public/hooks/rescreen': typeof ApiPublicHooksRescreenRoute
   '/api/public/v1/alerts': typeof ApiPublicV1AlertsRouteWithChildren
   '/api/public/v1/cases': typeof ApiPublicV1CasesRouteWithChildren
+  '/api/public/v1/openapi.json': typeof ApiPublicV1OpenapiDotjsonRoute
   '/api/public/v1/ping': typeof ApiPublicV1PingRoute
   '/api/public/v1/reports': typeof ApiPublicV1ReportsRouteWithChildren
   '/api/public/v1/screening': typeof ApiPublicV1ScreeningRoute
@@ -627,6 +637,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/rescreen'
     | '/api/public/v1/alerts'
     | '/api/public/v1/cases'
+    | '/api/public/v1/openapi.json'
     | '/api/public/v1/ping'
     | '/api/public/v1/reports'
     | '/api/public/v1/screening'
@@ -688,6 +699,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/rescreen'
     | '/api/public/v1/alerts'
     | '/api/public/v1/cases'
+    | '/api/public/v1/openapi.json'
     | '/api/public/v1/ping'
     | '/api/public/v1/reports'
     | '/api/public/v1/screening'
@@ -750,6 +762,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/rescreen'
     | '/api/public/v1/alerts'
     | '/api/public/v1/cases'
+    | '/api/public/v1/openapi.json'
     | '/api/public/v1/ping'
     | '/api/public/v1/reports'
     | '/api/public/v1/screening'
@@ -795,6 +808,7 @@ export interface RootRouteChildren {
   ApiPublicHooksRescreenRoute: typeof ApiPublicHooksRescreenRoute
   ApiPublicV1AlertsRoute: typeof ApiPublicV1AlertsRouteWithChildren
   ApiPublicV1CasesRoute: typeof ApiPublicV1CasesRouteWithChildren
+  ApiPublicV1OpenapiDotjsonRoute: typeof ApiPublicV1OpenapiDotjsonRoute
   ApiPublicV1PingRoute: typeof ApiPublicV1PingRoute
   ApiPublicV1ReportsRoute: typeof ApiPublicV1ReportsRouteWithChildren
   ApiPublicV1ScreeningRoute: typeof ApiPublicV1ScreeningRoute
@@ -1085,6 +1099,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicV1CasesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/v1/openapi.json': {
+      id: '/api/public/v1/openapi.json'
+      path: '/api/public/v1/openapi.json'
+      fullPath: '/api/public/v1/openapi.json'
+      preLoaderRoute: typeof ApiPublicV1OpenapiDotjsonRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/v1/ping': {
       id: '/api/public/v1/ping'
       path: '/api/public/v1/ping'
@@ -1365,6 +1386,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksRescreenRoute: ApiPublicHooksRescreenRoute,
   ApiPublicV1AlertsRoute: ApiPublicV1AlertsRouteWithChildren,
   ApiPublicV1CasesRoute: ApiPublicV1CasesRouteWithChildren,
+  ApiPublicV1OpenapiDotjsonRoute: ApiPublicV1OpenapiDotjsonRoute,
   ApiPublicV1PingRoute: ApiPublicV1PingRoute,
   ApiPublicV1ReportsRoute: ApiPublicV1ReportsRouteWithChildren,
   ApiPublicV1ScreeningRoute: ApiPublicV1ScreeningRoute,
