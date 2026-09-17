@@ -52,9 +52,9 @@ function IntegrationsPage() {
     mutationFn: async (input: {
       id?: string;
       title: string;
-      purpose?: string;
+      purpose: string | null;
       status: string;
-      notes?: string;
+      notes: string | null;
     }) => saveEntry({ data: input }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["api-notepad"] });
