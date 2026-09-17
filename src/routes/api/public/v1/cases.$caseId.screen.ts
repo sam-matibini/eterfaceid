@@ -28,6 +28,32 @@ export const Route = createFileRoute("/api/public/v1/cases/$caseId/screen")({
         const record = await loadCase(auth, params.caseId, "id, subject_name, reference");
         if (!record) return jsonResponse({ error: "not_found", message: "Unknown case" }, 404);
 
+        if (auth.sandbox) {
+          const { sandboxScreening } = await import("@/lib/sandbox.server");
+          const sim = sandboxScreening(String((record as any).subject_name ?? ""));
+          const outcome = {
+            run_id: sim.runId,
+            candidates: sim.candidates,
+            hits: sim.hits.length,
+            new_hits: sim.hits.length,
+            risk_score: sim.riskScore,
+            risk_level: sim.riskLevel,
+            engine_version: "eid-match-1",
+            sandbox: true,
+            results: sim.hits,
+          };
+          await apiAudit(auth, "screening.run", "case", params.caseId, { sandbox: true });
+          if (sim.hits.length > 0) {
+            await dispatchWebhook(auth.admin, auth.orgId, auth.environment, "screening.hit", {
+              case_id: params.caseId,
+              ...outcome,
+            });
+          }
+          return jsonResponse({ data: outcome });
+        }
+
+
+
         try {
           const outcome = await screenCaseWithAdmin(auth.admin, {
             caseId: params.caseId,
