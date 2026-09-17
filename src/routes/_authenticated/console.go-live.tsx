@@ -47,7 +47,7 @@ function GoLivePage() {
   const submit = useServerFn(submitLiveApplication);
   const accept = useServerFn(acceptContract);
 
-  const orgId = organization?.id ?? null;
+  const orgId = organization?.orgId ?? null;
 
   const status = useQuery({
     queryKey: ["go-live", orgId],
