@@ -28,6 +28,7 @@ import { Route as SolutionsFraudRiskRouteImport } from './routes/solutions.fraud
 import { Route as SolutionsPersonVerificationRouteImport } from './routes/solutions.person-verification'
 import { Route as VerifyTokenRouteImport } from './routes/verify.$token'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
+import { Route as AuthenticatedAdminApplicationsRouteImport } from './routes/_authenticated/admin.applications'
 import { Route as AuthenticatedAdminBillingRouteImport } from './routes/_authenticated/admin.billing'
 import { Route as AuthenticatedAdminEmailsRouteImport } from './routes/_authenticated/admin.emails'
 import { Route as AuthenticatedAdminIntegrationsRouteImport } from './routes/_authenticated/admin.integrations'
@@ -168,6 +169,12 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   path: '/admin/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAdminApplicationsRoute =
+  AuthenticatedAdminApplicationsRouteImport.update({
+    id: '/admin/applications',
+    path: '/admin/applications',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAdminBillingRoute =
   AuthenticatedAdminBillingRouteImport.update({
     id: '/admin/billing',
@@ -432,6 +439,7 @@ export interface FileRoutesByFullPath {
   '/solutions/person-verification': typeof SolutionsPersonVerificationRoute
   '/verify/$token': typeof VerifyTokenRoute
   '/solutions/': typeof SolutionsIndexRoute
+  '/admin/applications': typeof AuthenticatedAdminApplicationsRoute
   '/admin/billing': typeof AuthenticatedAdminBillingRoute
   '/admin/emails': typeof AuthenticatedAdminEmailsRoute
   '/admin/integrations': typeof AuthenticatedAdminIntegrationsRoute
@@ -495,6 +503,7 @@ export interface FileRoutesByTo {
   '/solutions/person-verification': typeof SolutionsPersonVerificationRoute
   '/verify/$token': typeof VerifyTokenRoute
   '/solutions': typeof SolutionsIndexRoute
+  '/admin/applications': typeof AuthenticatedAdminApplicationsRoute
   '/admin/billing': typeof AuthenticatedAdminBillingRoute
   '/admin/emails': typeof AuthenticatedAdminEmailsRoute
   '/admin/integrations': typeof AuthenticatedAdminIntegrationsRoute
@@ -560,6 +569,7 @@ export interface FileRoutesById {
   '/solutions/person-verification': typeof SolutionsPersonVerificationRoute
   '/verify/$token': typeof VerifyTokenRoute
   '/solutions/': typeof SolutionsIndexRoute
+  '/_authenticated/admin/applications': typeof AuthenticatedAdminApplicationsRoute
   '/_authenticated/admin/billing': typeof AuthenticatedAdminBillingRoute
   '/_authenticated/admin/emails': typeof AuthenticatedAdminEmailsRoute
   '/_authenticated/admin/integrations': typeof AuthenticatedAdminIntegrationsRoute
@@ -625,6 +635,7 @@ export interface FileRouteTypes {
     | '/solutions/person-verification'
     | '/verify/$token'
     | '/solutions/'
+    | '/admin/applications'
     | '/admin/billing'
     | '/admin/emails'
     | '/admin/integrations'
@@ -688,6 +699,7 @@ export interface FileRouteTypes {
     | '/solutions/person-verification'
     | '/verify/$token'
     | '/solutions'
+    | '/admin/applications'
     | '/admin/billing'
     | '/admin/emails'
     | '/admin/integrations'
@@ -752,6 +764,7 @@ export interface FileRouteTypes {
     | '/solutions/person-verification'
     | '/verify/$token'
     | '/solutions/'
+    | '/_authenticated/admin/applications'
     | '/_authenticated/admin/billing'
     | '/_authenticated/admin/emails'
     | '/_authenticated/admin/integrations'
@@ -963,6 +976,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin/'
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/applications': {
+      id: '/_authenticated/admin/applications'
+      path: '/admin/applications'
+      fullPath: '/admin/applications'
+      preLoaderRoute: typeof AuthenticatedAdminApplicationsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/admin/billing': {
@@ -1271,6 +1291,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
+  AuthenticatedAdminApplicationsRoute: typeof AuthenticatedAdminApplicationsRoute
   AuthenticatedAdminBillingRoute: typeof AuthenticatedAdminBillingRoute
   AuthenticatedAdminEmailsRoute: typeof AuthenticatedAdminEmailsRoute
   AuthenticatedAdminIntegrationsRoute: typeof AuthenticatedAdminIntegrationsRoute
@@ -1293,6 +1314,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
+  AuthenticatedAdminApplicationsRoute: AuthenticatedAdminApplicationsRoute,
   AuthenticatedAdminBillingRoute: AuthenticatedAdminBillingRoute,
   AuthenticatedAdminEmailsRoute: AuthenticatedAdminEmailsRoute,
   AuthenticatedAdminIntegrationsRoute: AuthenticatedAdminIntegrationsRoute,
