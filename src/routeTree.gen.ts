@@ -46,12 +46,16 @@ import { Route as AuthenticatedConsoleCasesCaseIdRouteImport } from './routes/_a
 import { Route as ApiPublicHooksPlaidSyncRouteImport } from './routes/api/public/hooks/plaid-sync'
 import { Route as ApiPublicHooksRefreshWatchlistsRouteImport } from './routes/api/public/hooks/refresh-watchlists'
 import { Route as ApiPublicHooksRescreenRouteImport } from './routes/api/public/hooks/rescreen'
+import { Route as ApiPublicV1AlertsRouteImport } from './routes/api/public/v1/alerts'
 import { Route as ApiPublicV1CasesRouteImport } from './routes/api/public/v1/cases'
 import { Route as ApiPublicV1PingRouteImport } from './routes/api/public/v1/ping'
+import { Route as ApiPublicV1ReportsRouteImport } from './routes/api/public/v1/reports'
 import { Route as ApiPublicV1ScreeningRouteImport } from './routes/api/public/v1/screening'
 import { Route as ApiPublicV1TransactionsRouteImport } from './routes/api/public/v1/transactions'
+import { Route as ApiPublicV1AlertsAlertIdRouteImport } from './routes/api/public/v1/alerts.$alertId'
 import { Route as ApiPublicV1CasesCaseIdRouteImport } from './routes/api/public/v1/cases.$caseId'
 import { Route as ApiPublicV1HitsHitIdRouteImport } from './routes/api/public/v1/hits.$hitId'
+import { Route as ApiPublicV1ReportsReportIdRouteImport } from './routes/api/public/v1/reports.$reportId'
 import { Route as ApiPublicV1CasesCaseIdAddressesRouteImport } from './routes/api/public/v1/cases.$caseId.addresses'
 import { Route as ApiPublicV1CasesCaseIdDecisionRouteImport } from './routes/api/public/v1/cases.$caseId.decision'
 import { Route as ApiPublicV1CasesCaseIdDocumentsRouteImport } from './routes/api/public/v1/cases.$caseId.documents'
@@ -264,6 +268,11 @@ const ApiPublicHooksRescreenRoute = ApiPublicHooksRescreenRouteImport.update({
   path: '/api/public/hooks/rescreen',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicV1AlertsRoute = ApiPublicV1AlertsRouteImport.update({
+  id: '/api/public/v1/alerts',
+  path: '/api/public/v1/alerts',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicV1CasesRoute = ApiPublicV1CasesRouteImport.update({
   id: '/api/public/v1/cases',
   path: '/api/public/v1/cases',
@@ -272,6 +281,11 @@ const ApiPublicV1CasesRoute = ApiPublicV1CasesRouteImport.update({
 const ApiPublicV1PingRoute = ApiPublicV1PingRouteImport.update({
   id: '/api/public/v1/ping',
   path: '/api/public/v1/ping',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicV1ReportsRoute = ApiPublicV1ReportsRouteImport.update({
+  id: '/api/public/v1/reports',
+  path: '/api/public/v1/reports',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicV1ScreeningRoute = ApiPublicV1ScreeningRouteImport.update({
@@ -284,6 +298,12 @@ const ApiPublicV1TransactionsRoute = ApiPublicV1TransactionsRouteImport.update({
   path: '/api/public/v1/transactions',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicV1AlertsAlertIdRoute =
+  ApiPublicV1AlertsAlertIdRouteImport.update({
+    id: '/$alertId',
+    path: '/$alertId',
+    getParentRoute: () => ApiPublicV1AlertsRoute,
+  } as any)
 const ApiPublicV1CasesCaseIdRoute = ApiPublicV1CasesCaseIdRouteImport.update({
   id: '/$caseId',
   path: '/$caseId',
@@ -294,6 +314,12 @@ const ApiPublicV1HitsHitIdRoute = ApiPublicV1HitsHitIdRouteImport.update({
   path: '/api/public/v1/hits/$hitId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicV1ReportsReportIdRoute =
+  ApiPublicV1ReportsReportIdRouteImport.update({
+    id: '/$reportId',
+    path: '/$reportId',
+    getParentRoute: () => ApiPublicV1ReportsRoute,
+  } as any)
 const ApiPublicV1CasesCaseIdAddressesRoute =
   ApiPublicV1CasesCaseIdAddressesRouteImport.update({
     id: '/addresses',
@@ -392,12 +418,16 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/plaid-sync': typeof ApiPublicHooksPlaidSyncRoute
   '/api/public/hooks/refresh-watchlists': typeof ApiPublicHooksRefreshWatchlistsRoute
   '/api/public/hooks/rescreen': typeof ApiPublicHooksRescreenRoute
+  '/api/public/v1/alerts': typeof ApiPublicV1AlertsRouteWithChildren
   '/api/public/v1/cases': typeof ApiPublicV1CasesRouteWithChildren
   '/api/public/v1/ping': typeof ApiPublicV1PingRoute
+  '/api/public/v1/reports': typeof ApiPublicV1ReportsRouteWithChildren
   '/api/public/v1/screening': typeof ApiPublicV1ScreeningRoute
   '/api/public/v1/transactions': typeof ApiPublicV1TransactionsRoute
+  '/api/public/v1/alerts/$alertId': typeof ApiPublicV1AlertsAlertIdRoute
   '/api/public/v1/cases/$caseId': typeof ApiPublicV1CasesCaseIdRouteWithChildren
   '/api/public/v1/hits/$hitId': typeof ApiPublicV1HitsHitIdRoute
+  '/api/public/v1/reports/$reportId': typeof ApiPublicV1ReportsReportIdRoute
   '/api/public/v1/cases/$caseId/addresses': typeof ApiPublicV1CasesCaseIdAddressesRoute
   '/api/public/v1/cases/$caseId/decision': typeof ApiPublicV1CasesCaseIdDecisionRoute
   '/api/public/v1/cases/$caseId/documents': typeof ApiPublicV1CasesCaseIdDocumentsRoute
@@ -446,12 +476,16 @@ export interface FileRoutesByTo {
   '/api/public/hooks/plaid-sync': typeof ApiPublicHooksPlaidSyncRoute
   '/api/public/hooks/refresh-watchlists': typeof ApiPublicHooksRefreshWatchlistsRoute
   '/api/public/hooks/rescreen': typeof ApiPublicHooksRescreenRoute
+  '/api/public/v1/alerts': typeof ApiPublicV1AlertsRouteWithChildren
   '/api/public/v1/cases': typeof ApiPublicV1CasesRouteWithChildren
   '/api/public/v1/ping': typeof ApiPublicV1PingRoute
+  '/api/public/v1/reports': typeof ApiPublicV1ReportsRouteWithChildren
   '/api/public/v1/screening': typeof ApiPublicV1ScreeningRoute
   '/api/public/v1/transactions': typeof ApiPublicV1TransactionsRoute
+  '/api/public/v1/alerts/$alertId': typeof ApiPublicV1AlertsAlertIdRoute
   '/api/public/v1/cases/$caseId': typeof ApiPublicV1CasesCaseIdRouteWithChildren
   '/api/public/v1/hits/$hitId': typeof ApiPublicV1HitsHitIdRoute
+  '/api/public/v1/reports/$reportId': typeof ApiPublicV1ReportsReportIdRoute
   '/api/public/v1/cases/$caseId/addresses': typeof ApiPublicV1CasesCaseIdAddressesRoute
   '/api/public/v1/cases/$caseId/decision': typeof ApiPublicV1CasesCaseIdDecisionRoute
   '/api/public/v1/cases/$caseId/documents': typeof ApiPublicV1CasesCaseIdDocumentsRoute
@@ -502,12 +536,16 @@ export interface FileRoutesById {
   '/api/public/hooks/plaid-sync': typeof ApiPublicHooksPlaidSyncRoute
   '/api/public/hooks/refresh-watchlists': typeof ApiPublicHooksRefreshWatchlistsRoute
   '/api/public/hooks/rescreen': typeof ApiPublicHooksRescreenRoute
+  '/api/public/v1/alerts': typeof ApiPublicV1AlertsRouteWithChildren
   '/api/public/v1/cases': typeof ApiPublicV1CasesRouteWithChildren
   '/api/public/v1/ping': typeof ApiPublicV1PingRoute
+  '/api/public/v1/reports': typeof ApiPublicV1ReportsRouteWithChildren
   '/api/public/v1/screening': typeof ApiPublicV1ScreeningRoute
   '/api/public/v1/transactions': typeof ApiPublicV1TransactionsRoute
+  '/api/public/v1/alerts/$alertId': typeof ApiPublicV1AlertsAlertIdRoute
   '/api/public/v1/cases/$caseId': typeof ApiPublicV1CasesCaseIdRouteWithChildren
   '/api/public/v1/hits/$hitId': typeof ApiPublicV1HitsHitIdRoute
+  '/api/public/v1/reports/$reportId': typeof ApiPublicV1ReportsReportIdRoute
   '/api/public/v1/cases/$caseId/addresses': typeof ApiPublicV1CasesCaseIdAddressesRoute
   '/api/public/v1/cases/$caseId/decision': typeof ApiPublicV1CasesCaseIdDecisionRoute
   '/api/public/v1/cases/$caseId/documents': typeof ApiPublicV1CasesCaseIdDocumentsRoute
@@ -558,12 +596,16 @@ export interface FileRouteTypes {
     | '/api/public/hooks/plaid-sync'
     | '/api/public/hooks/refresh-watchlists'
     | '/api/public/hooks/rescreen'
+    | '/api/public/v1/alerts'
     | '/api/public/v1/cases'
     | '/api/public/v1/ping'
+    | '/api/public/v1/reports'
     | '/api/public/v1/screening'
     | '/api/public/v1/transactions'
+    | '/api/public/v1/alerts/$alertId'
     | '/api/public/v1/cases/$caseId'
     | '/api/public/v1/hits/$hitId'
+    | '/api/public/v1/reports/$reportId'
     | '/api/public/v1/cases/$caseId/addresses'
     | '/api/public/v1/cases/$caseId/decision'
     | '/api/public/v1/cases/$caseId/documents'
@@ -612,12 +654,16 @@ export interface FileRouteTypes {
     | '/api/public/hooks/plaid-sync'
     | '/api/public/hooks/refresh-watchlists'
     | '/api/public/hooks/rescreen'
+    | '/api/public/v1/alerts'
     | '/api/public/v1/cases'
     | '/api/public/v1/ping'
+    | '/api/public/v1/reports'
     | '/api/public/v1/screening'
     | '/api/public/v1/transactions'
+    | '/api/public/v1/alerts/$alertId'
     | '/api/public/v1/cases/$caseId'
     | '/api/public/v1/hits/$hitId'
+    | '/api/public/v1/reports/$reportId'
     | '/api/public/v1/cases/$caseId/addresses'
     | '/api/public/v1/cases/$caseId/decision'
     | '/api/public/v1/cases/$caseId/documents'
@@ -667,12 +713,16 @@ export interface FileRouteTypes {
     | '/api/public/hooks/plaid-sync'
     | '/api/public/hooks/refresh-watchlists'
     | '/api/public/hooks/rescreen'
+    | '/api/public/v1/alerts'
     | '/api/public/v1/cases'
     | '/api/public/v1/ping'
+    | '/api/public/v1/reports'
     | '/api/public/v1/screening'
     | '/api/public/v1/transactions'
+    | '/api/public/v1/alerts/$alertId'
     | '/api/public/v1/cases/$caseId'
     | '/api/public/v1/hits/$hitId'
+    | '/api/public/v1/reports/$reportId'
     | '/api/public/v1/cases/$caseId/addresses'
     | '/api/public/v1/cases/$caseId/decision'
     | '/api/public/v1/cases/$caseId/documents'
@@ -705,8 +755,10 @@ export interface RootRouteChildren {
   ApiPublicHooksPlaidSyncRoute: typeof ApiPublicHooksPlaidSyncRoute
   ApiPublicHooksRefreshWatchlistsRoute: typeof ApiPublicHooksRefreshWatchlistsRoute
   ApiPublicHooksRescreenRoute: typeof ApiPublicHooksRescreenRoute
+  ApiPublicV1AlertsRoute: typeof ApiPublicV1AlertsRouteWithChildren
   ApiPublicV1CasesRoute: typeof ApiPublicV1CasesRouteWithChildren
   ApiPublicV1PingRoute: typeof ApiPublicV1PingRoute
+  ApiPublicV1ReportsRoute: typeof ApiPublicV1ReportsRouteWithChildren
   ApiPublicV1ScreeningRoute: typeof ApiPublicV1ScreeningRoute
   ApiPublicV1TransactionsRoute: typeof ApiPublicV1TransactionsRoute
   ApiPublicV1HitsHitIdRoute: typeof ApiPublicV1HitsHitIdRoute
@@ -973,6 +1025,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksRescreenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/v1/alerts': {
+      id: '/api/public/v1/alerts'
+      path: '/api/public/v1/alerts'
+      fullPath: '/api/public/v1/alerts'
+      preLoaderRoute: typeof ApiPublicV1AlertsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/v1/cases': {
       id: '/api/public/v1/cases'
       path: '/api/public/v1/cases'
@@ -985,6 +1044,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/v1/ping'
       fullPath: '/api/public/v1/ping'
       preLoaderRoute: typeof ApiPublicV1PingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/v1/reports': {
+      id: '/api/public/v1/reports'
+      path: '/api/public/v1/reports'
+      fullPath: '/api/public/v1/reports'
+      preLoaderRoute: typeof ApiPublicV1ReportsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/v1/screening': {
@@ -1001,6 +1067,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicV1TransactionsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/v1/alerts/$alertId': {
+      id: '/api/public/v1/alerts/$alertId'
+      path: '/$alertId'
+      fullPath: '/api/public/v1/alerts/$alertId'
+      preLoaderRoute: typeof ApiPublicV1AlertsAlertIdRouteImport
+      parentRoute: typeof ApiPublicV1AlertsRoute
+    }
     '/api/public/v1/cases/$caseId': {
       id: '/api/public/v1/cases/$caseId'
       path: '/$caseId'
@@ -1014,6 +1087,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/public/v1/hits/$hitId'
       preLoaderRoute: typeof ApiPublicV1HitsHitIdRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/api/public/v1/reports/$reportId': {
+      id: '/api/public/v1/reports/$reportId'
+      path: '/$reportId'
+      fullPath: '/api/public/v1/reports/$reportId'
+      preLoaderRoute: typeof ApiPublicV1ReportsReportIdRouteImport
+      parentRoute: typeof ApiPublicV1ReportsRoute
     }
     '/api/public/v1/cases/$caseId/addresses': {
       id: '/api/public/v1/cases/$caseId/addresses'
@@ -1134,6 +1214,17 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
+interface ApiPublicV1AlertsRouteChildren {
+  ApiPublicV1AlertsAlertIdRoute: typeof ApiPublicV1AlertsAlertIdRoute
+}
+
+const ApiPublicV1AlertsRouteChildren: ApiPublicV1AlertsRouteChildren = {
+  ApiPublicV1AlertsAlertIdRoute: ApiPublicV1AlertsAlertIdRoute,
+}
+
+const ApiPublicV1AlertsRouteWithChildren =
+  ApiPublicV1AlertsRoute._addFileChildren(ApiPublicV1AlertsRouteChildren)
+
 interface ApiPublicV1CasesCaseIdRouteChildren {
   ApiPublicV1CasesCaseIdAddressesRoute: typeof ApiPublicV1CasesCaseIdAddressesRoute
   ApiPublicV1CasesCaseIdDecisionRoute: typeof ApiPublicV1CasesCaseIdDecisionRoute
@@ -1178,6 +1269,17 @@ const ApiPublicV1CasesRouteChildren: ApiPublicV1CasesRouteChildren = {
 const ApiPublicV1CasesRouteWithChildren =
   ApiPublicV1CasesRoute._addFileChildren(ApiPublicV1CasesRouteChildren)
 
+interface ApiPublicV1ReportsRouteChildren {
+  ApiPublicV1ReportsReportIdRoute: typeof ApiPublicV1ReportsReportIdRoute
+}
+
+const ApiPublicV1ReportsRouteChildren: ApiPublicV1ReportsRouteChildren = {
+  ApiPublicV1ReportsReportIdRoute: ApiPublicV1ReportsReportIdRoute,
+}
+
+const ApiPublicV1ReportsRouteWithChildren =
+  ApiPublicV1ReportsRoute._addFileChildren(ApiPublicV1ReportsRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
@@ -1198,8 +1300,10 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksPlaidSyncRoute: ApiPublicHooksPlaidSyncRoute,
   ApiPublicHooksRefreshWatchlistsRoute: ApiPublicHooksRefreshWatchlistsRoute,
   ApiPublicHooksRescreenRoute: ApiPublicHooksRescreenRoute,
+  ApiPublicV1AlertsRoute: ApiPublicV1AlertsRouteWithChildren,
   ApiPublicV1CasesRoute: ApiPublicV1CasesRouteWithChildren,
   ApiPublicV1PingRoute: ApiPublicV1PingRoute,
+  ApiPublicV1ReportsRoute: ApiPublicV1ReportsRouteWithChildren,
   ApiPublicV1ScreeningRoute: ApiPublicV1ScreeningRoute,
   ApiPublicV1TransactionsRoute: ApiPublicV1TransactionsRoute,
   ApiPublicV1HitsHitIdRoute: ApiPublicV1HitsHitIdRoute,
