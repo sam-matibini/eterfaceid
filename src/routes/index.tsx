@@ -11,6 +11,7 @@ import fintechPoster from "@/assets/fintech-real-time-monitoring-poster.png.asse
 import verifyPeopleImage from "@/assets/verify-people-workflow.jpg";
 import verifyBusinessImage from "@/assets/verify-business-workflow.jpg";
 import continuousScreeningImage from "@/assets/continuous-screening-workflow.jpg";
+import kycKybAmlImage from "@/assets/kyc-kyb-aml-hero.jpg";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -113,6 +114,19 @@ function Home() {
               description="A suspicious pattern becomes an analyst alert."
             />
           </div>
+        </Container>
+      </section>
+
+      <section className="border-b border-rule">
+        <Container className="py-0">
+          <img
+            src={kycKybAmlImage}
+            alt="Compliance team verifying a customer's identity, reviewing a business registration and ownership chart, and monitoring screening results"
+            width={1536}
+            height={1024}
+            loading="lazy"
+            className="aspect-[4/3] w-full border-x border-rule object-cover sm:aspect-[16/7]"
+          />
         </Container>
       </section>
 
