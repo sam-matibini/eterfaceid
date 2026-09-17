@@ -6,6 +6,8 @@ import screeningFilm from "@/assets/screening-workflow.mp4.asset.json";
 import screeningPoster from "@/assets/screening-workflow-poster.png.asset.json";
 import transactionFilm from "@/assets/transaction-monitoring.mp4.asset.json";
 import transactionPoster from "@/assets/transaction-monitoring-poster.png.asset.json";
+import fintechFilm from "@/assets/fintech-real-time-monitoring.mp4.asset.json";
+import fintechPoster from "@/assets/fintech-real-time-monitoring-poster.png.asset.json";
 import verifyPeopleImage from "@/assets/verify-people-workflow.jpg";
 import verifyBusinessImage from "@/assets/verify-business-workflow.jpg";
 import continuousScreeningImage from "@/assets/continuous-screening-workflow.jpg";
@@ -146,6 +148,37 @@ function Home() {
           ))}
         </div>
       </Section>
+
+      <section className="border-y border-rule bg-paper">
+        <Container className="grid gap-10 py-16 lg:grid-cols-[0.72fr_1.28fr] lg:items-center">
+          <div>
+            <p className="text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-signal">
+              Fintech &middot; AI &middot; Open banking
+            </p>
+            <h2 className="mt-4 max-w-[14ch] text-[2rem] font-semibold leading-[1.12] text-ink md:text-[2.6rem]">
+              Real-time finance needs real-time controls
+            </h2>
+            <p className="mt-5 max-w-[52ch] text-[0.98rem] leading-[1.75] text-ink-soft">
+              Instant payments, linked accounts and AI-assisted fraud can change a customer&apos;s
+              risk between periodic reviews. eterfaceID continuously evaluates identity,
+              transaction, device, network, sanctions and counterparty signals, then routes
+              consequential decisions to a person.
+            </p>
+            <Link
+              to="/solutions/fraud-risk"
+              className="marker-bracket mt-6 inline-block text-[0.88rem] font-semibold text-ink hover:text-signal"
+            >
+              Explore transaction monitoring
+            </Link>
+          </div>
+          <ProductFilm
+            src={fintechFilm.url}
+            poster={fintechPoster.url}
+            title="Fintech monitoring in real time"
+            description="Live payment and counterparty signals become a focused analyst review."
+          />
+        </Container>
+      </section>
 
       <section className="border-y border-rule bg-paper">
         <Container className="grid gap-10 py-14 sm:grid-cols-2 lg:grid-cols-4">
