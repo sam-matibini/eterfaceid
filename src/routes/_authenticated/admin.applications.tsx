@@ -30,7 +30,7 @@ async function fetchApplications() {
   ]);
   const err = apps.error ?? orgs.error ?? contracts.error;
   if (err) throw err;
-  return (apps.data ?? []).map((app) => ({
+  return (apps.data ?? []).map((app): Record<string, any> => ({
     ...(app as Record<string, any>),
     org: (orgs.data ?? []).find((o) => o.id === (app as any).org_id) ?? null,
     contract: (contracts.data ?? []).find((c) => c.org_id === (app as any).org_id) ?? null,
