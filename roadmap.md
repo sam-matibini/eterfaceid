@@ -9,7 +9,8 @@
 - Phase 3d — transaction monitoring with FINTRAC/FinCEN/FATF rules, beneficial-ownership calculation (25% UBO, OFAC 50% rule), address and age verification, regulatory report packages (STR/LCTR/EFTR/SAR/CTR/FIU), regulatory coverage page, public REST API v1 (cases, screening, transactions) and signed webhooks
 
 ## Next
-- Phase 3e — optional add-ons when keys arrive: Plaid, Interac, Twilio/Telesign, IP/email reputation
+- Phase 3e — optional add-ons when keys arrive: Plaid (built, waiting on credentials), Interac, Twilio/Telesign, IP/email reputation
+- API notepad — track and add new APIs; entries live in App admin > Integrations; connecting a listed API needs its keys (secure store, never shown)
 - Nightly automatic list refresh (endpoint built at /api/public/hooks/refresh-watchlists; needs the schedule switched on after publish)
 - Face-match model: currently a reviewer confirms the selfie against the document; automatic scoring needs model weights installed
 

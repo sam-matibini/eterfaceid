@@ -5,8 +5,13 @@ import { useState } from "react";
 
 import { AdminShell, buttonClass, ghostButtonClass, inputClass } from "@/components/admin/shell";
 import { Panel, StatusPill } from "@/components/console/shell";
-import { fetchIntegrations } from "@/lib/platform";
-import { sendTestEmail, setIntegrationEnabled } from "@/lib/platform.functions";
+import { fetchApiNotepad, fetchIntegrations, type ApiNotepadEntry } from "@/lib/platform";
+import {
+  deleteApiNotepadEntry,
+  saveApiNotepadEntry,
+  sendTestEmail,
+  setIntegrationEnabled,
+} from "@/lib/platform.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/integrations")({
   head: () => ({
