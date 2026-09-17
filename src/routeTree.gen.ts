@@ -37,6 +37,7 @@ import { Route as AuthenticatedConsoleIndexRouteImport } from './routes/_authent
 import { Route as AuthenticatedConsoleAlertsRouteImport } from './routes/_authenticated/console.alerts'
 import { Route as AuthenticatedConsoleAuditRouteImport } from './routes/_authenticated/console.audit'
 import { Route as AuthenticatedConsoleComplianceRouteImport } from './routes/_authenticated/console.compliance'
+import { Route as AuthenticatedConsoleGoLiveRouteImport } from './routes/_authenticated/console.go-live'
 import { Route as AuthenticatedConsoleReportsRouteImport } from './routes/_authenticated/console.reports'
 import { Route as AuthenticatedConsoleSettingsRouteImport } from './routes/_authenticated/console.settings'
 import { Route as AuthenticatedConsoleTransactionsRouteImport } from './routes/_authenticated/console.transactions'
@@ -217,6 +218,12 @@ const AuthenticatedConsoleComplianceRoute =
   AuthenticatedConsoleComplianceRouteImport.update({
     id: '/console/compliance',
     path: '/console/compliance',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedConsoleGoLiveRoute =
+  AuthenticatedConsoleGoLiveRouteImport.update({
+    id: '/console/go-live',
+    path: '/console/go-live',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedConsoleReportsRoute =
@@ -433,6 +440,7 @@ export interface FileRoutesByFullPath {
   '/console/alerts': typeof AuthenticatedConsoleAlertsRoute
   '/console/audit': typeof AuthenticatedConsoleAuditRoute
   '/console/compliance': typeof AuthenticatedConsoleComplianceRoute
+  '/console/go-live': typeof AuthenticatedConsoleGoLiveRoute
   '/console/reports': typeof AuthenticatedConsoleReportsRoute
   '/console/settings': typeof AuthenticatedConsoleSettingsRoute
   '/console/transactions': typeof AuthenticatedConsoleTransactionsRoute
@@ -495,6 +503,7 @@ export interface FileRoutesByTo {
   '/console/alerts': typeof AuthenticatedConsoleAlertsRoute
   '/console/audit': typeof AuthenticatedConsoleAuditRoute
   '/console/compliance': typeof AuthenticatedConsoleComplianceRoute
+  '/console/go-live': typeof AuthenticatedConsoleGoLiveRoute
   '/console/reports': typeof AuthenticatedConsoleReportsRoute
   '/console/settings': typeof AuthenticatedConsoleSettingsRoute
   '/console/transactions': typeof AuthenticatedConsoleTransactionsRoute
@@ -559,6 +568,7 @@ export interface FileRoutesById {
   '/_authenticated/console/alerts': typeof AuthenticatedConsoleAlertsRoute
   '/_authenticated/console/audit': typeof AuthenticatedConsoleAuditRoute
   '/_authenticated/console/compliance': typeof AuthenticatedConsoleComplianceRoute
+  '/_authenticated/console/go-live': typeof AuthenticatedConsoleGoLiveRoute
   '/_authenticated/console/reports': typeof AuthenticatedConsoleReportsRoute
   '/_authenticated/console/settings': typeof AuthenticatedConsoleSettingsRoute
   '/_authenticated/console/transactions': typeof AuthenticatedConsoleTransactionsRoute
@@ -623,6 +633,7 @@ export interface FileRouteTypes {
     | '/console/alerts'
     | '/console/audit'
     | '/console/compliance'
+    | '/console/go-live'
     | '/console/reports'
     | '/console/settings'
     | '/console/transactions'
@@ -685,6 +696,7 @@ export interface FileRouteTypes {
     | '/console/alerts'
     | '/console/audit'
     | '/console/compliance'
+    | '/console/go-live'
     | '/console/reports'
     | '/console/settings'
     | '/console/transactions'
@@ -748,6 +760,7 @@ export interface FileRouteTypes {
     | '/_authenticated/console/alerts'
     | '/_authenticated/console/audit'
     | '/_authenticated/console/compliance'
+    | '/_authenticated/console/go-live'
     | '/_authenticated/console/reports'
     | '/_authenticated/console/settings'
     | '/_authenticated/console/transactions'
@@ -1015,6 +1028,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedConsoleComplianceRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/console/go-live': {
+      id: '/_authenticated/console/go-live'
+      path: '/console/go-live'
+      fullPath: '/console/go-live'
+      preLoaderRoute: typeof AuthenticatedConsoleGoLiveRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/console/reports': {
       id: '/_authenticated/console/reports'
       path: '/console/reports'
@@ -1259,6 +1279,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedConsoleAlertsRoute: typeof AuthenticatedConsoleAlertsRoute
   AuthenticatedConsoleAuditRoute: typeof AuthenticatedConsoleAuditRoute
   AuthenticatedConsoleComplianceRoute: typeof AuthenticatedConsoleComplianceRoute
+  AuthenticatedConsoleGoLiveRoute: typeof AuthenticatedConsoleGoLiveRoute
   AuthenticatedConsoleReportsRoute: typeof AuthenticatedConsoleReportsRoute
   AuthenticatedConsoleSettingsRoute: typeof AuthenticatedConsoleSettingsRoute
   AuthenticatedConsoleTransactionsRoute: typeof AuthenticatedConsoleTransactionsRoute
@@ -1280,6 +1301,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedConsoleAlertsRoute: AuthenticatedConsoleAlertsRoute,
   AuthenticatedConsoleAuditRoute: AuthenticatedConsoleAuditRoute,
   AuthenticatedConsoleComplianceRoute: AuthenticatedConsoleComplianceRoute,
+  AuthenticatedConsoleGoLiveRoute: AuthenticatedConsoleGoLiveRoute,
   AuthenticatedConsoleReportsRoute: AuthenticatedConsoleReportsRoute,
   AuthenticatedConsoleSettingsRoute: AuthenticatedConsoleSettingsRoute,
   AuthenticatedConsoleTransactionsRoute: AuthenticatedConsoleTransactionsRoute,
