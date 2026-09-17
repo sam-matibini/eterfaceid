@@ -28,3 +28,10 @@
 - Plans set in /admin drive the public pricing page and invoice calculations.
 - Usage is counted per company per month (verifications, screenings, transactions) and invoices are generated from it.
 - Emails send automatically for invitations, welcomes, screening matches, monitoring alerts and filed reports; each type can be switched off per workspace in Settings.
+
+## Bank-confirmed identity and transactions via Plaid (built, waiting on credentials)
+- Optional add-on: switched on in App admin > Integrations; when off nothing on a case changes.
+- Reviewer starts "Connect bank" on a person case; the customer signs in to their own bank and the name, address, phone and email the bank holds are compared with the case, field by field.
+- The result is saved as a case check and feeds the risk score.
+- Linked banks import recent transactions into the monitoring screens through the existing rules; a daily job pulls new activity.
+- Waiting on you: Plaid client ID, secret and environment (sandbox or production).
