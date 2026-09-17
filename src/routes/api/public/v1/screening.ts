@@ -23,7 +23,31 @@ export const Route = createFileRoute("/api/public/v1/screening")({
         const parsed = schema.safeParse(await request.json().catch(() => null));
         if (!parsed.success) return jsonResponse({ error: "invalid_request", issues: parsed.error.issues }, 422);
 
+        if (auth.sandbox) {
+          const { sandboxScreening } = await import("@/lib/sandbox.server");
+          const sim = sandboxScreening(parsed.data.name);
+          return jsonResponse({
+            engine: ENGINE_VERSION,
+            threshold: parsed.data.threshold ?? 0.72,
+            candidates_examined: sim.candidates,
+            sandbox: true,
+            data: sim.hits.map((h) => ({
+              entity_id: null,
+              name: h.matched_name,
+              list: h.list_name,
+              list_code: "sandbox",
+              category: h.category,
+              programs: null,
+              birth_date: null,
+              countries: [],
+              score: h.match_score,
+              reasons: h.reasons.map((r) => r.label),
+            })),
+          });
+        }
+
         const threshold = parsed.data.threshold ?? 0.72;
+
         const { data: candidates, error } = await auth.admin.rpc("match_watchlist_names", {
           _q: normalizeName(parsed.data.name),
           _threshold: 0.45,
