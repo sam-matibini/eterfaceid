@@ -36,3 +36,10 @@
 - The result is saved as a case check and feeds the risk score.
 - Linked banks import recent transactions into the monitoring screens through the existing rules; a daily job pulls new activity.
 - Waiting on you: Plaid client ID, secret and environment (sandbox or production).
+
+## Integration API v1 (done)
+- Everything the console does is now available over HTTP: cases, decisions, document and liveness checks, address and age, fraud/device risk, beneficial ownership, screening and re-screening, match dispositions, payments and alerts, regulatory reports, bank-confirmed identity.
+- Hosted verification links: a one-time secure link the customer opens to submit their ID and liveness check; the result arrives on the webhook.
+- Safe retries with an Idempotency-Key header, paging on every list, browser-callable (CORS), usage counted per company.
+- Signed webhooks: case.created, case.decision, verification.completed, screening.hit, transaction.flagged, report.filed.
+- Full reference on the public Developers page plus a machine-readable file at /api/public/v1/openapi.json for Postman or client generation.

@@ -66,10 +66,10 @@ function Developers() {
       <PageHero
         eyebrow="Developers"
         title="One API for identity, ownership, screening and monitoring"
-        description="Everything the eterfaceID console does is available over HTTP. Authenticate with an API key, page through results, retry safely with idempotency keys, and receive signed webhooks when something changes."
+        lede="Everything the eterfaceID console does is available over HTTP. Authenticate with an API key, page through results, retry safely with idempotency keys, and receive signed webhooks when something changes."
       />
 
-      <Section title="Quick start" description="Create your first case in one request.">
+      <Section title="Quick start" intro="Create your first case in one request.">
         <div className="grid gap-6 lg:grid-cols-2">
           <ol className="space-y-3 text-sm text-muted-foreground">
             <li>
@@ -96,7 +96,7 @@ function Developers() {
 
       <Section
         title="Conventions"
-        description="The same rules apply to every endpoint, so there are no surprises per resource."
+        intro="The same rules apply to every endpoint, so there are no surprises per resource."
       >
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[
@@ -126,7 +126,7 @@ function Developers() {
       </Section>
 
       {API_GROUPS.map((group) => (
-        <Section key={group.name} title={group.name} description={group.blurb}>
+        <Section key={group.name} title={group.name} intro={group.blurb}>
           <div className="space-y-4">
             {group.endpoints.map((ep) => (
               <div key={`${ep.method}${ep.path}`} className="rounded-lg border border-border bg-card p-5">
@@ -157,7 +157,7 @@ function Developers() {
         </Section>
       ))}
 
-      <Section title="Webhooks" description="Signed with your endpoint secret so you can prove we sent them.">
+      <Section title="Webhooks" intro="Signed with your endpoint secret so you can prove we sent them.">
         <div className="grid gap-6 lg:grid-cols-2">
           <div className="overflow-hidden rounded-lg border border-border">
             <table className="w-full text-sm">
@@ -190,7 +190,7 @@ function Developers() {
         </div>
       </Section>
 
-      <Section title="Errors" description="Every failure returns JSON with an error code and a plain message.">
+      <Section title="Errors" intro="Every failure returns JSON with an error code and a plain message.">
         <div className="overflow-hidden rounded-lg border border-border">
           <table className="w-full text-sm">
             <thead className="bg-muted/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
@@ -215,7 +215,7 @@ function Developers() {
 
       <Section
         title="OpenAPI"
-        description="Import the machine-readable spec into Postman, or generate a client in your language."
+        intro="Import the machine-readable spec into Postman, or generate a client in your language."
       >
         <a
           className="inline-flex rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-muted"
@@ -227,11 +227,7 @@ function Developers() {
 
       <CTASection
         title="Integrating eterfaceID?"
-        description="Tell us what you are building and we will help you scope the first calls."
-        primaryLabel="Talk to us"
-        primaryHref="/contact"
-        secondaryLabel="See pricing"
-        secondaryHref="/pricing"
+        body="Tell us what you are building and we will help you scope the first calls."
       />
     </>
   );

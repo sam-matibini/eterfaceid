@@ -35,11 +35,10 @@ export const Route = createFileRoute("/api/public/v1/cases/$caseId/decision")({
           .update({
             status: parsed.data.status as never,
             decision_note: note,
-            decided_at: new Date().toISOString(),
           } as never)
           .eq("id", params.caseId)
           .eq("org_id", auth.orgId)
-          .select("id, reference, subject_name, status, risk_level, risk_score, decision_note, decided_at")
+          .select("id, reference, subject_name, status, risk_level, risk_score, decision_note")
           .single();
         if (error) return jsonResponse({ error: "update_failed", message: error.message }, 500);
 
