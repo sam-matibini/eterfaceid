@@ -35,6 +35,22 @@ export async function fetchIntegrations() {
   return data ?? [];
 }
 
+export type ApiNotepadEntry = {
+  id: string;
+  title: string;
+  purpose: string | null;
+  status: "idea" | "keys_needed" | "connecting" | "live";
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export async function fetchApiNotepad() {
+  const { data, error } = await supabase.from("api_notepad").select("*").order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as ApiNotepadEntry[];
+}
+
 export async function fetchEmailLog() {
   const { data, error } = await supabase
     .from("email_log")
