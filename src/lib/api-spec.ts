@@ -130,6 +130,20 @@ export const API_GROUPS: ApiGroup[] = [
         description: "Multiplies ownership down the chain, flags owners at or above 25%, and applies the OFAC 50 percent rule.",
         response: { data: { owners: [{ name: "Jane Doe", effectivePct: 42, isUbo: true }], rule: { blocked: false } } },
       },
+      {
+        method: "GET",
+        path: "/cases/{case_id}/registry",
+        summary: "Read The KYB registry lookups",
+        description: "Official-registry results already saved on the case.",
+      },
+      {
+        method: "POST",
+        path: "/cases/{case_id}/registry",
+        summary: "Look up the company in The KYB",
+        description:
+          "Searches official registries through The KYB and attaches the best match (or a chosen kyb_response_id) as an entity check.",
+        request: { name: "Acme Ltd", registration_number: "1234567", country: "CA" },
+      },
     ],
   },
   {
@@ -247,7 +261,7 @@ export const SANDBOX_TEST_VALUES: { value: string; effect: string }[] = [
   { value: "test-sanctioned", effect: "Screening returns a high-confidence sanctions match and a high risk score." },
   { value: "test-pep", effect: "Screening returns a politically exposed person match and a medium risk score." },
   { value: "test-review", effect: "Bank-confirmed identity comes back as a close, not exact, match." },
-  { value: "test-fail", effect: "Bank-confirmed identity comes back as different." },
+  { value: "test-fail", effect: "Bank-confirmed identity and The KYB registry lookup come back as different / dissolved." },
   { value: "any other name", effect: "Clean result, no matches." },
 ];
 

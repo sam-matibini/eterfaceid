@@ -108,6 +108,49 @@ export function sandboxBankIdentity(subjectName: string) {
   } as const;
 }
 
+/** Deterministic The KYB registry outcome for sandbox. */
+export function sandboxRegistryLookup(subjectName: string) {
+  const fail = contains(subjectName, SANDBOX_TRIGGERS.fail);
+  const review = contains(subjectName, SANDBOX_TRIGGERS.review);
+  return {
+    result: fail ? "fail" : review ? "review" : "pass",
+    comparisons: [
+      {
+        field: "Legal name",
+        claimed: subjectName,
+        registry: subjectName,
+        status: fail ? "different" : review ? "close" : "match",
+      },
+      {
+        field: "Registry status",
+        claimed: "active / in good standing",
+        registry: fail ? "dissolved" : "active",
+        status: fail ? "different" : "match",
+      },
+    ],
+    profile: {
+      name: subjectName,
+      registration_number: "SANDBOX-0001",
+      status: fail ? "dissolved" : "active",
+      type: "Private Limited Company",
+      country_code: "CA",
+    },
+    matches: [
+      {
+        kyb_response_id: "sandbox-kyb-response",
+        name: subjectName,
+        registration_number: "SANDBOX-0001",
+        country_code: "CA",
+        type: "Private Limited Company",
+        status: fail ? "dissolved" : "active",
+        risk_level: fail ? "high" : "low",
+        verification_status: fail ? "failed" : "verified",
+        fetch_status: "resolved",
+      },
+    ],
+  } as const;
+}
+
 /** A simulated bank link session — no real Plaid call is made in sandbox. */
 export function sandboxLinkToken() {
   return {
