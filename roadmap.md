@@ -9,7 +9,7 @@
 - Phase 3d — transaction monitoring with FINTRAC/FinCEN/FATF rules, beneficial-ownership calculation (25% UBO, OFAC 50% rule), address and age verification, regulatory report packages (STR/LCTR/EFTR/SAR/CTR/FIU), regulatory coverage page, public REST API v1 (cases, screening, transactions) and signed webhooks
 
 ## Next
-- Phase 3e — optional add-ons when keys arrive: Plaid (built, waiting on credentials), Interac, Twilio/Telesign, IP/email reputation
+- Phase 3e — optional add-ons when keys arrive: Plaid (built, waiting on credentials), The KYB (built, waiting on the API key from https://backoffice.thekyb.com/), Interac, Twilio/Telesign, IP/email reputation
 - API notepad — track and add new APIs; entries live in App admin > Integrations; connecting a listed API needs its keys (secure store, never shown)
 - Nightly automatic list refresh (endpoint built at /api/public/hooks/refresh-watchlists; needs the schedule switched on after publish)
 - Face-match model: currently a reviewer confirms the selfie against the document; automatic scoring needs model weights installed
@@ -29,6 +29,13 @@
 - Plans set in /admin drive the public pricing page and invoice calculations.
 - Usage is counted per company per month (verifications, screenings, transactions) and invoices are generated from it.
 - Emails send automatically for invitations, welcomes, screening matches, monitoring alerts and filed reports; each type can be switched off per workspace in Settings.
+
+## The KYB — official registry lookup (built, waiting on the API key)
+- Optional add-on: switched on in App admin > Integrations; when off, business cases stay as they are.
+- Reviewer searches a business case by legal name or registration number; results come from official registries through The KYB v2 API (`/v2/kyb`).
+- The chosen record is compared with the case (name, number, active status) and saved as an entity check, with officers and beneficial owners listed.
+- Public API: GET/POST `/api/public/v1/cases/{case_id}/registry`. Sandbox keys never call The KYB.
+- Waiting on you: paste the API secret key from https://backoffice.thekyb.com/ (Settings → API integration) on App admin > Integrations. The key is stored in the secure store and never shown again.
 
 ## Bank-confirmed identity and transactions via Plaid (built, waiting on credentials)
 - Optional add-on: switched on in App admin > Integrations; when off nothing on a case changes.

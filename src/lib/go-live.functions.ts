@@ -62,8 +62,9 @@ const applicationInput = z.object({
 
 /**
  * Runs eterfaceID's own business verification over what the applicant submitted:
- * registered details, address quality, ownership chain (25% UBO rule) and
- * screening of every owner against the sanctions and PEP lists (50% rule).
+ * registered details, optional The KYB registry lookup, address quality,
+ * ownership chain (25% UBO rule) and screening of every owner against the
+ * sanctions and PEP lists (50% rule).
  */
 async function verifyApplicant(admin: any, input: z.infer<typeof applicationInput>) {
   const checks: Array<{ name: string; ok: boolean; severity: "info" | "warn" | "fail"; detail?: string | undefined }> = [];
@@ -80,6 +81,54 @@ async function verifyApplicant(admin: any, input: z.infer<typeof applicationInpu
     severity: "fail",
     detail: input.registration_number ?? "missing",
   });
+
+  try {
+    const { THEKYB_PROVIDER } = await import("@/lib/thekyb");
+    const { thekyb, thekybConfigured } = await import("@/lib/thekyb.server");
+    const { pickBestMatch, compareRegistry } = await import("@/lib/thekyb");
+    const { data: setting } = await admin
+      .from("integration_settings")
+      .select("enabled")
+      .eq("provider", THEKYB_PROVIDER)
+      .maybeSingle();
+    if (setting?.enabled && (await thekybConfigured())) {
+      const search = await thekyb.search({
+        name: input.legal_name,
+        registrationNumber: input.registration_number ?? undefined,
+        country: input.country,
+      });
+      const picked = pickBestMatch(input.legal_name, input.registration_number, search.matches);
+      if (!picked) {
+        checks.push({
+          name: "The KYB registry lookup",
+          ok: false,
+          severity: "warn",
+          detail: "No official-registry match for the submitted name or number",
+        });
+      } else {
+        const compared = compareRegistry({
+          claimedName: input.legal_name,
+          claimedRegistration: input.registration_number,
+          matchedName: picked.name,
+          matchedRegistration: picked.registration_number,
+          registryStatus: picked.status,
+        });
+        checks.push({
+          name: "The KYB registry lookup",
+          ok: compared.result !== "fail",
+          severity: compared.result === "fail" ? "fail" : compared.result === "review" ? "warn" : "info",
+          detail: `${picked.name}${picked.registration_number ? ` · ${picked.registration_number}` : ""}${picked.status ? ` · ${picked.status}` : ""}`,
+        });
+      }
+    }
+  } catch {
+    checks.push({
+      name: "The KYB registry lookup",
+      ok: false,
+      severity: "warn",
+      detail: "Could not be run",
+    });
+  }
 
   const addressChecks = validateAddress({
     line1: input.address_line1 ?? "",

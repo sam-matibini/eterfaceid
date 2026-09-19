@@ -9,6 +9,7 @@ import { decideCase } from "@/lib/verification.functions";
 import { ConsoleShell, Panel, StatusPill } from "@/components/console/shell";
 import { VerificationPanels } from "@/components/console/verification";
 import { AddressPanel } from "@/components/console/address";
+import { RegistryPanel } from "@/components/console/registry";
 import { computeOwnership } from "@/lib/monitoring.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { useRoles } from "@/hooks/useSession";
@@ -176,6 +177,15 @@ function CaseDetail() {
               </tbody>
             </table>
           </Panel>
+
+          {record.case_type === "business" ? (
+            <RegistryPanel
+              caseId={caseId}
+              canWrite={canWrite}
+              subjectName={record.subject_name}
+              country={record.country}
+            />
+          ) : null}
 
           {record.case_type === "business" ? (
             <Panel

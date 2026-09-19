@@ -809,6 +809,30 @@ export type Database = {
         }
         Relationships: []
       }
+      integration_secrets: {
+        Row: {
+          api_key: string
+          last4: string | null
+          provider: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          api_key: string
+          last4?: string | null
+          provider: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          api_key?: string
+          last4?: string | null
+          provider?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       invoice_lines: {
         Row: {
           amount: number
@@ -1914,6 +1938,87 @@ export type Database = {
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "verification_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      thekyb_lookups: {
+        Row: {
+          case_id: string
+          comparisons: Json
+          company_type: string | null
+          country_code: string | null
+          created_at: string
+          created_by: string | null
+          fetch_status: string | null
+          id: string
+          kyb_request_id: string | null
+          kyb_response_id: string | null
+          matched_name: string | null
+          org_id: string
+          profile: Json
+          query_name: string | null
+          registration_number: string | null
+          registry_status: string | null
+          result: string
+          risk_level: string | null
+          verification_status: string | null
+        }
+        Insert: {
+          case_id: string
+          comparisons?: Json
+          company_type?: string | null
+          country_code?: string | null
+          created_at?: string
+          created_by?: string | null
+          fetch_status?: string | null
+          id?: string
+          kyb_request_id?: string | null
+          kyb_response_id?: string | null
+          matched_name?: string | null
+          org_id: string
+          profile?: Json
+          query_name?: string | null
+          registration_number?: string | null
+          registry_status?: string | null
+          result?: string
+          risk_level?: string | null
+          verification_status?: string | null
+        }
+        Update: {
+          case_id?: string
+          comparisons?: Json
+          company_type?: string | null
+          country_code?: string | null
+          created_at?: string
+          created_by?: string | null
+          fetch_status?: string | null
+          id?: string
+          kyb_request_id?: string | null
+          kyb_response_id?: string | null
+          matched_name?: string | null
+          org_id?: string
+          profile?: Json
+          query_name?: string | null
+          registration_number?: string | null
+          registry_status?: string | null
+          result?: string
+          risk_level?: string | null
+          verification_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "thekyb_lookups_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "thekyb_lookups_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]

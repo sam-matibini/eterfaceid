@@ -12,6 +12,8 @@ import {
   sendTestEmail,
   setIntegrationEnabled,
 } from "@/lib/platform.functions";
+import { saveTheKybApiKey, thekybStatus } from "@/lib/thekyb.functions";
+import { THEKYB_BACKOFFICE_URL, THEKYB_PROVIDER } from "@/lib/thekyb";
 
 export const Route = createFileRoute("/_authenticated/admin/integrations")({
   head: () => ({
@@ -34,6 +36,10 @@ function IntegrationsPage() {
   const [testTo, setTestTo] = useState("");
   const [editing, setEditing] = useState<ApiNotepadEntry | null>(null);
   const [form, setForm] = useState({ title: "", purpose: "", status: "idea" as ApiNotepadEntry["status"], notes: "" });
+  const [theKybKey, setTheKybKey] = useState("");
+  const statusFn = useServerFn(thekybStatus);
+  const saveKey = useServerFn(saveTheKybApiKey);
+  const theKyb = useQuery({ queryKey: ["thekyb-status"], queryFn: () => statusFn({}) });
 
   const switching = useMutation({
     mutationFn: async (input: { provider: string; enabled: boolean }) => toggle({ data: input }),
@@ -68,6 +74,16 @@ function IntegrationsPage() {
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["api-notepad"] }),
   });
 
+  const savingKey = useMutation({
+    mutationFn: async () => saveKey({ data: { apiKey: theKybKey.trim() } }),
+    onSuccess: () => {
+      setTheKybKey("");
+      void queryClient.invalidateQueries({ queryKey: ["thekyb-status"] });
+      void queryClient.invalidateQueries({ queryKey: ["integrations"] });
+      void queryClient.invalidateQueries({ queryKey: ["api-notepad"] });
+    },
+  });
+
   function startEdit(entry: ApiNotepadEntry) {
     setEditing(entry);
     setForm({
@@ -99,6 +115,9 @@ function IntegrationsPage() {
                   {row.last_error ? (
                     <div className="mt-1 text-xs text-[var(--signal)]">{row.last_error}</div>
                   ) : null}
+                  {row.provider === THEKYB_PROVIDER && theKyb.data?.last4 ? (
+                    <div className="mt-1 text-xs text-muted-foreground">Key on file ending {theKyb.data.last4}</div>
+                  ) : null}
                 </div>
                 <div className="flex items-center gap-3">
                   <StatusPill tone={row.enabled ? "approved" : "pending"}>
@@ -115,6 +134,45 @@ function IntegrationsPage() {
               </div>
             ))}
           </div>
+        </Panel>
+
+        <Panel title="The KYB API key">
+          <p className="text-sm text-muted-foreground">
+            Generate the secret key in{" "}
+            <a href={THEKYB_BACKOFFICE_URL} className="underline underline-offset-4" target="_blank" rel="noreferrer">
+              The KYB back office
+            </a>{" "}
+            (Settings → API integration), then paste it here. It is stored in the secure store and never shown
+            again.
+          </p>
+          <form
+            className="mt-4 flex flex-wrap gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (theKybKey.trim().length >= 8) savingKey.mutate();
+            }}
+          >
+            <input
+              id="thekyb-api-key"
+              type="password"
+              autoComplete="off"
+              value={theKybKey}
+              onChange={(e) => setTheKybKey(e.target.value)}
+              placeholder={theKyb.data?.last4 ? `Replace key ending ${theKyb.data.last4}` : "Paste The KYB API secret key"}
+              className={`${inputClass} flex-1`}
+            />
+            <button type="submit" className={buttonClass} disabled={savingKey.isPending || theKybKey.trim().length < 8}>
+              {savingKey.isPending ? "Saving…" : "Save key"}
+            </button>
+          </form>
+          {savingKey.data ? (
+            <p className="mt-3 text-sm text-muted-foreground">
+              Key saved{savingKey.data.last4 ? ` (${savingKey.data.last4})` : ""}. The KYB is ready.
+            </p>
+          ) : null}
+          {savingKey.isError ? (
+            <p className="mt-3 text-sm text-[var(--signal)]">{(savingKey.error as Error).message}</p>
+          ) : null}
         </Panel>
 
         <Panel title="Send a test email">
@@ -152,9 +210,9 @@ function IntegrationsPage() {
 
       <div className="mt-8">
         <Panel title="API wish list">
-          <p className="text-sm text-muted-foreground">
+          <p id="notepad" className="text-sm text-muted-foreground">
             APIs you want to add to the platform. Record them here; connecting one needs its keys, which always go
-            into the secure store and are never shown.
+            into the secure store and are never shown. The KYB is listed so you can paste its key above.
           </p>
 
           <form
