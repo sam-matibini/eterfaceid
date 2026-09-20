@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
 import { usePlatformStaff } from "@/hooks/usePlatformStaff";
 import { adminGateStatus, lockAdmin, unlockAdmin } from "@/lib/admin-gate.functions";
+import { isStaffBypassUnlocked, lockStaffBypass } from "@/lib/staff-bypass";
 
 export { usePlatformStaff };
 
@@ -26,14 +27,15 @@ export function AdminShell({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const { user } = useSession();
   const { isStaff, ready } = usePlatformStaff();
+  const pinUnlocked = isStaffBypassUnlocked();
 
   useEffect(() => {
-    if (ready && !isStaff) void navigate({ to: "/console", replace: true });
-  }, [ready, isStaff, navigate]);
+    if (ready && !isStaff && !pinUnlocked) void navigate({ to: "/console", replace: true });
+  }, [ready, isStaff, pinUnlocked, navigate]);
 
   const gate = useQuery({
     queryKey: ["admin-gate", user?.id],
-    enabled: Boolean(user?.id) && isStaff,
+    enabled: Boolean(user?.id) && isStaff && !pinUnlocked,
     queryFn: () => adminGateStatus(),
     staleTime: 60_000,
   });
@@ -41,24 +43,30 @@ export function AdminShell({ children }: { children: ReactNode }) {
   async function signOut() {
     await queryClient.cancelQueries();
     queryClient.clear();
+    lockStaffBypass();
     await supabase.auth.signOut();
     void navigate({ to: "/auth", replace: true });
   }
 
   async function lock() {
-    await lockAdmin();
-    queryClient.clear();
-    void gate.refetch();
+    lockStaffBypass();
+    if (user) {
+      await lockAdmin();
+      queryClient.clear();
+      void gate.refetch();
+      return;
+    }
+    void navigate({ to: "/auth", replace: true });
   }
 
-  if (!ready) {
+  if (!ready && !pinUnlocked) {
     return <div className="p-10 text-sm text-muted-foreground">Loading…</div>;
   }
-  if (!isStaff) return null;
-  if (gate.isLoading) {
+  if (!isStaff && !pinUnlocked) return null;
+  if (!pinUnlocked && gate.isLoading) {
     return <div className="p-10 text-sm text-muted-foreground">Loading…</div>;
   }
-  if (!gate.data?.unlocked) {
+  if (!pinUnlocked && !gate.data?.unlocked) {
     return <AdminUnlock onUnlocked={() => void gate.refetch()} />;
   }
 

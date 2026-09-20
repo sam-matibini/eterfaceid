@@ -4,6 +4,7 @@ import {
   STAFF_BYPASS_EMAIL,
   STAFF_BYPASS_HASH,
   STAFF_BYPASS_PATH,
+  staffPinUnlocks,
 } from "./staff-bypass";
 import { applyWorkerEnv, FALLBACK_SUPABASE_URL } from "./staff-bypass";
 import {
@@ -24,6 +25,8 @@ assert(STAFF_BYPASS_EMAIL === "ops@eterfaceid.com", "bootstrap email");
 assert(STAFF_BYPASS_PATH === "/admin/integrations", "lands on integrations");
 assert(STAFF_BYPASS_HASH === "notepad", "opens the API notepad");
 assert(DEFAULT_STAFF_BYPASS_PIN === "eterfaceid", "bootstrap pin");
+assert(staffPinUnlocks("eterfaceid"), "default pin unlocks without Supabase");
+assert(!staffPinUnlocks("wrong"), "wrong pin does not unlock");
 
 assert(FALLBACK_SUPABASE_URL.includes("supabase.co"), "public supabase url fallback");
 
