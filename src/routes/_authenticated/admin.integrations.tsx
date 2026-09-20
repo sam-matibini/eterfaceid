@@ -17,7 +17,9 @@ import {
 import {
   bootstrapResendStatus,
   bootstrapSaveResendApiKey,
+  bootstrapSaveTheKybApiKey,
   bootstrapSendTestEmail,
+  bootstrapTheKybStatus,
 } from "@/lib/staff-bypass.functions";
 import { isStaffBypassUnlocked, readStaffBypassPin } from "@/lib/staff-bypass";
 import { saveTheKybApiKey, thekybStatus } from "@/lib/thekyb.functions";
@@ -73,10 +75,12 @@ function IntegrationsPage() {
   const [theKybKey, setTheKybKey] = useState("");
   const statusFn = useServerFn(thekybStatus);
   const saveKey = useServerFn(saveTheKybApiKey);
+  const bootstrapStatusTheKyb = useServerFn(bootstrapTheKybStatus);
+  const bootstrapSaveTheKyb = useServerFn(bootstrapSaveTheKybApiKey);
   const theKyb = useQuery({
-    queryKey: ["thekyb-status"],
-    enabled: !pinUnlocked,
-    queryFn: () => statusFn({}),
+    queryKey: ["thekyb-status", pinUnlocked],
+    queryFn: () =>
+      pinUnlocked ? bootstrapStatusTheKyb({ data: { pin: readStaffBypassPin() } }) : statusFn({}),
   });
   const resend = useQuery({
     queryKey: ["resend-status", pinUnlocked],
@@ -134,7 +138,10 @@ function IntegrationsPage() {
   });
 
   const savingKey = useMutation({
-    mutationFn: async () => saveKey({ data: { apiKey: theKybKey.trim() } }),
+    mutationFn: async () =>
+      pinUnlocked
+        ? bootstrapSaveTheKyb({ data: { pin: readStaffBypassPin(), apiKey: theKybKey.trim() } })
+        : saveKey({ data: { apiKey: theKybKey.trim() } }),
     onSuccess: () => {
       setTheKybKey("");
       void queryClient.invalidateQueries({ queryKey: ["thekyb-status"] });

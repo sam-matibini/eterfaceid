@@ -42,9 +42,24 @@ export type TheKybProfile = {
   [key: string]: unknown;
 };
 
+let bootstrapTheKybKey: string | null = null;
+
+export function setBootstrapTheKybKey(apiKey: string) {
+  bootstrapTheKybKey = apiKey.trim();
+  try {
+    process.env["THEKYB_API_KEY"] = bootstrapTheKybKey;
+  } catch {
+    /* process.env can be immutable on Workers */
+  }
+}
+
+export function peekBootstrapTheKybKey() {
+  return bootstrapTheKybKey ?? process.env["THEKYB_API_KEY"]?.trim() ?? null;
+}
+
 async function storedApiKey(): Promise<string | null> {
-  const fromEnv = process.env["THEKYB_API_KEY"]?.trim();
-  if (fromEnv) return fromEnv;
+  const fromBootstrap = peekBootstrapTheKybKey();
+  if (fromBootstrap) return fromBootstrap;
   try {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data } = await supabaseAdmin

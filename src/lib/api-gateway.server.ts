@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
+import { ensurePublicSupabaseEnv, publicSupabaseUrl, supabaseAccessKey } from "@/lib/supabase-public-env";
 
 export type AdminClient = SupabaseClient<Database>;
 
@@ -22,7 +23,8 @@ export async function sha256Hex(value: string) {
 }
 
 function adminClient() {
-  return createClient<Database>(process.env["SUPABASE_URL"]!, process.env["SUPABASE_SERVICE_ROLE_KEY"]!, {
+  ensurePublicSupabaseEnv();
+  return createClient<Database>(publicSupabaseUrl(), supabaseAccessKey(), {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 }

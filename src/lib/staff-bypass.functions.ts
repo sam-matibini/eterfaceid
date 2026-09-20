@@ -151,9 +151,11 @@ export const bootstrapSaveResendApiKey = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     await assertBootstrapPin(data.pin);
     const { setBootstrapResendKey } = await import("@/lib/email.server");
+    const { projectRest } = await import("@/lib/supabase-project");
     setBootstrapResendKey(data.apiKey);
     const last4 = data.apiKey.slice(-4);
     const admin = await adminFromRuntime();
+    let persisted = false;
     if (admin) {
       await admin.from("integration_secrets").upsert(
         {
@@ -174,8 +176,36 @@ export const bootstrapSaveResendApiKey = createServerFn({ method: "POST" })
           config: { last4 } as never,
         } as never)
         .eq("provider", "resend");
+      persisted = true;
+    } else {
+      const secret = await projectRest("integration_secrets", {
+        method: "POST",
+        query: "on_conflict=provider",
+        prefer: "resolution=merge-duplicates,return=minimal",
+        body: {
+          provider: "resend",
+          api_key: data.apiKey,
+          last4,
+          updated_at: new Date().toISOString(),
+        },
+      });
+      persisted = !secret.error;
+      if (persisted) {
+        await projectRest("integration_settings", {
+          method: "PATCH",
+          query: "provider=eq.resend",
+          prefer: "return=minimal",
+          body: {
+            enabled: true,
+            status: "connected",
+            last_checked_at: new Date().toISOString(),
+            last_error: null,
+            config: { last4 },
+          },
+        });
+      }
     }
-    return { last4, persisted: Boolean(admin) };
+    return { last4, persisted };
   });
 
 export const bootstrapResendStatus = createServerFn({ method: "GET" })
@@ -223,4 +253,70 @@ export const bootstrapSendTestEmail = createServerFn({ method: "POST" })
       return { sent: false as const, reason: "provider" as const, detail: body.slice(0, 300) };
     }
     return { sent: true as const };
+  });
+
+export const bootstrapTheKybStatus = createServerFn({ method: "GET" })
+  .inputValidator((input) => z.object({ pin: z.string().min(1).max(72) }).parse(input))
+  .handler(async ({ data }) => {
+    await assertBootstrapPin(data.pin);
+    const { peekBootstrapTheKybKey, thekybConfigured } = await import("@/lib/thekyb.server");
+    const key = peekBootstrapTheKybKey();
+    return {
+      enabled: true,
+      configured: Boolean(key) || (await thekybConfigured()),
+      last4: key ? key.slice(-4) : null,
+      lastError: null,
+      lastCheckedAt: null,
+    };
+  });
+
+export const bootstrapSaveTheKybApiKey = createServerFn({ method: "POST" })
+  .inputValidator((input) =>
+    z.object({ pin: z.string().min(1).max(72), apiKey: z.string().trim().min(8).max(400) }).parse(input),
+  )
+  .handler(async ({ data }) => {
+    await assertBootstrapPin(data.pin);
+    const { setBootstrapTheKybKey } = await import("@/lib/thekyb.server");
+    const { THEKYB_PROVIDER, maskApiKey } = await import("@/lib/thekyb");
+    const { projectRest } = await import("@/lib/supabase-project");
+    setBootstrapTheKybKey(data.apiKey);
+    const last4 = data.apiKey.slice(-4);
+
+    const persisted = await projectRest("integration_secrets", {
+      method: "POST",
+      query: "on_conflict=provider",
+      prefer: "resolution=merge-duplicates,return=minimal",
+      body: {
+        provider: THEKYB_PROVIDER,
+        api_key: data.apiKey,
+        last4,
+        updated_at: new Date().toISOString(),
+      },
+    });
+    if (!persisted.error) {
+      await projectRest("integration_settings", {
+        method: "PATCH",
+        query: `provider=eq.${THEKYB_PROVIDER}`,
+        prefer: "return=minimal",
+        body: {
+          enabled: true,
+          status: "live",
+          last_checked_at: new Date().toISOString(),
+          last_error: null,
+          config: { last4, backoffice: "https://backoffice.thekyb.com/" },
+        },
+      });
+    }
+
+    let countries = 0;
+    let lastError: string | null = null;
+    try {
+      const { thekyb } = await import("@/lib/thekyb.server");
+      countries = (await thekyb.ping()).countries;
+    } catch (err) {
+      lastError = err instanceof Error ? err.message : "The KYB key could not be checked";
+    }
+
+    if (lastError) throw new Error(lastError);
+    return { ok: true, last4: maskApiKey(data.apiKey), countries, persisted: !persisted.error };
   });
