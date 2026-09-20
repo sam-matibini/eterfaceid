@@ -161,6 +161,7 @@ export function Header() {
               { label: "About us", to: "/about" },
               { label: "Careers", to: "/careers" },
               { label: "Contact us", to: "/contact" },
+              { label: session ? "Console" : "Sign in", to: session ? "/console" : "/auth" },
             ].map((l) => (
               <li key={l.to}>
                 <Link

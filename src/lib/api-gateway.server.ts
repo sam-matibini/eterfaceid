@@ -165,8 +165,20 @@ const RATE_LIMIT_PER_MINUTE = 120;
 export async function authenticateApiRequest(request: Request): Promise<ApiContext | Response> {
   const header = request.headers.get("authorization") ?? "";
   const token = header.toLowerCase().startsWith("bearer ") ? header.slice(7).trim() : "";
-  if (!token.startsWith("eid_")) {
-    return jsonResponse({ error: "missing_api_key", message: "Send your key as: Authorization: Bearer eid_..." }, 401);
+  if (!token.startsWith("eid_") && !token.startsWith("ef_")) {
+    return jsonResponse(
+      { error: "missing_api_key", message: "Send your secret key as: Authorization: Bearer ef_test_secret_... or eid_..." },
+      401,
+    );
+  }
+  if (
+    (token.startsWith("ef_test_") && !token.startsWith("ef_test_secret_")) ||
+    (token.startsWith("ef_live_") && !token.startsWith("ef_live_secret_"))
+  ) {
+    return jsonResponse(
+      { error: "publishable_key_not_allowed", message: "Publishable keys cannot call the secret API. Use a secret key." },
+      401,
+    );
   }
   const admin = adminClient();
   const hash = await sha256Hex(token);
@@ -208,6 +220,21 @@ export async function authenticateApiRequest(request: Request): Promise<ApiConte
   }
 
   await admin.from("api_keys").update({ last_used_at: new Date().toISOString() }).eq("id", keyId);
+  const requestId = crypto.randomUUID();
+  try {
+    await admin.from("api_request_logs").insert({
+      org_id: orgId,
+      key_id: keyId,
+      environment,
+      method: request.method,
+      path: new URL(request.url).pathname,
+      success: true,
+      request_id: requestId,
+      ip_address: request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
+    });
+  } catch {
+    /* logging must never block the API */
+  }
   return { keyId, orgId, environment, sandbox, admin };
 }
 

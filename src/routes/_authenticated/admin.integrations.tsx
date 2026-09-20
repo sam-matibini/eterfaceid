@@ -1,14 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { AdminShell, buttonClass, ghostButtonClass, inputClass } from "@/components/admin/shell";
 import { Panel, StatusPill } from "@/components/console/shell";
 import { fetchApiNotepad, fetchIntegrations, type ApiNotepadEntry } from "@/lib/platform";
 import {
   deleteApiNotepadEntry,
+  resendStatus,
   saveApiNotepadEntry,
+  saveResendApiKey,
   sendTestEmail,
   setIntegrationEnabled,
 } from "@/lib/platform.functions";
@@ -31,15 +33,32 @@ function IntegrationsPage() {
   const notepad = useQuery({ queryKey: ["api-notepad"], queryFn: fetchApiNotepad });
   const toggle = useServerFn(setIntegrationEnabled);
   const test = useServerFn(sendTestEmail);
+  const resendInfo = useServerFn(resendStatus);
+  const saveResend = useServerFn(saveResendApiKey);
   const saveEntry = useServerFn(saveApiNotepadEntry);
   const removeEntry = useServerFn(deleteApiNotepadEntry);
   const [testTo, setTestTo] = useState("");
+  const [resendKey, setResendKey] = useState("");
   const [editing, setEditing] = useState<ApiNotepadEntry | null>(null);
   const [form, setForm] = useState({ title: "", purpose: "", status: "idea" as ApiNotepadEntry["status"], notes: "" });
+  const notepadTitleRef = useRef<HTMLInputElement>(null);
   const [theKybKey, setTheKybKey] = useState("");
   const statusFn = useServerFn(thekybStatus);
   const saveKey = useServerFn(saveTheKybApiKey);
   const theKyb = useQuery({ queryKey: ["thekyb-status"], queryFn: () => statusFn({}) });
+  const resend = useQuery({ queryKey: ["resend-status"], queryFn: () => resendInfo({}) });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.location.hash.replace("#", "") !== "notepad") return;
+    setForm({
+      title: "Resend",
+      purpose: "Transactional email for invites, verification, password reset and alerts",
+      status: "keys_needed",
+      notes: "Create a sending-access key at resend.com/api-keys and paste it in the Resend API key field above.",
+    });
+    window.requestAnimationFrame(() => notepadTitleRef.current?.focus());
+  }, []);
 
   const switching = useMutation({
     mutationFn: async (input: { provider: string; enabled: boolean }) => toggle({ data: input }),
@@ -51,6 +70,7 @@ function IntegrationsPage() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["integrations"] });
       void queryClient.invalidateQueries({ queryKey: ["email-log"] });
+      void queryClient.invalidateQueries({ queryKey: ["resend-status"] });
     },
   });
 
@@ -81,6 +101,15 @@ function IntegrationsPage() {
       void queryClient.invalidateQueries({ queryKey: ["thekyb-status"] });
       void queryClient.invalidateQueries({ queryKey: ["integrations"] });
       void queryClient.invalidateQueries({ queryKey: ["api-notepad"] });
+    },
+  });
+
+  const savingResend = useMutation({
+    mutationFn: async () => saveResend({ data: { apiKey: resendKey.trim() } }),
+    onSuccess: () => {
+      setResendKey("");
+      void queryClient.invalidateQueries({ queryKey: ["resend-status"] });
+      void queryClient.invalidateQueries({ queryKey: ["integrations"] });
     },
   });
 
@@ -117,6 +146,9 @@ function IntegrationsPage() {
                   ) : null}
                   {row.provider === THEKYB_PROVIDER && theKyb.data?.last4 ? (
                     <div className="mt-1 text-xs text-muted-foreground">Key on file ending {theKyb.data.last4}</div>
+                  ) : null}
+                  {row.provider === "resend" && resend.data?.last4 ? (
+                    <div className="mt-1 text-xs text-muted-foreground">Key on file ending {resend.data.last4}</div>
                   ) : null}
                 </div>
                 <div className="flex items-center gap-3">
@@ -175,6 +207,55 @@ function IntegrationsPage() {
           ) : null}
         </Panel>
 
+        <Panel title="Resend API key">
+          <p className="text-sm text-muted-foreground">
+            Create a sending-access key in{" "}
+            <a href="https://resend.com/api-keys" className="underline underline-offset-4" target="_blank" rel="noreferrer">
+              Resend → API Keys
+            </a>
+            , then paste it here. Emails go out from{" "}
+            <span className="font-medium text-foreground">support@eterfaceid.com</span> unless you change the sender
+            under Company details.
+          </p>
+          <form
+            className="mt-4 flex flex-wrap gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (resendKey.trim().startsWith("re_")) savingResend.mutate();
+            }}
+          >
+            <input
+              id="resend-api-key"
+              type="password"
+              autoComplete="off"
+              value={resendKey}
+              onChange={(e) => setResendKey(e.target.value)}
+              placeholder={
+                resend.data?.last4 ? `Replace key ending ${resend.data.last4}` : "Paste Resend API key (re_…)"
+              }
+              className={`${inputClass} flex-1`}
+            />
+            <button
+              type="submit"
+              className={buttonClass}
+              disabled={savingResend.isPending || !resendKey.trim().startsWith("re_")}
+            >
+              {savingResend.isPending ? "Saving…" : "Save key"}
+            </button>
+          </form>
+          {savingResend.data ? (
+            <p className="mt-3 text-sm text-muted-foreground">
+              Key saved{savingResend.data.last4 ? ` (••••${savingResend.data.last4})` : ""}. Send a test email next.
+            </p>
+          ) : null}
+          {savingResend.isError ? (
+            <p className="mt-3 text-sm text-[var(--signal)]">{(savingResend.error as Error).message}</p>
+          ) : null}
+          {resend.data?.lastError ? (
+            <p className="mt-3 text-sm text-[var(--signal)]">{resend.data.lastError}</p>
+          ) : null}
+        </Panel>
+
         <Panel title="Send a test email">
           <form
             className="flex flex-wrap gap-2"
@@ -194,25 +275,28 @@ function IntegrationsPage() {
             </button>
           </form>
           {testing.data ? (
-            <p className="mt-3 text-sm text-muted-foreground">
-              {testing.data.sent ? "Test email sent." : `Not sent: ${testing.data.reason ?? "unknown reason"}`}
+            <p className={`mt-3 text-sm ${testing.data.sent ? "text-muted-foreground" : "text-[var(--signal)]"}`}>
+              {testing.data.sent
+                ? "Test email sent. Check the inbox and the Email log."
+                : `Not sent: ${testing.data.detail ?? testing.data.reason ?? "unknown reason"}`}
             </p>
           ) : null}
           {testing.isError ? (
             <p className="mt-3 text-sm text-[var(--signal)]">{(testing.error as Error).message}</p>
           ) : null}
           <p className="mt-5 border-t border-[var(--rule)] pt-4 text-xs text-muted-foreground">
-            Emails come from the sender name and address set under Company details. Until your own domain is
-            verified with the email provider, delivery is limited to your own address.
+            Invites, welcomes, verification and password-reset messages all use this Resend connection. Check App
+            admin → Email log if a send is not accepted.
           </p>
         </Panel>
       </div>
 
       <div className="mt-8">
-        <Panel title="API wish list">
+        <Panel title="API notepad">
           <p id="notepad" className="text-sm text-muted-foreground">
             APIs you want to add to the platform. Record them here; connecting one needs its keys, which always go
-            into the secure store and are never shown. The KYB is listed so you can paste its key above.
+            into the secure store and are never shown. Paste the Resend sending key in the Resend API key field
+            above, then save this notepad row.
           </p>
 
           <form
@@ -230,9 +314,10 @@ function IntegrationsPage() {
             }}
           >
             <input
+              ref={notepadTitleRef}
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
-              placeholder="API name (e.g. Interac verification)"
+              placeholder="API name (e.g. Resend)"
               className={inputClass}
             />
             <select
@@ -260,7 +345,7 @@ function IntegrationsPage() {
             />
             <div className="flex items-center gap-2 md:col-span-2">
               <button type="submit" className={buttonClass} disabled={savingEntry.isPending}>
-                {editing ? "Save changes" : "Add to wish list"}
+                {editing ? "Save changes" : "Add to notepad"}
               </button>
               {editing ? (
                 <button

@@ -3,7 +3,16 @@ import { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 
 import { supabase } from "@/integrations/supabase/client";
-import type { AppRole } from "@/lib/console";
+import {
+  hasPermission,
+  inferAccessRole,
+  mfaRequiredFor,
+  type AccessRole,
+  type AppRole,
+  type PermissionCode,
+} from "@/lib/access";
+
+const ACTIVE_ORG_KEY = "eid_active_org";
 
 export function useSession() {
   const [session, setSession] = useState<Session | null>(null);
@@ -29,32 +38,106 @@ export function useSession() {
   return { session, ready, user: session?.user ?? null };
 }
 
+export type OrganizationMembership = {
+  orgId: string;
+  role: AppRole;
+  accessRole: AccessRole;
+  isOwner: boolean;
+  name: string;
+  legalName: string;
+  orgLiveAccess: string;
+  sandboxAccess: boolean;
+  liveAccess: boolean;
+  permissions: string[];
+  mfaRequired: boolean;
+  jobTitle: string | null;
+  userType: string;
+};
+
+function readStoredOrg() {
+  if (typeof window === "undefined") return null;
+  return window.localStorage.getItem(ACTIVE_ORG_KEY);
+}
+
+export function setActiveOrganization(orgId: string) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(ACTIVE_ORG_KEY, orgId);
+}
+
 export function useOrganization() {
   const { user, ready } = useSession();
   const query = useQuery({
     queryKey: ["my-org", user?.id],
     enabled: Boolean(user?.id),
     queryFn: async () => {
-      const { data, error } = await supabase
+      const full = await supabase
         .from("organization_members")
-        .select("org_id, role, organizations(id, name, slug)")
+        .select(
+          "org_id, role, access_role, is_owner, sandbox_access, live_access, permissions, mfa_required, job_title, user_type, status, organizations(id, name, slug, legal_name, live_access)",
+        )
         .eq("user_id", user!.id)
-        .order("created_at")
-        .limit(1)
-        .maybeSingle();
+        .order("created_at");
+      const { data, error } =
+        full.error && /does not exist|schema cache/i.test(full.error.message)
+          ? await supabase
+              .from("organization_members")
+              .select("org_id, role, organizations(id, name, slug, live_access)")
+              .eq("user_id", user!.id)
+              .order("created_at")
+          : full;
       if (error) throw error;
-      if (!data) return null;
-      return {
-        orgId: data.org_id as string,
-        role: data.role as AppRole,
-        name: (data.organizations as { name: string } | null)?.name ?? "Your team",
-      };
+      const rows = (data ?? []).filter((row) => (row as { status?: string }).status !== "disabled");
+      const memberships: OrganizationMembership[] = rows.map((raw) => {
+        const row = raw as {
+          org_id: string;
+          role: AppRole;
+          access_role?: AccessRole | null;
+          is_owner?: boolean | null;
+          sandbox_access?: boolean | null;
+          live_access?: boolean | null;
+          permissions?: string[] | null;
+          mfa_required?: boolean | null;
+          job_title?: string | null;
+          user_type?: string | null;
+          organizations?: {
+            name?: string;
+            legal_name?: string | null;
+            live_access?: string;
+          } | null;
+        };
+        const org = row.organizations ?? null;
+        return {
+          orgId: row.org_id,
+          role: row.role,
+          accessRole: row.access_role ?? inferAccessRole(row.role),
+          isOwner: Boolean(row.is_owner),
+          name: org?.name ?? "Your team",
+          legalName: org?.legal_name ?? org?.name ?? "Your team",
+          orgLiveAccess: org?.live_access ?? "locked",
+          sandboxAccess: row.sandbox_access !== false,
+          liveAccess: Boolean(row.live_access),
+          permissions: row.permissions ?? [],
+          mfaRequired: Boolean(row.mfa_required),
+          jobTitle: row.job_title ?? null,
+          userType: row.user_type ?? "employee",
+        };
+      });
+      if (!memberships.length) return { memberships: [], current: null as OrganizationMembership | null };
+      const stored = readStoredOrg();
+      const current = memberships.find((m) => m.orgId === stored) ?? memberships[0];
+      return { memberships, current };
     },
   });
+  const current = query.data?.current ?? null;
   return {
-    organization: query.data ?? null,
+    organization: current,
+    memberships: query.data?.memberships ?? [],
     loading: !ready || query.isLoading,
     ready: ready && !query.isLoading,
+    setActive: (orgId: string) => {
+      setActiveOrganization(orgId);
+      void query.refetch();
+    },
   };
 }
 
@@ -63,9 +146,30 @@ export function useRoles() {
   const roles = organization ? [organization.role] : [];
   return {
     roles,
-    isAdmin: organization?.role === "admin",
+    isAdmin: organization?.role === "admin" || organization?.isOwner === true,
+    isOwner: Boolean(organization?.isOwner),
     canWrite: organization?.role === "admin" || organization?.role === "analyst",
+    liveAccess: Boolean(organization?.liveAccess),
+    sandboxAccess: organization ? organization.sandboxAccess !== false : false,
+    mfaRequired: mfaRequiredFor({
+      is_owner: organization?.isOwner,
+      access_role: organization?.accessRole,
+      role: organization?.role,
+      live_access: organization?.liveAccess,
+      mfa_required: organization?.mfaRequired,
+    }),
     loading,
+    has: (code: PermissionCode) =>
+      hasPermission(
+        organization
+          ? {
+              role: organization.role,
+              access_role: organization.accessRole,
+              permissions: organization.permissions,
+              is_owner: organization.isOwner,
+            }
+          : null,
+        code,
+      ),
   };
 }
-
