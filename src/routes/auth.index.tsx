@@ -174,7 +174,13 @@ function AuthPage() {
             data: { full_name: `${firstName.trim()} ${lastName.trim()}`.trim() },
           },
         });
-        if (signUpError) throw signUpError;
+        if (signUpError) {
+          if (/already registered|already been registered|rate limit/i.test(signUpError.message)) {
+            await requestVerificationEmail(parsed.data.email, origin);
+            return;
+          }
+          throw signUpError;
+        }
         if (!data.session) {
           await requestVerificationEmail(parsed.data.email, origin);
         }
