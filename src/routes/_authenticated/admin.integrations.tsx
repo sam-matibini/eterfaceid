@@ -479,6 +479,13 @@ function IntegrationsPage() {
             Invites, welcomes, verification and password-reset messages all use this Resend connection. Check App
             admin → Email log if a send is not accepted.
           </p>
+          <p className="mt-3 text-xs text-muted-foreground">
+            To send Supabase Auth mail through the same Resend account, set Authentication → Hooks → Send Email to{" "}
+            <code className="break-all">
+              {typeof window !== "undefined" ? `${window.location.origin}/api/hooks/auth-email` : "/api/hooks/auth-email"}
+            </code>
+            .
+          </p>
         </Panel>
       </div>
 

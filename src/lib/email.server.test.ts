@@ -2,8 +2,10 @@ import {
   formatSender,
   normalizeResendFromAddress,
   parseProviderError,
+  peekBootstrapResendKey,
   renderTemplate,
   resendSendPlan,
+  setBootstrapResendKey,
 } from "./email.server";
 import { publicEmailFailureMessage } from "./email-copy";
 
@@ -54,5 +56,12 @@ assert(
   ),
   "env leaks are hidden from end users",
 );
+
+const previous = peekBootstrapResendKey();
+setBootstrapResendKey("re_persisted_key");
+assert(peekBootstrapResendKey() === "re_persisted_key", "bootstrap key is readable after save");
+assert(process.env["RESEND_API_KEY"] === "re_persisted_key", "bootstrap key is copied onto process.env");
+if (previous) setBootstrapResendKey(previous);
+else delete process.env["RESEND_API_KEY"];
 
 console.log("email.server.test.ts passed");

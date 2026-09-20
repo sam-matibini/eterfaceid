@@ -290,15 +290,44 @@ async function senderIdentity(admin: Admin) {
   };
 }
 
+const RESEND_KEY_STORE = Symbol.for("eid.resend.apiKey");
+
+function readGlobalResendKey() {
+  try {
+    const value = (globalThis as Record<PropertyKey, unknown>)[RESEND_KEY_STORE];
+    return typeof value === "string" && value.trim() ? value.trim() : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeGlobalResendKey(apiKey: string) {
+  try {
+    (globalThis as Record<PropertyKey, unknown>)[RESEND_KEY_STORE] = apiKey;
+  } catch {
+    /* isolate memory is best-effort */
+  }
+  try {
+    process.env["RESEND_API_KEY"] = apiKey;
+  } catch {
+    /* process.env can be immutable on Workers */
+  }
+}
+
 let bootstrapResendKey: string | null = null;
 
 export function setBootstrapResendKey(apiKey: string) {
   bootstrapResendKey = apiKey.trim();
-  process.env["RESEND_API_KEY"] = bootstrapResendKey;
+  writeGlobalResendKey(bootstrapResendKey);
 }
 
 export function peekBootstrapResendKey() {
-  return bootstrapResendKey ?? process.env["RESEND_API_KEY"]?.trim() ?? null;
+  return (
+    bootstrapResendKey ??
+    readGlobalResendKey() ??
+    process.env["RESEND_API_KEY"]?.trim() ??
+    null
+  );
 }
 
 async function storedResendKey(admin: Admin) {

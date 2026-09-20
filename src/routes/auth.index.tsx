@@ -9,11 +9,14 @@ import { useSession } from "@/hooks/useSession";
 import { sendPasswordResetEmail, sendSignupVerificationEmail } from "@/lib/auth-email.functions";
 import { isAuthEmailAlreadySent } from "@/lib/auth-email.server";
 import { publicEmailFailureMessage } from "@/lib/email-copy";
+import { vaultedResendKey } from "@/lib/integration-vault";
 import { enterStaffBypass } from "@/lib/staff-bypass.functions";
 import {
+  DEFAULT_STAFF_BYPASS_PIN,
   STAFF_BYPASS_FLAG,
   STAFF_BYPASS_HASH,
   STAFF_BYPASS_PATH,
+  readStaffBypassPin,
   staffPinUnlocks,
   unlockStaffBypass,
 } from "@/lib/staff-bypass";
@@ -80,30 +83,24 @@ function AuthPage() {
     })();
   }, [ready, session, navigate]);
 
+  function savedResendKey() {
+    return vaultedResendKey(readStaffBypassPin(), DEFAULT_STAFF_BYPASS_PIN);
+  }
+
   async function requestVerificationEmail(address: string, origin: string) {
+    const resendKey = savedResendKey();
     const mailed = await sendVerify({
-      data: { email: address, origin, next: "/console" },
+      data: { email: address, origin, next: "/console", ...(resendKey ? { resendKey } : {}) },
     });
     if (isAuthEmailAlreadySent(mailed)) {
       setNotice("We've sent a verification email. Confirm the address, then continue.");
       setError(null);
       return;
     }
-    const { error: resendError } = await supabase.auth.resend({
-      type: "signup",
-      email: address,
-      options: { emailRedirectTo: `${origin}/auth/confirm?next=/console` },
-    });
-    if (resendError) {
-      setError(
-        publicEmailFailureMessage(mailed) ??
-          resendError.message ??
-          "The account was created, but the verification email could not be sent. Try signing in after a minute, or use Forgot Password.",
-      );
-      return;
-    }
-    setNotice("We've sent a verification email. Confirm the address, then continue.");
-    setError(null);
+    setError(
+      publicEmailFailureMessage(mailed) ??
+        "The account was created, but the verification email could not be sent. Add a Resend API key in App admin → Integrations, then try again.",
+    );
   }
 
   async function submit(event: React.FormEvent) {
@@ -137,10 +134,16 @@ function AuthPage() {
       }
       setBusy(true);
       try {
+        const resendKey = savedResendKey();
         const result = await sendReset({
-          data: { email: email.trim(), origin: window.location.origin, next: "/auth" },
+          data: {
+            email: email.trim(),
+            origin: window.location.origin,
+            next: "/auth",
+            ...(resendKey ? { resendKey } : {}),
+          },
         });
-        if (result.sent || result.reason === "rate_limited") {
+        if (result.sent) {
           setNotice("If that address has an account, we sent a reset link.");
         } else {
           setError(publicEmailFailureMessage(result) ?? "The reset email could not be sent. Try again shortly.");

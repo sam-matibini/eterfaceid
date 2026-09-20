@@ -62,6 +62,7 @@ import { Route as AuthenticatedConsoleUsersRouteImport } from './routes/_authent
 import { Route as AuthenticatedConsoleWatchlistsRouteImport } from './routes/_authenticated/console.watchlists'
 import { Route as AuthenticatedConsoleWebhooksRouteImport } from './routes/_authenticated/console.webhooks'
 import { Route as AuthenticatedSecurityMfaRouteImport } from './routes/_authenticated/security.mfa'
+import { Route as ApiHooksAuthEmailRouteImport } from './routes/api/hooks/auth-email'
 import { Route as AuthenticatedAdminCompaniesOrgIdRouteImport } from './routes/_authenticated/admin.companies.$orgId'
 import { Route as AuthenticatedAdminInvoicesInvoiceIdRouteImport } from './routes/_authenticated/admin.invoices.$invoiceId'
 import { Route as AuthenticatedConsoleCasesIndexRouteImport } from './routes/_authenticated/console.cases.index'
@@ -386,6 +387,11 @@ const AuthenticatedSecurityMfaRoute =
     path: '/security/mfa',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiHooksAuthEmailRoute = ApiHooksAuthEmailRouteImport.update({
+  id: '/api/hooks/auth-email',
+  path: '/api/hooks/auth-email',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedAdminCompaniesOrgIdRoute =
   AuthenticatedAdminCompaniesOrgIdRouteImport.update({
     id: '/admin/companies/$orgId',
@@ -613,6 +619,7 @@ export interface FileRoutesByFullPath {
   '/console/watchlists': typeof AuthenticatedConsoleWatchlistsRoute
   '/console/webhooks': typeof AuthenticatedConsoleWebhooksRoute
   '/security/mfa': typeof AuthenticatedSecurityMfaRoute
+  '/api/hooks/auth-email': typeof ApiHooksAuthEmailRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/console/': typeof AuthenticatedConsoleIndexRoute
   '/admin/companies/$orgId': typeof AuthenticatedAdminCompaniesOrgIdRoute
@@ -697,6 +704,7 @@ export interface FileRoutesByTo {
   '/console/watchlists': typeof AuthenticatedConsoleWatchlistsRoute
   '/console/webhooks': typeof AuthenticatedConsoleWebhooksRoute
   '/security/mfa': typeof AuthenticatedSecurityMfaRoute
+  '/api/hooks/auth-email': typeof ApiHooksAuthEmailRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/console': typeof AuthenticatedConsoleIndexRoute
   '/admin/companies/$orgId': typeof AuthenticatedAdminCompaniesOrgIdRoute
@@ -784,6 +792,7 @@ export interface FileRoutesById {
   '/_authenticated/console/watchlists': typeof AuthenticatedConsoleWatchlistsRoute
   '/_authenticated/console/webhooks': typeof AuthenticatedConsoleWebhooksRoute
   '/_authenticated/security/mfa': typeof AuthenticatedSecurityMfaRoute
+  '/api/hooks/auth-email': typeof ApiHooksAuthEmailRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/console/': typeof AuthenticatedConsoleIndexRoute
   '/_authenticated/admin/companies/$orgId': typeof AuthenticatedAdminCompaniesOrgIdRoute
@@ -871,6 +880,7 @@ export interface FileRouteTypes {
     | '/console/watchlists'
     | '/console/webhooks'
     | '/security/mfa'
+    | '/api/hooks/auth-email'
     | '/admin/'
     | '/console/'
     | '/admin/companies/$orgId'
@@ -955,6 +965,7 @@ export interface FileRouteTypes {
     | '/console/watchlists'
     | '/console/webhooks'
     | '/security/mfa'
+    | '/api/hooks/auth-email'
     | '/admin'
     | '/console'
     | '/admin/companies/$orgId'
@@ -1041,6 +1052,7 @@ export interface FileRouteTypes {
     | '/_authenticated/console/watchlists'
     | '/_authenticated/console/webhooks'
     | '/_authenticated/security/mfa'
+    | '/api/hooks/auth-email'
     | '/_authenticated/admin/'
     | '/_authenticated/console/'
     | '/_authenticated/admin/companies/$orgId'
@@ -1097,6 +1109,7 @@ export interface RootRouteChildren {
   SolutionsPersonVerificationRoute: typeof SolutionsPersonVerificationRoute
   VerifyTokenRoute: typeof VerifyTokenRoute
   SolutionsIndexRoute: typeof SolutionsIndexRoute
+  ApiHooksAuthEmailRoute: typeof ApiHooksAuthEmailRoute
   ApiPublicHooksPlaidSyncRoute: typeof ApiPublicHooksPlaidSyncRoute
   ApiPublicHooksRefreshWatchlistsRoute: typeof ApiPublicHooksRefreshWatchlistsRoute
   ApiPublicHooksRescreenRoute: typeof ApiPublicHooksRescreenRoute
@@ -1483,6 +1496,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/security/mfa'
       preLoaderRoute: typeof AuthenticatedSecurityMfaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/api/hooks/auth-email': {
+      id: '/api/hooks/auth-email'
+      path: '/api/hooks/auth-email'
+      fullPath: '/api/hooks/auth-email'
+      preLoaderRoute: typeof ApiHooksAuthEmailRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/admin/companies/$orgId': {
       id: '/_authenticated/admin/companies/$orgId'
@@ -1887,6 +1907,7 @@ const rootRouteChildren: RootRouteChildren = {
   SolutionsPersonVerificationRoute: SolutionsPersonVerificationRoute,
   VerifyTokenRoute: VerifyTokenRoute,
   SolutionsIndexRoute: SolutionsIndexRoute,
+  ApiHooksAuthEmailRoute: ApiHooksAuthEmailRoute,
   ApiPublicHooksPlaidSyncRoute: ApiPublicHooksPlaidSyncRoute,
   ApiPublicHooksRefreshWatchlistsRoute: ApiPublicHooksRefreshWatchlistsRoute,
   ApiPublicHooksRescreenRoute: ApiPublicHooksRescreenRoute,

@@ -8,6 +8,8 @@ import { useSession } from "@/hooks/useSession";
 import { acceptInvite, peekInvite } from "@/lib/teams.functions";
 import { sendSignupVerificationEmail } from "@/lib/auth-email.functions";
 import { publicEmailFailureMessage } from "@/lib/email-copy";
+import { vaultedResendKey } from "@/lib/integration-vault";
+import { DEFAULT_STAFF_BYPASS_PIN, readStaffBypassPin } from "@/lib/staff-bypass";
 
 export const Route = createFileRoute("/invite/$token")({
   ssr: false,
@@ -92,10 +94,16 @@ function InvitePage() {
       });
       if (signUpError) throw signUpError;
       if (!data.session) {
+        const resendKey = vaultedResendKey(readStaffBypassPin(), DEFAULT_STAFF_BYPASS_PIN);
         const mailed = await sendVerify({
-          data: { email: info.email, origin: window.location.origin, next: `/invite/${token}` },
+          data: {
+            email: info.email,
+            origin: window.location.origin,
+            next: `/invite/${token}`,
+            ...(resendKey ? { resendKey } : {}),
+          },
         });
-        if (mailed.sent || mailed.reason === "rate_limited") {
+        if (mailed.sent) {
           setNotice(`We've sent a verification email to ${info.email}. Confirm it, then return here.`);
         } else {
           setError(

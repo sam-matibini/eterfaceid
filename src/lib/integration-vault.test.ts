@@ -5,6 +5,7 @@ import {
   readIntegrationVault,
   restoreKeysFromVault,
   setApiPersistEnabled,
+  vaultedResendKey,
   upsertVaultApi,
   upsertVaultNote,
   vaultAsIntegrationRows,
@@ -49,6 +50,8 @@ const restored = restoreKeysFromVault("eterfaceid");
 assert(restored.resendKey === "re_test_key_m9EL", "resend key restores with the staff pin");
 assert(restored.theKybKey === "kyb-secret-5289", "the kyb key restores with the staff pin");
 assert(restoreKeysFromVault("wrong").resendKey !== "re_test_key_m9EL", "wrong pin does not restore the key");
+assert(vaultedResendKey("wrong", "eterfaceid") === "re_test_key_m9EL", "vaulted key tries pins until one works");
+assert(vaultedResendKey("wrong") === "", "vaulted key stays empty when no pin matches");
 
 const rows = vaultAsIntegrationRows();
 assert(rows.some((row) => row.provider === "resend" && row.enabled), "connected services lists resend");

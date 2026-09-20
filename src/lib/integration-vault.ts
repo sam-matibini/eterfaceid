@@ -194,6 +194,16 @@ export function restoreKeysFromVault(pin: string) {
   };
 }
 
+/** Unwrap the saved Resend key using the first pin that works. */
+export function vaultedResendKey(...pins: string[]) {
+  for (const pin of pins) {
+    if (!pin.trim()) continue;
+    const key = restoreKeysFromVault(pin).resendKey.trim();
+    if (key.startsWith("re_")) return key;
+  }
+  return "";
+}
+
 export function vaultAsIntegrationRows() {
   return readIntegrationVault().apis.map((row) => ({
     id: `vault-${row.provider}`,

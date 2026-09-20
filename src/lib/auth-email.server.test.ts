@@ -1,6 +1,9 @@
 import {
+  authActionToEvent,
+  authConfirmEidUrl,
   authConfirmUrl,
   authLinkFromGenerate,
+  confirmUrlFromAuthHook,
   generateLinkTypes,
   isAuthEmailAlreadySent,
   rewriteAuthActionLink,
@@ -12,14 +15,14 @@ function assert(condition: unknown, message: string) {
 }
 
 assert(isAuthEmailAlreadySent({ sent: true }), "sent is already sent");
-assert(isAuthEmailAlreadySent({ sent: false, reason: "rate_limited" }), "rate_limited is already sent");
+assert(!isAuthEmailAlreadySent({ sent: false, reason: "rate_limited" }), "rate_limited is not treated as sent");
 assert(
-  isAuthEmailAlreadySent({
+  !isAuthEmailAlreadySent({
     sent: false,
     reason: "provider_error",
     detail: "For security purposes, you can only request this after 59 seconds.",
   }),
-  "supabase cooldown is already sent",
+  "supabase cooldown is not treated as sent",
 );
 assert(!isAuthEmailAlreadySent({ sent: false, reason: "not_configured" }), "missing resend is not already sent");
 
@@ -52,5 +55,21 @@ assert(
   authLinkFromGenerate(null, "https://eterfaceid.com", "signup") === null,
   "missing generateLink properties are not treated as sent",
 );
+
+assert(authActionToEvent("signup") === "account.verify", "signup maps to verify");
+assert(authActionToEvent("recovery") === "account.password_reset", "recovery maps to reset");
+
+const hookUrl = confirmUrlFromAuthHook("https://eterfaceid.com", {
+  token_hash: "hook-hash",
+  email_action_type: "signup",
+  redirect_to: "https://eterfaceid.com/auth/confirm?next=/console",
+});
+assert(hookUrl.includes("token_hash=hook-hash"), "hook confirm keeps the auth token");
+assert(hookUrl.includes("type=signup"), "hook confirm keeps the action type");
+assert(hookUrl.includes("next=%2Fauth%2Fconfirm"), "hook confirm keeps the app path");
+
+const eidUrl = authConfirmEidUrl("https://eterfaceid.com", "signed.token", "/console");
+assert(eidUrl.includes("eid=signed.token"), "signed token is on the confirm url");
+assert(eidUrl.includes("next=%2Fconsole"), "signed token keeps next");
 
 console.log("auth-email.server.test.ts passed");
