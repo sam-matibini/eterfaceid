@@ -1,10 +1,11 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, type ReactNode } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
 import { usePlatformStaff } from "@/hooks/usePlatformStaff";
+import { adminGateStatus, lockAdmin, unlockAdmin } from "@/lib/admin-gate.functions";
 
 export { usePlatformStaff };
 
