@@ -56,6 +56,12 @@ assert(
   ),
   "env leaks are hidden from end users",
 );
+assert(
+  publicEmailFailureMessage({ sent: false, reason: "provider_error", detail: "[401] API key is invalid" })?.includes(
+    "Paste a current sending key",
+  ),
+  "invalid Resend keys ask for a fresh Integrations paste",
+);
 
 const previous = peekBootstrapResendKey();
 setBootstrapResendKey("re_persisted_key");
