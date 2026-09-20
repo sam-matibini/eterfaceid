@@ -4,7 +4,6 @@ import { z } from "zod";
 
 import { AuthFrame, authButtonClass, authInputClass } from "@/components/auth/AuthFrame";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
 import { useSession } from "@/hooks/useSession";
 
 export const Route = createFileRoute("/auth/")({
@@ -122,16 +121,6 @@ function AuthPage() {
     }
   }
 
-  async function google() {
-    setError(null);
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
-    });
-    if (result.error) {
-      setError("Google sign-in could not be started. Try again or use your email address.");
-    }
-  }
-
   const title =
     mode === "signup" ? (hasInvite ? "Create your account" : "Create a company account") : mode === "reset" ? "Reset your password" : "eterfaceID Login";
 
@@ -148,23 +137,6 @@ function AuthPage() {
               : "Sign in with your work email, then complete MFA if your role requires it."
       }
     >
-      {mode !== "reset" ? (
-        <>
-          <button
-            type="button"
-            onClick={google}
-            className="inline-flex h-11 w-full items-center justify-center rounded-md border border-[var(--rule)] bg-background px-4 text-sm font-medium transition-colors hover:bg-[var(--paper-deep)]"
-          >
-            Continue with Google
-          </button>
-          <div className="my-6 flex items-center gap-3 text-xs uppercase tracking-widest text-muted-foreground">
-            <span className="h-px flex-1 bg-[var(--rule)]" />
-            or
-            <span className="h-px flex-1 bg-[var(--rule)]" />
-          </div>
-        </>
-      ) : null}
-
       <form onSubmit={submit} className="space-y-4">
         {mode === "signup" ? (
           <div className="grid gap-4 sm:grid-cols-2">
