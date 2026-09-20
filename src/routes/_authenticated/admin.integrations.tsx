@@ -232,6 +232,8 @@ function IntegrationsPage() {
     },
     onSuccess: () => {
       setTheKybKey("");
+    },
+    onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: ["thekyb-status"] });
       void queryClient.invalidateQueries({ queryKey: ["integrations"] });
       void queryClient.invalidateQueries({ queryKey: ["api-notepad"] });
