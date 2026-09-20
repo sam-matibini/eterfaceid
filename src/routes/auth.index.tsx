@@ -344,7 +344,7 @@ function AuthPage() {
 
       <p className="mt-8 text-xs text-muted-foreground">
         {mode === "staff"
-          ? "This opens App admin → Integrations so Resend and other API keys can be saved. Set STAFF_BYPASS_PIN to replace the bootstrap code, or off to disable it."
+          ? "This opens App admin → Integrations so you can paste the Resend API key. No email confirmation or database publish is required."
           : "Creating a company account makes you the Organization Owner. Live access for other users is granted separately. Privileged roles require MFA."}
       </p>
     </AuthFrame>
