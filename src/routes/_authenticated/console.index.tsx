@@ -1,154 +1,154 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
 
-import { ConsoleShell, Panel, StatusPill } from "@/components/console/shell";
-import {
-  fetchCases,
-  riskLabel,
-  statusLabel,
-  type CaseStatus,
-  type RiskLevel,
-} from "@/lib/console";
+import { ConsoleShell, inkButtonClass, Panel, StatusPill } from "@/components/console/shell";
+import { useEnvironment } from "@/hooks/useEnvironment";
+import { useOrganization, useRoles } from "@/hooks/useSession";
+import { displayRole } from "@/lib/access";
+import { fetchDashboardStats } from "@/lib/console";
 
 export const Route = createFileRoute("/_authenticated/console/")({
   head: () => ({
     meta: [
-      { title: "Cases — eterfaceID console" },
+      { title: "Dashboard — eterfaceID" },
       { name: "robots", content: "noindex" },
     ],
   }),
-  component: CasesPage,
+  component: DashboardPage,
 });
 
-function CasesPage() {
-  const [status, setStatus] = useState<"all" | CaseStatus>("all");
-  const [search, setSearch] = useState("");
-  const { data, isLoading, error } = useQuery({ queryKey: ["cases"], queryFn: fetchCases });
-
-  const rows = useMemo(() => {
-    const all = data ?? [];
-    return all.filter((row) => {
-      const statusOk = status === "all" || row.status === status;
-      const term = search.trim().toLowerCase();
-      const searchOk =
-        !term ||
-        row.subject_name.toLowerCase().includes(term) ||
-        row.reference.toLowerCase().includes(term);
-      return statusOk && searchOk;
-    });
-  }, [data, status, search]);
-
-  const counts = useMemo(() => {
-    const all = data ?? [];
-    return {
-      open: all.filter((c) => c.status === "pending" || c.status === "in_review").length,
-      high: all.filter((c) => c.risk_level === "high").length,
-      approved: all.filter((c) => c.status === "approved").length,
-      total: all.length,
-    };
-  }, [data]);
+function DashboardPage() {
+  const { organization } = useOrganization();
+  const { has, isAdmin } = useRoles();
+  const { environment, setEnvironment, canUseLive } = useEnvironment();
+  const stats = useQuery({
+    queryKey: ["dashboard-stats"],
+    queryFn: fetchDashboardStats,
+    retry: false,
+  });
+  const developer = organization?.accessRole === "developer" || has("api_keys.create");
+  const data = stats.data;
 
   return (
     <ConsoleShell>
-      <h1 className="font-display text-3xl font-bold tracking-tight">Cases</h1>
-      <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-        Every person and business record under review, with its current status, risk level and
-        outstanding screening work.
-      </p>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="font-display text-3xl font-bold tracking-tight">
+            {developer ? "Developer Dashboard" : "Dashboard"}
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+            {organization?.legalName ?? organization?.name} ·{" "}
+            {displayRole(organization?.role, organization?.accessRole, organization?.isOwner)}
+          </p>
+        </div>
+        {developer ? (
+          <label className="text-xs uppercase tracking-widest text-muted-foreground">
+            Environment
+            <select
+              className="ml-2 h-10 rounded-md border border-[var(--rule)] bg-background px-2 text-sm normal-case tracking-normal text-foreground"
+              value={environment}
+              onChange={(e) => setEnvironment(e.target.value as "sandbox" | "live")}
+            >
+              <option value="sandbox">SANDBOX</option>
+              <option value="live" disabled={!canUseLive}>
+                LIVE
+              </option>
+            </select>
+          </label>
+        ) : null}
+      </div>
 
-      <div className="mt-8 grid gap-px border border-[var(--rule)] bg-[var(--rule)] sm:grid-cols-4">
+      <div className="mt-8 grid gap-px border border-[var(--rule)] bg-[var(--rule)] sm:grid-cols-2 lg:grid-cols-4">
         {[
-          { label: "Open for review", value: counts.open },
-          { label: "High risk", value: counts.high },
-          { label: "Approved", value: counts.approved },
-          { label: "Total cases", value: counts.total },
+          { label: "API Status", value: "Operational" },
+          { label: "API Requests Today", value: data?.requestsToday ?? 0 },
+          { label: "Successful", value: data?.successful ?? 0 },
+          { label: "Failed", value: data?.failed ?? 0 },
         ].map((stat) => (
           <div key={stat.label} className="bg-background px-5 py-4">
             <div className="font-display text-2xl font-bold">{stat.value}</div>
-            <div className="mt-1 text-xs uppercase tracking-widest text-muted-foreground">
-              {stat.label}
-            </div>
+            <div className="mt-1 text-xs uppercase tracking-widest text-muted-foreground">{stat.label}</div>
           </div>
         ))}
       </div>
 
-      <div className="mt-8 flex flex-wrap items-center gap-3">
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search by name or reference"
-          className="h-10 w-64 rounded-md border border-[var(--rule)] bg-background px-3 text-sm outline-none focus-visible:border-[var(--signal)]"
-        />
-        {(["all", "pending", "in_review", "approved", "rejected"] as const).map((value) => (
-          <button
-            key={value}
-            type="button"
-            onClick={() => setStatus(value)}
-            className={`rounded-full border px-3 py-1.5 text-xs transition-colors ${
-              status === value
-                ? "border-[var(--ink)] text-[var(--ink)]"
-                : "border-[var(--rule)] text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {value === "all" ? "All" : statusLabel[value]}
-          </button>
+      <div className="mt-px grid gap-px border-x border-b border-[var(--rule)] bg-[var(--rule)] sm:grid-cols-3">
+        {[
+          { label: "KYC Checks", value: data?.kyc ?? 0 },
+          { label: "KYB Checks", value: data?.kyb ?? 0 },
+          { label: "AML Screens", value: data?.aml ?? 0 },
+        ].map((stat) => (
+          <div key={stat.label} className="bg-background px-5 py-4">
+            <div className="font-display text-2xl font-bold">{stat.value}</div>
+            <div className="mt-1 text-xs uppercase tracking-widest text-muted-foreground">{stat.label}</div>
+          </div>
         ))}
       </div>
 
-      <div className="mt-6">
-        <Panel title="Case queue">
-          {isLoading ? <p className="text-sm text-muted-foreground">Loading cases…</p> : null}
-          {error ? (
-            <p className="text-sm text-[var(--signal)]">
-              These cases could not be loaded. Your account may not have a role yet — ask an
-              administrator to grant one.
-            </p>
-          ) : null}
-          {!isLoading && !error && rows.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No cases match this filter.</p>
-          ) : null}
-          {rows.length > 0 ? (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs uppercase tracking-widest text-muted-foreground">
-                  <th className="pb-3 font-medium">Reference</th>
-                  <th className="pb-3 font-medium">Subject</th>
-                  <th className="pb-3 font-medium">Type</th>
-                  <th className="pb-3 font-medium">Status</th>
-                  <th className="pb-3 font-medium">Risk</th>
-                  <th className="pb-3 font-medium">Opened</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row) => (
-                  <tr key={row.id} className="border-t border-[var(--rule)]">
-                    <td className="py-3 font-mono text-xs">
-                      <Link
-                        to="/console/cases/$caseId"
-                        params={{ caseId: row.id }}
-                        className="underline underline-offset-4 hover:text-[var(--signal)]"
-                      >
-                        {row.reference}
-                      </Link>
-                    </td>
-                    <td className="py-3">{row.subject_name}</td>
-                    <td className="py-3 capitalize text-muted-foreground">{row.case_type}</td>
-                    <td className="py-3">
-                      <StatusPill tone={row.status}>{statusLabel[row.status as CaseStatus]}</StatusPill>
-                    </td>
-                    <td className="py-3">
-                      <StatusPill tone={row.risk_level}>
-                        {riskLabel[row.risk_level as RiskLevel]} · {row.risk_score}
-                      </StatusPill>
-                    </td>
-                    <td className="py-3 text-muted-foreground">
-                      {new Date(row.created_at).toLocaleDateString()}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      <div className="mt-8 grid gap-6 lg:grid-cols-2">
+        <Panel title="Quick Actions">
+          <div className="flex flex-wrap gap-2">
+            {has("api_keys.create") || isAdmin ? (
+              <Link to="/console/api-keys" className={`${inkButtonClass} inline-flex items-center`}>
+                Create API Key
+              </Link>
+            ) : null}
+            <a
+              href="/developers"
+              className="inline-flex h-10 items-center rounded-md border border-[var(--rule)] px-4 text-sm"
+            >
+              View API Documentation
+            </a>
+            {has("webhooks.manage") || isAdmin ? (
+              <Link
+                to="/console/webhooks"
+                className="inline-flex h-10 items-center rounded-md border border-[var(--rule)] px-4 text-sm"
+              >
+                Create Webhook
+              </Link>
+            ) : null}
+            {has("api_logs.view") || isAdmin ? (
+              <Link
+                to="/console/api-logs"
+                className="inline-flex h-10 items-center rounded-md border border-[var(--rule)] px-4 text-sm"
+              >
+                View API Logs
+              </Link>
+            ) : null}
+            <Link
+              to="/console/cases"
+              className="inline-flex h-10 items-center rounded-md border border-[var(--rule)] px-4 text-sm"
+            >
+              Run Sandbox Test
+            </Link>
+          </div>
+        </Panel>
+
+        <Panel title="Access">
+          <ul className="space-y-3 text-sm">
+            <li className="flex items-center justify-between">
+              <span>Sandbox access</span>
+              <StatusPill tone={organization?.sandboxAccess ? "approved" : "closed"}>
+                {organization?.sandboxAccess ? "granted" : "off"}
+              </StatusPill>
+            </li>
+            <li className="flex items-center justify-between">
+              <span>Live API access</span>
+              <StatusPill tone={organization?.liveAccess ? "approved" : "closed"}>
+                {organization?.liveAccess ? "authorized" : "not authorized"}
+              </StatusPill>
+            </li>
+            <li className="flex items-center justify-between">
+              <span>Organization live status</span>
+              <StatusPill tone={organization?.orgLiveAccess === "approved" ? "approved" : "pending"}>
+                {organization?.orgLiveAccess ?? "locked"}
+              </StatusPill>
+            </li>
+          </ul>
+          {!organization?.liveAccess ? (
+            <Link to="/console/live-access" className="mt-4 inline-block text-sm text-[var(--signal)]">
+              Request Live Access
+            </Link>
           ) : null}
         </Panel>
       </div>

@@ -59,11 +59,13 @@ export type Database = {
           environment: string
           id: string
           key_hash: string
+          key_kind: string
           key_prefix: string
           last_used_at: string | null
           name: string
           org_id: string
           revoked_at: string | null
+          scopes: string[]
         }
         Insert: {
           created_at?: string
@@ -71,11 +73,13 @@ export type Database = {
           environment?: string
           id?: string
           key_hash: string
+          key_kind?: string
           key_prefix: string
           last_used_at?: string | null
           name: string
           org_id?: string
           revoked_at?: string | null
+          scopes?: string[]
         }
         Update: {
           created_at?: string
@@ -83,11 +87,13 @@ export type Database = {
           environment?: string
           id?: string
           key_hash?: string
+          key_kind?: string
           key_prefix?: string
           last_used_at?: string | null
           name?: string
           org_id?: string
           revoked_at?: string | null
+          scopes?: string[]
         }
         Relationships: [
           {
@@ -248,8 +254,13 @@ export type Database = {
           detail: Json
           entity_id: string | null
           entity_type: string
+          environment: string | null
           id: string
+          ip_address: string | null
           org_id: string
+          request_id: string | null
+          success: boolean
+          user_agent: string | null
         }
         Insert: {
           action: string
@@ -259,8 +270,13 @@ export type Database = {
           detail?: Json
           entity_id?: string | null
           entity_type: string
+          environment?: string | null
           id?: string
+          ip_address?: string | null
           org_id?: string
+          request_id?: string | null
+          success?: boolean
+          user_agent?: string | null
         }
         Update: {
           action?: string
@@ -270,8 +286,13 @@ export type Database = {
           detail?: Json
           entity_id?: string | null
           entity_type?: string
+          environment?: string | null
           id?: string
+          ip_address?: string | null
           org_id?: string
+          request_id?: string | null
+          success?: boolean
+          user_agent?: string | null
         }
         Relationships: [
           {
@@ -1225,41 +1246,68 @@ export type Database = {
         Row: {
           accepted_at: string | null
           accepted_by: string | null
+          access_role: string
           created_at: string
           email: string
           expires_at: string
+          first_name: string | null
           id: string
           invited_by: string | null
+          job_title: string | null
+          last_name: string | null
+          live_access: boolean
           org_id: string
+          permissions: string[]
+          resent_at: string | null
           revoked_at: string | null
           role: Database["public"]["Enums"]["app_role"]
+          sandbox_access: boolean
           token_hash: string
+          user_type: string
         }
         Insert: {
           accepted_at?: string | null
           accepted_by?: string | null
+          access_role?: string
           created_at?: string
           email: string
           expires_at?: string
+          first_name?: string | null
           id?: string
           invited_by?: string | null
+          job_title?: string | null
+          last_name?: string | null
+          live_access?: boolean
           org_id: string
+          permissions?: string[]
+          resent_at?: string | null
           revoked_at?: string | null
           role?: Database["public"]["Enums"]["app_role"]
+          sandbox_access?: boolean
           token_hash: string
+          user_type?: string
         }
         Update: {
           accepted_at?: string | null
           accepted_by?: string | null
+          access_role?: string
           created_at?: string
           email?: string
           expires_at?: string
+          first_name?: string | null
           id?: string
           invited_by?: string | null
+          job_title?: string | null
+          last_name?: string | null
+          live_access?: boolean
           org_id?: string
+          permissions?: string[]
+          resent_at?: string | null
           revoked_at?: string | null
           role?: Database["public"]["Enums"]["app_role"]
+          sandbox_access?: boolean
           token_hash?: string
+          user_type?: string
         }
         Relationships: [
           {
@@ -1273,25 +1321,52 @@ export type Database = {
       }
       organization_members: {
         Row: {
+          access_role: string
           created_at: string
           id: string
+          is_owner: boolean
+          job_title: string | null
+          live_access: boolean
+          mfa_required: boolean
           org_id: string
+          permissions: string[]
           role: Database["public"]["Enums"]["app_role"]
+          sandbox_access: boolean
+          status: string
           user_id: string
+          user_type: string
         }
         Insert: {
+          access_role?: string
           created_at?: string
           id?: string
+          is_owner?: boolean
+          job_title?: string | null
+          live_access?: boolean
+          mfa_required?: boolean
           org_id: string
+          permissions?: string[]
           role?: Database["public"]["Enums"]["app_role"]
+          sandbox_access?: boolean
+          status?: string
           user_id: string
+          user_type?: string
         }
         Update: {
+          access_role?: string
           created_at?: string
           id?: string
+          is_owner?: boolean
+          job_title?: string | null
+          live_access?: boolean
+          mfa_required?: boolean
           org_id?: string
+          permissions?: string[]
           role?: Database["public"]["Enums"]["app_role"]
+          sandbox_access?: boolean
+          status?: string
           user_id?: string
+          user_type?: string
         }
         Relationships: [
           {
@@ -1305,36 +1380,243 @@ export type Database = {
       }
       organizations: {
         Row: {
+          address_line1: string | null
+          address_line2: string | null
+          city: string | null
+          country: string | null
           created_at: string
           created_by: string | null
           id: string
+          legal_name: string | null
           live_access: string
           live_approved_at: string | null
           name: string
+          postal_code: string | null
+          primary_admin_user_id: string | null
+          region: string | null
+          registration_number: string | null
           slug: string
           updated_at: string
+          website: string | null
         }
         Insert: {
+          address_line1?: string | null
+          address_line2?: string | null
+          city?: string | null
+          country?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
+          legal_name?: string | null
           live_access?: string
           live_approved_at?: string | null
           name: string
+          postal_code?: string | null
+          primary_admin_user_id?: string | null
+          region?: string | null
+          registration_number?: string | null
           slug: string
           updated_at?: string
+          website?: string | null
         }
         Update: {
+          address_line1?: string | null
+          address_line2?: string | null
+          city?: string | null
+          country?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
+          legal_name?: string | null
           live_access?: string
           live_approved_at?: string | null
           name?: string
+          postal_code?: string | null
+          primary_admin_user_id?: string | null
+          region?: string | null
+          registration_number?: string | null
           slug?: string
           updated_at?: string
+          website?: string | null
         }
         Relationships: []
+      }
+      org_environments: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          label: string
+          org_id: string
+          publishable_prefix: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          label: string
+          org_id: string
+          publishable_prefix: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          label?: string
+          org_id?: string
+          publishable_prefix?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_environments_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      live_access_requests: {
+        Row: {
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          decision_note: string | null
+          id: string
+          org_id: string
+          reason: string | null
+          requested_by: string | null
+          scopes: string[]
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          id?: string
+          org_id: string
+          reason?: string | null
+          requested_by?: string | null
+          scopes?: string[]
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          id?: string
+          org_id?: string
+          reason?: string | null
+          requested_by?: string | null
+          scopes?: string[]
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_access_requests_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      login_events: {
+        Row: {
+          created_at: string
+          detail: Json
+          email: string | null
+          event: string
+          id: string
+          ip_address: string | null
+          org_id: string | null
+          success: boolean
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          detail?: Json
+          email?: string | null
+          event: string
+          id?: string
+          ip_address?: string | null
+          org_id?: string | null
+          success?: boolean
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          detail?: Json
+          email?: string | null
+          event?: string
+          id?: string
+          ip_address?: string | null
+          org_id?: string | null
+          success?: boolean
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      api_request_logs: {
+        Row: {
+          created_at: string
+          environment: string
+          id: string
+          ip_address: string | null
+          key_id: string | null
+          method: string
+          org_id: string
+          path: string
+          request_id: string | null
+          status: number | null
+          success: boolean | null
+        }
+        Insert: {
+          created_at?: string
+          environment?: string
+          id?: string
+          ip_address?: string | null
+          key_id?: string | null
+          method: string
+          org_id: string
+          path: string
+          request_id?: string | null
+          status?: number | null
+          success?: boolean | null
+        }
+        Update: {
+          created_at?: string
+          environment?: string
+          id?: string
+          ip_address?: string | null
+          key_id?: string | null
+          method?: string
+          org_id?: string
+          path?: string
+          request_id?: string | null
+          status?: number | null
+          success?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_request_logs_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       plaid_identity_results: {
         Row: {
@@ -2621,6 +2903,7 @@ export type Database = {
       can_write_org: { Args: { _org: string }; Returns: boolean }
       current_org_ids: { Args: never; Returns: string[] }
       has_any_role: { Args: { _user_id: string }; Returns: boolean }
+      has_org_permission: { Args: { _org: string; _perm: string }; Returns: boolean }
       has_org_role: {
         Args: { _org: string; _role: Database["public"]["Enums"]["app_role"] }
         Returns: boolean
@@ -2634,6 +2917,7 @@ export type Database = {
       }
       is_org_member: { Args: { _org: string }; Returns: boolean }
       is_platform_staff: { Args: never; Returns: boolean }
+      member_has_live_access: { Args: { _org: string }; Returns: boolean }
       match_watchlist_names: {
         Args: { _limit?: number; _q: string; _threshold?: number }
         Returns: {

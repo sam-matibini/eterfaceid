@@ -1,9 +1,11 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { AccessRole, AppRole } from "@/lib/access";
+import { inferAccessRole } from "@/lib/access";
 
+export type { AppRole, AccessRole };
 export type CaseType = "person" | "business";
 export type CaseStatus = "pending" | "in_review" | "approved" | "rejected";
 export type RiskLevel = "low" | "medium" | "high";
-export type AppRole = "admin" | "analyst" | "viewer";
 
 export const statusLabel: Record<CaseStatus, string> = {
   pending: "Pending",
@@ -75,7 +77,11 @@ export async function fetchAuditEvents() {
 
 export async function fetchTeam() {
   const [members, profiles, invites] = await Promise.all([
-    supabase.from("organization_members").select("user_id, role, created_at"),
+    supabase
+      .from("organization_members")
+      .select(
+        "user_id, role, access_role, is_owner, user_type, job_title, sandbox_access, live_access, permissions, mfa_required, status, created_at",
+      ),
     supabase.from("profiles").select("*"),
     supabase
       .from("organization_invites")
@@ -84,7 +90,34 @@ export async function fetchTeam() {
       .is("revoked_at", null)
       .order("created_at", { ascending: false }),
   ]);
-  if (members.error) throw members.error;
+  if (members.error) {
+    if (/does not exist|schema cache/i.test(members.error.message)) {
+      const legacy = await supabase.from("organization_members").select("user_id, role, created_at");
+      const legacyProfiles = await supabase.from("profiles").select("*");
+      return {
+        members: (legacy.data ?? []).map((m) => {
+          const profile = (legacyProfiles.data ?? []).find((p) => p.id === m.user_id);
+          return {
+            userId: m.user_id,
+            role: m.role as AppRole,
+            accessRole: inferAccessRole(m.role),
+            isOwner: m.role === "admin",
+            userType: "employee",
+            jobTitle: null,
+            sandboxAccess: true,
+            liveAccess: m.role === "admin",
+            permissions: [],
+            mfaRequired: m.role === "admin",
+            status: "active",
+            email: profile?.email ?? null,
+            fullName: profile?.full_name ?? null,
+          };
+        }),
+        invites: [],
+      };
+    }
+    throw members.error;
+  }
   if (profiles.error) throw profiles.error;
   if (invites.error) throw invites.error;
   return {
@@ -93,11 +126,77 @@ export async function fetchTeam() {
       return {
         userId: m.user_id,
         role: m.role as AppRole,
+        accessRole: (m.access_role as AccessRole | null) ?? "viewer",
+        isOwner: Boolean(m.is_owner),
+        userType: m.user_type ?? "employee",
+        jobTitle: m.job_title ?? null,
+        sandboxAccess: m.sandbox_access !== false,
+        liveAccess: Boolean(m.live_access),
+        permissions: (m.permissions as string[] | null) ?? [],
+        mfaRequired: Boolean(m.mfa_required),
+        status: m.status ?? "active",
         email: profile?.email ?? null,
         fullName: profile?.full_name ?? null,
       };
     }),
     invites: invites.data ?? [],
+  };
+}
+
+export async function fetchLiveAccessRequests() {
+  const { data, error } = await supabase
+    .from("live_access_requests")
+    .select("*")
+    .order("created_at", { ascending: false });
+  if (error) {
+    if (/does not exist|schema cache/i.test(error.message)) return [];
+    throw error;
+  }
+  return data;
+}
+
+export async function fetchApiRequestLogs() {
+  const { data, error } = await supabase
+    .from("api_request_logs")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(200);
+  if (error) {
+    if (/does not exist|schema cache/i.test(error.message)) return [];
+    throw error;
+  }
+  return data ?? [];
+}
+
+export async function fetchOrganizationProfile(orgId: string) {
+  const { data, error } = await supabase.from("organizations").select("*").eq("id", orgId).maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+export async function fetchDashboardStats() {
+  const since = new Date();
+  since.setHours(0, 0, 0, 0);
+  const [cases, logs, keys] = await Promise.all([
+    supabase.from("cases").select("id, case_type, status, created_at"),
+    supabase
+      .from("api_request_logs")
+      .select("id, success, created_at, environment")
+      .gte("created_at", since.toISOString()),
+    supabase.from("api_keys").select("id, environment, revoked_at").is("revoked_at", null),
+  ]);
+  if (cases.error) throw cases.error;
+  const allCases = cases.data ?? [];
+  const allLogs = logs.error ? [] : (logs.data ?? []);
+  return {
+    kyc: allCases.filter((c) => c.case_type === "person").length,
+    kyb: allCases.filter((c) => c.case_type === "business").length,
+    aml: allCases.length,
+    requestsToday: allLogs.length,
+    successful: allLogs.filter((l) => l.success !== false).length,
+    failed: allLogs.filter((l) => l.success === false).length,
+    sandboxKeys: (keys.data ?? []).filter((k) => k.environment !== "live").length,
+    liveKeys: (keys.data ?? []).filter((k) => k.environment === "live").length,
   };
 }
 

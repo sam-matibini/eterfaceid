@@ -1,32 +1,87 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, type ReactNode } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
+import { useEnvironment } from "@/hooks/useEnvironment";
 import { useOrganization, useRoles, useSession } from "@/hooks/useSession";
 import { usePlatformStaff } from "@/hooks/usePlatformStaff";
+import { displayRole, type PermissionCode } from "@/lib/access";
 
-const navItems = [
-  { to: "/console", label: "Cases", exact: true },
-  { to: "/console/watchlists", label: "Watchlists", exact: false },
-  { to: "/console/transactions", label: "Transactions", exact: false },
-  { to: "/console/alerts", label: "Monitoring", exact: false },
-  { to: "/console/reports", label: "Reports", exact: false },
-  { to: "/console/compliance", label: "Coverage", exact: false },
-  { to: "/console/audit", label: "Audit trail", exact: false },
-  { to: "/console/go-live", label: "Go live", exact: false },
-  { to: "/console/settings", label: "Settings", exact: false },
+type NavLeaf = { to: string; label: string; exact?: boolean; permission?: PermissionCode };
+type NavGroup = { label: string; items: NavLeaf[] };
 
-] as const;
-
+const navGroups: NavGroup[] = [
+  { label: "Overview", items: [{ to: "/console", label: "Dashboard", exact: true }] },
+  {
+    label: "Organization",
+    items: [
+      { to: "/console/organization", label: "Company Profile", permission: "users.manage" },
+      { to: "/console/users", label: "Users & Teams", permission: "users.manage" },
+      { to: "/console/roles", label: "Roles & Permissions", permission: "roles.manage" },
+      { to: "/console/security", label: "Security" },
+    ],
+  },
+  {
+    label: "Developers",
+    items: [
+      { to: "/console/developers", label: "Developer Accounts" },
+      { to: "/console/api-keys", label: "API Keys", permission: "api_keys.create" },
+      { to: "/console/webhooks", label: "Webhooks", permission: "webhooks.manage" },
+      { to: "/console/api-logs", label: "API Logs", permission: "api_logs.view" },
+    ],
+  },
+  {
+    label: "Environments",
+    items: [
+      { to: "/console/environments", label: "Sandbox & Live" },
+      { to: "/console/go-live", label: "Go live", permission: "live.environment.manage" },
+      { to: "/console/live-access", label: "Live access" },
+    ],
+  },
+  {
+    label: "KYC / KYB",
+    items: [
+      { to: "/console/cases", label: "Customers", permission: "kyc.reports.view" },
+      { to: "/console/watchlists", label: "AML Screening", permission: "aml.results.view" },
+      { to: "/console/compliance", label: "Coverage" },
+    ],
+  },
+  {
+    label: "Transactions / Monitoring",
+    items: [
+      { to: "/console/transactions", label: "Transactions" },
+      { to: "/console/alerts", label: "Alerts" },
+      { to: "/console/cases", label: "Cases" },
+    ],
+  },
+  {
+    label: "Reports",
+    items: [
+      { to: "/console/reports", label: "KYC / KYB / AML Reports", permission: "reports.download" },
+      { to: "/console/audit", label: "Audit Reports" },
+    ],
+  },
+  {
+    label: "Settings",
+    items: [
+      { to: "/console/settings", label: "Notifications" },
+      { to: "/console/security", label: "Security" },
+      { to: "/console/api-keys", label: "API Configuration" },
+      { to: "/console/billing", label: "Billing", permission: "billing.manage" },
+    ],
+  },
+];
 
 export function ConsoleShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { user } = useSession();
-  const { roles } = useRoles();
-  const { organization, ready } = useOrganization();
+  const { roles, has, isAdmin } = useRoles();
+  const { organization, memberships, ready, setActive } = useOrganization();
   const { isStaff } = usePlatformStaff();
+  const { environment, setEnvironment, canUseLive } = useEnvironment();
 
   useEffect(() => {
     if (ready && !organization) void navigate({ to: "/onboarding", replace: true });
@@ -39,55 +94,162 @@ export function ConsoleShell({ children }: { children: ReactNode }) {
     void navigate({ to: "/auth", replace: true });
   }
 
+  function visible(item: NavLeaf) {
+    if (!item.permission) return true;
+    if (isAdmin) return true;
+    return has(item.permission);
+  }
 
   return (
-    <div className="flex min-h-screen flex-col bg-[var(--paper)]">
-      <header className="border-b border-[var(--rule)] bg-background">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-6 px-6 py-4">
-          <Link to="/console" className="font-display text-lg font-bold tracking-tight">
-            <span className="text-[var(--ink)]">eterface</span>
-            <span className="text-[var(--signal)]">ID</span>
-            <span className="ml-2 align-middle text-xs font-medium uppercase tracking-widest text-muted-foreground">
-              Console
-            </span>
-          </Link>
-          <nav className="flex flex-1 flex-wrap items-center gap-5 text-sm">
-            {navItems.map((item) => (
+    <div className="flex min-h-screen bg-[var(--paper)]">
+      <aside className="hidden w-60 shrink-0 flex-col border-r border-[var(--rule)] bg-background lg:flex">
+        <Link to="/console" className="border-b border-[var(--rule)] px-5 py-4 font-display text-lg font-bold tracking-tight">
+          <span className="text-[var(--ink)]">eterface</span>
+          <span className="text-[var(--signal)]">ID</span>
+        </Link>
+        <nav className="flex-1 overflow-y-auto px-3 py-4">
+          {navGroups.map((group) => {
+            const items = group.items.filter(visible);
+            if (!items.length) return null;
+            return (
+              <div key={group.label} className="mb-4">
+                <p className="px-2 pb-1 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+                  {group.label}
+                </p>
+                <ul className="space-y-0.5">
+                  {items.map((item) => {
+                    const active = item.exact ? pathname === item.to : pathname === item.to || pathname.startsWith(`${item.to}/`);
+                    return (
+                      <li key={`${group.label}-${item.to}-${item.label}`}>
+                        <Link
+                          to={item.to as "/console"}
+                          className={`block rounded-md px-2 py-1.5 text-sm transition-colors ${
+                            active
+                              ? "bg-[var(--paper-deep)] font-medium text-foreground"
+                              : "text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          {item.label}
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            );
+          })}
+        </nav>
+      </aside>
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header className="border-b border-[var(--rule)] bg-background">
+          <div className="flex flex-wrap items-center gap-4 px-6 py-3">
+            <Link to="/console" className="font-display text-lg font-bold tracking-tight lg:hidden">
+              <span className="text-[var(--ink)]">eterface</span>
+              <span className="text-[var(--signal)]">ID</span>
+            </Link>
+            <EnvironmentSwitch environment={environment} canUseLive={canUseLive} onChange={setEnvironment} />
+            <div className="ml-auto flex flex-wrap items-center gap-3 text-sm">
+              {memberships.length > 1 ? (
+                <select
+                  value={organization?.orgId ?? ""}
+                  onChange={(e) => setActive(e.target.value)}
+                  className="h-8 rounded-md border border-[var(--rule)] bg-background px-2 text-xs"
+                >
+                  {memberships.map((m) => (
+                    <option key={m.orgId} value={m.orgId}>
+                      {m.name}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <span className="hidden text-muted-foreground sm:inline">{organization?.name}</span>
+              )}
+              {isStaff ? (
+                <Link to="/admin" className="text-[var(--signal)] transition-opacity hover:opacity-80">
+                  App admin
+                </Link>
+              ) : null}
+              <span className="hidden text-muted-foreground md:inline">
+                {user?.email}
+                {organization
+                  ? ` · ${displayRole(organization.role, organization.accessRole, organization.isOwner)}`
+                  : roles.length
+                    ? ` · ${roles.join(", ")}`
+                    : ""}
+              </span>
+              <button
+                type="button"
+                onClick={signOut}
+                className="rounded-md border border-[var(--rule)] px-3 py-1.5 text-sm transition-colors hover:bg-[var(--paper-deep)]"
+              >
+                Sign out
+              </button>
+            </div>
+          </div>
+          <div className="flex gap-3 overflow-x-auto border-t border-[var(--rule)] px-4 py-2 lg:hidden">
+            {navGroups[0]?.items.concat(navGroups.flatMap((g) => g.items).slice(1, 8)).map((item) => (
               <Link
-                key={item.to}
-                to={item.to}
-                activeOptions={{ exact: item.exact ?? false }}
-                activeProps={{ className: "text-foreground font-medium" }}
-                inactiveProps={{ className: "text-muted-foreground" }}
-                className="transition-colors hover:text-foreground"
+                key={item.to + item.label}
+                to={item.to as "/console"}
+                className="whitespace-nowrap text-xs text-muted-foreground"
               >
                 {item.label}
               </Link>
             ))}
-          </nav>
-          <div className="flex items-center gap-4 text-sm">
-            {isStaff ? (
-              <Link to="/admin" className="text-[var(--signal)] transition-opacity hover:opacity-80">
-                App admin
-              </Link>
-            ) : null}
-            <span className="hidden text-muted-foreground sm:inline">
-              {organization ? `${organization.name} · ` : ""}
-              {user?.email}
-              {roles.length ? ` · ${roles.join(", ")}` : ""}
-            </span>
-
-            <button
-              type="button"
-              onClick={signOut}
-              className="rounded-md border border-[var(--rule)] px-3 py-1.5 text-sm transition-colors hover:bg-[var(--paper-deep)]"
-            >
-              Sign out
-            </button>
           </div>
-        </div>
-      </header>
-      <main className="mx-auto w-full max-w-7xl flex-1 px-6 py-10">{children}</main>
+        </header>
+        <EnvironmentBanner environment={environment} />
+        <main className="mx-auto w-full max-w-7xl flex-1 px-6 py-10">{children}</main>
+      </div>
+    </div>
+  );
+}
+
+function EnvironmentSwitch({
+  environment,
+  canUseLive,
+  onChange,
+}: {
+  environment: "sandbox" | "live";
+  canUseLive: boolean;
+  onChange: (value: "sandbox" | "live") => void;
+}) {
+  return (
+    <div className="flex items-center gap-1 rounded-md border border-[var(--rule)] p-0.5 text-xs">
+      <button
+        type="button"
+        onClick={() => onChange("sandbox")}
+        className={`rounded px-2 py-1 ${environment === "sandbox" ? "bg-[var(--paper-deep)] font-medium" : "text-muted-foreground"}`}
+      >
+        SANDBOX
+      </button>
+      <button
+        type="button"
+        disabled={!canUseLive}
+        onClick={() => onChange("live")}
+        className={`rounded px-2 py-1 ${
+          environment === "live" ? "bg-[var(--signal)]/10 font-medium text-[var(--signal)]" : "text-muted-foreground"
+        } disabled:opacity-40`}
+      >
+        LIVE
+      </button>
+    </div>
+  );
+}
+
+export function EnvironmentBanner({ environment }: { environment: "sandbox" | "live" }) {
+  const live = environment === "live";
+  return (
+    <div
+      className={`border-b px-6 py-2 text-xs ${
+        live
+          ? "border-[var(--signal)]/40 bg-[var(--signal)]/10 text-[var(--signal)]"
+          : "border-[var(--rule)] bg-[var(--paper-deep)] text-muted-foreground"
+      }`}
+    >
+      <span className="font-medium uppercase tracking-widest">{live ? "LIVE" : "SANDBOX"}</span>
+      <span className="ml-2">{live ? "Production environment" : "Test environment"}</span>
     </div>
   );
 }
@@ -136,7 +298,6 @@ export function Panel({
 }) {
   return (
     <section className={`border border-[var(--rule)] bg-background${className ? ` ${className}` : ""}`}>
-
       <div className="flex items-center justify-between gap-4 border-b border-[var(--rule)] px-5 py-3">
         <h2 className="font-display text-sm font-semibold uppercase tracking-widest text-muted-foreground">
           {title}
@@ -147,3 +308,8 @@ export function Panel({
     </section>
   );
 }
+
+export const fieldClass =
+  "h-10 w-full rounded-md border border-[var(--rule)] bg-background px-3 text-sm outline-none focus-visible:border-[var(--signal)]";
+export const inkButtonClass =
+  "h-10 rounded-md bg-[var(--ink)] px-4 text-sm text-background transition-opacity hover:opacity-90 disabled:opacity-50";

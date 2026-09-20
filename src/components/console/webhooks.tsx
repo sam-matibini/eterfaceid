@@ -21,7 +21,7 @@ export function WebhooksPanel({ isAdmin }: { isAdmin: boolean }) {
       const raw = Array.from(crypto.getRandomValues(new Uint8Array(24)))
         .map((b) => b.toString(16).padStart(2, "0"))
         .join("");
-      const signing = `whsec_${raw}`;
+      const signing = `${environment === "live" ? "whsec_live_" : "whsec_test_"}${raw}`;
       const { data, error } = await supabase
         .from("webhook_endpoints")
         .insert({ url, environment, secret: signing, events: EVENTS })

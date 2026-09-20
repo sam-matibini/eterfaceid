@@ -1,27 +1,13 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
+import { NOTIFICATION_EVENT_LIST, type NotificationEvent } from "@/lib/notification-events";
 
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/resend";
 
 type Admin = SupabaseClient<Database>;
 
-export type NotificationEvent =
-  | "team.invite"
-  | "team.welcome"
-  | "case.decision"
-  | "alert.opened"
-  | "screening.hit"
-  | "report.filed"
-  | "test";
-
-export const NOTIFICATION_EVENTS: { event: NotificationEvent; label: string; description: string }[] = [
-  { event: "team.invite", label: "Team invitations", description: "Invitation link sent to the person you invite." },
-  { event: "team.welcome", label: "Welcome message", description: "Sent when someone joins your workspace." },
-  { event: "case.decision", label: "Case decisions", description: "When a case is approved or rejected." },
-  { event: "alert.opened", label: "Monitoring alerts", description: "When a new monitoring alert opens." },
-  { event: "screening.hit", label: "New screening matches", description: "When screening finds a possible match." },
-  { event: "report.filed", label: "Report filed", description: "Confirmation once a report is marked as filed." },
-];
+export type { NotificationEvent };
+export const NOTIFICATION_EVENTS = NOTIFICATION_EVENT_LIST;
 
 function layout(title: string, bodyHtml: string, footer: string) {
   return `<!doctype html><html><body style="margin:0;background:#f6f5f2;font-family:'Helvetica Neue',Arial,sans-serif;color:#15171a">
@@ -54,28 +40,108 @@ export function renderTemplate(
   data: Record<string, string>,
 ): { subject: string; html: string } {
   const org = data["org"] ?? "your team";
-  const footer = data["footer"] ?? "Sent by eterfaceID because of activity in your workspace.";
+  const footer =
+    data["footer"] ??
+    "Sent by the eterfaceID Security &amp; Compliance Team. Never share passwords, MFA codes, API secret keys or webhook secrets.";
   switch (event) {
     case "team.invite":
       return {
-        subject: `You have been invited to ${org} on eterfaceID`,
+        subject: `You've been invited to join ${org} on eterfaceID`,
         html: layout(
           `Join ${org} on eterfaceID`,
-          p(`${data["inviter"] ?? "A colleague"} invited you to join <strong>${org}</strong> as ${data["role"] ?? "a team member"}.`) +
-            button(data["link"] ?? "#", "Accept the invitation") +
-            p("This invitation expires in 14 days."),
+          p(`Hello ${data["name"] ?? "there"},`) +
+            p(
+              `${data["inviter"] ?? "A colleague"} has invited you to join <strong>${org}</strong>'s eterfaceID organization.`,
+            ) +
+            p(`Your assigned role: <strong>${data["role"] ?? "Team member"}</strong>`) +
+            p(`Your initial environment access: <strong>${data["environment"] ?? "Sandbox"}</strong>`) +
+            p(
+              "eterfaceID provides identity verification, KYC, KYB and AML compliance services through a secure dashboard and API.",
+            ) +
+            button(data["link"] ?? "#", "Accept Invitation") +
+            p(`This invitation will expire in ${data["hours"] ?? "72"} hours.`) +
+            p("If you did not expect this invitation, please contact your organization's administrator."),
           footer,
         ),
       };
     case "team.welcome":
       return {
-        subject: `Welcome to ${org} on eterfaceID`,
+        subject: `Welcome to eterfaceID`,
         html: layout(
-          `Welcome to ${org}`,
-          p(`Your account is active. You can sign in and start working on cases right away.`) +
-            button(data["link"] ?? "#", "Open the console"),
+          `Welcome to eterfaceID, ${data["name"] ?? "there"}`,
+          p(`Your account for <strong>${org}</strong> has been successfully activated.`) +
+            p(`Role: <strong>${data["role"] ?? "Team member"}</strong>`) +
+            p(`Access: ${data["access"] ?? "Sandbox"}`) +
+            button(data["link"] ?? "#", "Login to eterfaceID") +
+            p("Security reminder: never share your password, MFA codes, API secret keys, or webhook secrets."),
           footer,
         ),
+      };
+    case "live.access_requested":
+      return {
+        subject: `Live API access requested at ${org}`,
+        html: layout(
+          "Live access request",
+          p(`<strong>${data["name"] ?? "A teammate"}</strong> (${data["email"] ?? ""}) requested Live API access.`) +
+            p(`Reason: ${data["reason"] ?? ""}`) +
+            button(data["link"] ?? "#", "Review request"),
+          footer,
+        ),
+      };
+    case "live.access_approved":
+      return {
+        subject: `Live API access approved at ${org}`,
+        html: layout(
+          "Live API access approved",
+          p(`Hello ${data["name"] ?? "there"}, your Live API access for <strong>${org}</strong> has been approved.`) +
+            (data["note"] ? p(data["note"]) : "") +
+            button(data["link"] ?? "#", "Open the developer dashboard"),
+          footer,
+        ),
+      };
+    case "live.access_rejected":
+      return {
+        subject: `Live API access was not approved at ${org}`,
+        html: layout(
+          "Live API access not approved",
+          p(`Hello ${data["name"] ?? "there"}, a request for Live API access at <strong>${org}</strong> was declined.`) +
+            (data["note"] ? p(data["note"]) : "") +
+            p("Contact your organization administrator if you still need production access."),
+          footer,
+        ),
+      };
+    case "api_key.created":
+    case "api_key.live_created":
+      return {
+        subject: `${data["environment"] === "live" ? "Live" : "Sandbox"} API key created at ${org}`,
+        html: layout(
+          "API key created",
+          p(
+            `A ${data["environment"] ?? "sandbox"} API key named <strong>${data["name"] ?? "API key"}</strong> was created for ${org}. The secret is shown only once in the console.`,
+          ),
+          footer,
+        ),
+      };
+    case "api_key.revoked":
+      return {
+        subject: `API key revoked at ${org}`,
+        html: layout("API key revoked", p(`An API key was revoked for <strong>${org}</strong>.`), footer),
+      };
+    case "org.invite_accepted":
+      return {
+        subject: `${data["name"] ?? "A teammate"} joined ${org} on eterfaceID`,
+        html: layout(
+          "Invitation accepted",
+          p(
+            `<strong>${data["name"] ?? "A teammate"}</strong> accepted an invitation to ${org} as ${data["role"] ?? "a team member"}.`,
+          ),
+          footer,
+        ),
+      };
+    case "account.mfa_enabled":
+      return {
+        subject: "Multi-factor authentication is on",
+        html: layout("MFA enabled", p("Multi-factor authentication is now protecting your eterfaceID account."), footer),
       };
     case "case.decision":
       return {

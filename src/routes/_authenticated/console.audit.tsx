@@ -35,6 +35,7 @@ function AuditPage() {
                 <th className="pb-3 font-medium">Who</th>
                 <th className="pb-3 font-medium">Action</th>
                 <th className="pb-3 font-medium">Record</th>
+                <th className="pb-3 font-medium">Environment</th>
                 <th className="pb-3 font-medium">Detail</th>
               </tr>
             </thead>
@@ -47,6 +48,9 @@ function AuditPage() {
                   <td className="py-3">{event.actor_email ?? "—"}</td>
                   <td className="py-3 font-mono text-xs">{event.action}</td>
                   <td className="py-3 text-muted-foreground">{event.entity_type}</td>
+                  <td className="py-3 text-xs uppercase tracking-widest text-muted-foreground">
+                    {event.environment ?? "—"}
+                  </td>
                   <td className="py-3 font-mono text-xs text-muted-foreground">
                     {JSON.stringify(event.detail)}
                   </td>

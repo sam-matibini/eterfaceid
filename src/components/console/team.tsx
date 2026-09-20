@@ -2,23 +2,43 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 
-import { Panel, StatusPill } from "@/components/console/shell";
+import { fieldClass, inkButtonClass, Panel, StatusPill } from "@/components/console/shell";
 import { useOrganization } from "@/hooks/useSession";
-import { fetchTeam, type AppRole } from "@/lib/console";
-import { inviteMember, removeMember, revokeInvite, setMemberRole } from "@/lib/teams.functions";
-
-const allRoles: AppRole[] = ["admin", "analyst", "viewer"];
+import {
+  ACCESS_ROLES,
+  INVITE_PERMISSION_OPTIONS,
+  PERMISSIONS,
+  USER_TYPES,
+  defaultPermissions,
+  displayRole,
+  type AccessRole,
+  type PermissionCode,
+  type UserType,
+} from "@/lib/access";
+import { fetchTeam } from "@/lib/console";
+import { inviteMember, removeMember, resendInvite, revokeInvite, setMemberRole } from "@/lib/teams.functions";
 
 export function TeamPanel({ isAdmin }: { isAdmin: boolean }) {
   const queryClient = useQueryClient();
   const { organization } = useOrganization();
   const invite = useServerFn(inviteMember);
   const cancelInvite = useServerFn(revokeInvite);
+  const resend = useServerFn(resendInvite);
   const changeRole = useServerFn(setMemberRole);
   const kick = useServerFn(removeMember);
 
-  const [email, setEmail] = useState("");
-  const [role, setRole] = useState<AppRole>("analyst");
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    jobTitle: "",
+    userType: "employee" as UserType,
+    accessRole: "developer" as AccessRole,
+    sandboxAccess: true,
+    liveAccess: false,
+    permissions: defaultPermissions("developer") as PermissionCode[],
+  });
   const [inviteLink, setInviteLink] = useState<string | null>(null);
 
   const team = useQuery({ queryKey: ["team"], queryFn: fetchTeam });
@@ -28,17 +48,51 @@ export function TeamPanel({ isAdmin }: { isAdmin: boolean }) {
     void queryClient.invalidateQueries({ queryKey: ["audit"] });
   };
 
+  function applyRole(role: AccessRole) {
+    setForm((current) => ({
+      ...current,
+      accessRole: role,
+      liveAccess: role === "administrator" ? current.liveAccess : false,
+      permissions: defaultPermissions(role),
+    }));
+  }
+
   const sendInvite = useMutation({
-    mutationFn: async () => invite({ data: { email, role } }),
+    mutationFn: async () =>
+      invite({
+        data: {
+          email: form.email,
+          firstName: form.firstName,
+          lastName: form.lastName,
+          jobTitle: form.jobTitle || undefined,
+          userType: form.userType,
+          accessRole: form.accessRole === "owner" ? "administrator" : form.accessRole,
+          sandboxAccess: form.sandboxAccess,
+          liveAccess: form.liveAccess,
+          permissions: form.permissions,
+          origin: window.location.origin,
+        },
+      }),
     onSuccess: (result) => {
-      setEmail("");
+      setForm({
+        firstName: "",
+        lastName: "",
+        email: "",
+        jobTitle: "",
+        userType: "employee",
+        accessRole: "developer",
+        sandboxAccess: true,
+        liveAccess: false,
+        permissions: defaultPermissions("developer"),
+      });
+      setOpen(false);
       setInviteLink(`${window.location.origin}/invite/${result.token}`);
       refresh();
     },
   });
 
   const roleMutation = useMutation({
-    mutationFn: async (vars: { userId: string; role: AppRole }) => changeRole({ data: vars }),
+    mutationFn: async (vars: { userId: string; accessRole: AccessRole }) => changeRole({ data: vars }),
     onSuccess: refresh,
   });
 
@@ -52,34 +106,70 @@ export function TeamPanel({ isAdmin }: { isAdmin: boolean }) {
     onSuccess: refresh,
   });
 
+  const resendMutation = useMutation({
+    mutationFn: async (id: string) => resend({ data: { id, origin: window.location.origin } }),
+    onSuccess: (result) => {
+      setInviteLink(`${window.location.origin}/invite/${result.token}`);
+      refresh();
+    },
+  });
+
+  function togglePermission(code: PermissionCode) {
+    setForm((current) => ({
+      ...current,
+      permissions: current.permissions.includes(code)
+        ? current.permissions.filter((p) => p !== code)
+        : [...current.permissions, code],
+    }));
+  }
+
   return (
-    <Panel title={organization ? `${organization.name} — your team` : "Your team"}>
+    <Panel
+      title={organization ? `${organization.name} — Users & Teams` : "Users & Teams"}
+      action={
+        isAdmin ? (
+          <button type="button" className={inkButtonClass} onClick={() => setOpen((v) => !v)}>
+            {open ? "Close" : "Add User"}
+          </button>
+        ) : undefined
+      }
+    >
       <div className="space-y-4 text-sm">
         {(team.data?.members ?? []).map((member) => (
           <div key={member.userId} className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <div className="font-medium">{member.fullName ?? member.email ?? "Team member"}</div>
-              <div className="text-xs text-muted-foreground">{member.email}</div>
+              <div className="text-xs text-muted-foreground">
+                {member.email}
+                {member.jobTitle ? ` · ${member.jobTitle}` : ""}
+                {` · ${member.userType}`}
+              </div>
+              <div className="mt-1 flex flex-wrap gap-1">
+                <StatusPill tone={member.sandboxAccess ? "approved" : "closed"}>Sandbox</StatusPill>
+                <StatusPill tone={member.liveAccess ? "high" : "closed"}>Live</StatusPill>
+              </div>
             </div>
             <div className="flex items-center gap-2">
-              {isAdmin ? (
+              {isAdmin && !member.isOwner ? (
                 <select
-                  value={member.role}
+                  value={member.accessRole === "owner" ? "administrator" : member.accessRole}
                   onChange={(e) =>
-                    roleMutation.mutate({ userId: member.userId, role: e.target.value as AppRole })
+                    roleMutation.mutate({ userId: member.userId, accessRole: e.target.value as AccessRole })
                   }
                   className="h-9 rounded-md border border-[var(--rule)] bg-background px-2 text-sm"
                 >
-                  {allRoles.map((r) => (
-                    <option key={r} value={r}>
-                      {r}
+                  {ACCESS_ROLES.map((r) => (
+                    <option key={r.value} value={r.value}>
+                      {r.label}
                     </option>
                   ))}
                 </select>
               ) : (
-                <StatusPill tone="pending">{member.role}</StatusPill>
+                <StatusPill tone="pending">
+                  {displayRole(member.role, member.accessRole, member.isOwner)}
+                </StatusPill>
               )}
-              {isAdmin ? (
+              {isAdmin && !member.isOwner ? (
                 <button
                   type="button"
                   onClick={() => removeMutation.mutate(member.userId)}
@@ -96,52 +186,135 @@ export function TeamPanel({ isAdmin }: { isAdmin: boolean }) {
         ) : null}
       </div>
 
-      {isAdmin ? (
+      {open && isAdmin ? (
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            if (email.trim()) sendInvite.mutate();
+            sendInvite.mutate();
           }}
-          className="mt-5 flex flex-wrap gap-2 border-t border-[var(--rule)] pt-5"
+          className="mt-5 space-y-4 border-t border-[var(--rule)] pt-5"
         >
-          <input
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="colleague@company.com"
-            type="email"
-            className="h-10 flex-1 rounded-md border border-[var(--rule)] bg-background px-3 text-sm outline-none focus-visible:border-[var(--signal)]"
-          />
-          <select
-            value={role}
-            onChange={(e) => setRole(e.target.value as AppRole)}
-            className="h-10 rounded-md border border-[var(--rule)] bg-background px-2 text-sm"
-          >
-            {allRoles.map((r) => (
-              <option key={r} value={r}>
-                {r}
-              </option>
-            ))}
-          </select>
-          <button
-            type="submit"
-            disabled={sendInvite.isPending}
-            className="h-10 rounded-md bg-[var(--ink)] px-4 text-sm text-background transition-opacity hover:opacity-90"
-          >
-            Invite
+          <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">Add Team Member</p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="text-xs uppercase tracking-widest text-muted-foreground">
+              First Name *
+              <input
+                required
+                className={`${fieldClass} mt-1 normal-case tracking-normal text-foreground`}
+                value={form.firstName}
+                onChange={(e) => setForm({ ...form, firstName: e.target.value })}
+              />
+            </label>
+            <label className="text-xs uppercase tracking-widest text-muted-foreground">
+              Last Name *
+              <input
+                required
+                className={`${fieldClass} mt-1 normal-case tracking-normal text-foreground`}
+                value={form.lastName}
+                onChange={(e) => setForm({ ...form, lastName: e.target.value })}
+              />
+            </label>
+            <label className="text-xs uppercase tracking-widest text-muted-foreground sm:col-span-2">
+              Email Address *
+              <input
+                required
+                type="email"
+                className={`${fieldClass} mt-1 normal-case tracking-normal text-foreground`}
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+              />
+            </label>
+            <label className="text-xs uppercase tracking-widest text-muted-foreground">
+              Job Title
+              <input
+                className={`${fieldClass} mt-1 normal-case tracking-normal text-foreground`}
+                value={form.jobTitle}
+                onChange={(e) => setForm({ ...form, jobTitle: e.target.value })}
+              />
+            </label>
+            <label className="text-xs uppercase tracking-widest text-muted-foreground">
+              User Type *
+              <select
+                className={`${fieldClass} mt-1 normal-case tracking-normal text-foreground`}
+                value={form.userType}
+                onChange={(e) => setForm({ ...form, userType: e.target.value as UserType })}
+              >
+                {USER_TYPES.map((t) => (
+                  <option key={t.value} value={t.value}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="text-xs uppercase tracking-widest text-muted-foreground sm:col-span-2">
+              Role *
+              <select
+                className={`${fieldClass} mt-1 normal-case tracking-normal text-foreground`}
+                value={form.accessRole}
+                onChange={(e) => applyRole(e.target.value as AccessRole)}
+              >
+                {ACCESS_ROLES.filter((r) => r.value !== "analyst").map((r) => (
+                  <option key={r.value} value={r.value}>
+                    {r.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <div>
+            <p className="text-xs uppercase tracking-widest text-muted-foreground">Environment Access</p>
+            <label className="mt-2 flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={form.sandboxAccess}
+                onChange={(e) => setForm({ ...form, sandboxAccess: e.target.checked })}
+              />
+              Sandbox
+            </label>
+            <label className="mt-1 flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={form.liveAccess}
+                onChange={(e) => setForm({ ...form, liveAccess: e.target.checked })}
+              />
+              Live — must be authorized explicitly. Developer role does not grant it.
+            </label>
+          </div>
+
+          <div>
+            <p className="text-xs uppercase tracking-widest text-muted-foreground">Permissions</p>
+            <div className="mt-2 grid gap-2 sm:grid-cols-2">
+              {INVITE_PERMISSION_OPTIONS.map((code) => {
+                const meta = PERMISSIONS.find((p) => p.code === code);
+                return (
+                  <label key={code} className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={form.permissions.includes(code)}
+                      onChange={() => togglePermission(code)}
+                    />
+                    {meta?.label ?? code}
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+
+          {sendInvite.isError ? (
+            <p className="text-sm text-[var(--signal)]">{(sendInvite.error as Error).message}</p>
+          ) : null}
+
+          <button type="submit" disabled={sendInvite.isPending} className={inkButtonClass}>
+            {sendInvite.isPending ? "Sending…" : "Send Invitation"}
           </button>
         </form>
-      ) : null}
-
-      {sendInvite.isError ? (
-        <p className="mt-3 text-sm text-[var(--signal)]">
-          {(sendInvite.error as Error).message}
-        </p>
       ) : null}
 
       {inviteLink ? (
         <div className="mt-4 border border-[var(--signal)] bg-[var(--paper-deep)] p-3">
           <p className="text-xs uppercase tracking-widest text-[var(--signal)]">
-            Send this link to your colleague
+            Invitation sent. Share this link if the email does not arrive.
           </p>
           <code className="mt-2 block break-all font-mono text-xs">{inviteLink}</code>
         </div>
@@ -153,16 +326,29 @@ export function TeamPanel({ isAdmin }: { isAdmin: boolean }) {
           {(team.data?.invites ?? []).map((row) => (
             <div key={row.id} className="flex flex-wrap items-center justify-between gap-2">
               <span>
-                {row.email} · {row.role}
+                {row.email} · {displayRole(row.role, row.access_role)}
+                {row.live_access ? " · Live" : " · Sandbox"}
+                <span className="block text-xs text-muted-foreground">
+                  Expires {new Date(row.expires_at).toLocaleString()}
+                </span>
               </span>
               {isAdmin ? (
-                <button
-                  type="button"
-                  onClick={() => cancelMutation.mutate(row.id)}
-                  className="rounded-md border border-[var(--rule)] px-3 py-1.5 text-xs transition-colors hover:bg-[var(--paper-deep)]"
-                >
-                  Cancel
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => resendMutation.mutate(row.id)}
+                    className="rounded-md border border-[var(--rule)] px-3 py-1.5 text-xs transition-colors hover:bg-[var(--paper-deep)]"
+                  >
+                    Resend
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => cancelMutation.mutate(row.id)}
+                    className="rounded-md border border-[var(--rule)] px-3 py-1.5 text-xs transition-colors hover:bg-[var(--paper-deep)]"
+                  >
+                    Revoke
+                  </button>
+                </div>
               ) : null}
             </div>
           ))}
@@ -170,8 +356,8 @@ export function TeamPanel({ isAdmin }: { isAdmin: boolean }) {
       ) : null}
 
       <p className="mt-5 border-t border-[var(--rule)] pt-4 text-xs text-muted-foreground">
-        Admin: full access including team, keys and webhooks. Analyst: works cases and adjudicates
-        hits. Viewer: read-only. Invitations expire after 14 days.
+        Roles are templates. Permissions on each person can be changed independently. Live access is never granted
+        just because someone is a developer. Invitations expire after 72 hours and can be resent or revoked.
       </p>
     </Panel>
   );
