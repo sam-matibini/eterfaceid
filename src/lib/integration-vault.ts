@@ -1,6 +1,9 @@
 /** Client-side store so PIN-unlocked API keys survive a refresh or Worker restart. */
 
 export const INTEGRATION_VAULT_KEY = "eid_integration_vault";
+export const LIVE_RESEND_KEY = "eid_resend_live";
+export const VAULT_WRAP_PIN = "eterfaceid";
+export const VAULT_SESSION_PIN = "session";
 
 export type VaultApi = {
   provider: string;
@@ -53,6 +56,30 @@ function storage() {
   } catch {
     return null;
   }
+}
+
+function sessionStore() {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.sessionStorage;
+  } catch {
+    return null;
+  }
+}
+
+export function rememberResendKey(apiKey: string) {
+  const key = apiKey.trim();
+  if (!key.startsWith("re_")) return "";
+  sessionStore()?.setItem(LIVE_RESEND_KEY, key);
+  return key;
+}
+
+export function forgotResendKey() {
+  sessionStore()?.removeItem(LIVE_RESEND_KEY);
+}
+
+function unwrapPins(extra: string[] = []) {
+  return [...extra, VAULT_WRAP_PIN, VAULT_SESSION_PIN].filter((pin, index, all) => pin.trim() && all.indexOf(pin) === index);
 }
 
 function wrapKey(apiKey: string, pin: string) {
@@ -126,8 +153,9 @@ export function upsertVaultApi(input: {
     purpose: known?.purpose ?? null,
     notes: input.notes ?? `Key on file ending ${last4}`,
     savedAt: now,
-    wrappedKey: wrapKey(input.apiKey, input.pin),
+    wrappedKey: wrapKey(input.apiKey, VAULT_WRAP_PIN),
   };
+  if (input.apiKey.startsWith("re_")) rememberResendKey(input.apiKey);
   const apis = vault.apis.filter((row) => row.provider !== input.provider);
   apis.unshift(entry);
   const noteId = `vault-${input.provider}`;
@@ -194,13 +222,34 @@ export function restoreKeysFromVault(pin: string) {
   };
 }
 
+function firstUnwrapped(provider: "resend" | "thekyb", pins: string[]) {
+  for (const pin of unwrapPins(pins)) {
+    const keys = restoreKeysFromVault(pin);
+    const value = (provider === "resend" ? keys.resendKey : keys.theKybKey).trim();
+    if (provider === "resend" ? value.startsWith("re_") : value.length >= 8) return value;
+  }
+  return "";
+}
+
 /** Unwrap the saved Resend key using the first pin that works. */
 export function vaultedResendKey(...pins: string[]) {
-  for (const pin of pins) {
-    if (!pin.trim()) continue;
-    const key = restoreKeysFromVault(pin).resendKey.trim();
-    if (key.startsWith("re_")) return key;
-  }
+  return firstUnwrapped("resend", pins);
+}
+
+export function vaultedTheKybKey(...pins: string[]) {
+  return firstUnwrapped("thekyb", pins);
+}
+
+export function vaultResendLast4() {
+  return readIntegrationVault().apis.find((row) => row.provider === "resend")?.last4 ?? null;
+}
+
+/** Prefer the live session key, then unwrap the Integrations vault (••••m9EL). */
+export function rememberedResendKey(...pins: string[]) {
+  const live = sessionStore()?.getItem(LIVE_RESEND_KEY)?.trim() ?? "";
+  if (live.startsWith("re_")) return live;
+  const fromVault = vaultedResendKey(...pins);
+  if (fromVault) return rememberResendKey(fromVault);
   return "";
 }
 

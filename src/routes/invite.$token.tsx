@@ -8,7 +8,7 @@ import { useSession } from "@/hooks/useSession";
 import { acceptInvite, peekInvite } from "@/lib/teams.functions";
 import { sendSignupVerificationEmail } from "@/lib/auth-email.functions";
 import { publicEmailFailureMessage } from "@/lib/email-copy";
-import { vaultedResendKey } from "@/lib/integration-vault";
+import { rememberedResendKey, vaultResendLast4 } from "@/lib/integration-vault";
 import { DEFAULT_STAFF_BYPASS_PIN, readStaffBypassPin } from "@/lib/staff-bypass";
 
 export const Route = createFileRoute("/invite/$token")({
@@ -94,7 +94,7 @@ function InvitePage() {
       });
       if (signUpError) throw signUpError;
       if (!data.session) {
-        const resendKey = vaultedResendKey(readStaffBypassPin(), DEFAULT_STAFF_BYPASS_PIN);
+        const resendKey = rememberedResendKey(readStaffBypassPin(), DEFAULT_STAFF_BYPASS_PIN);
         const mailed = await sendVerify({
           data: {
             email: info.email,
@@ -107,7 +107,7 @@ function InvitePage() {
           setNotice(`We've sent a verification email to ${info.email}. Confirm it, then return here.`);
         } else {
           setError(
-            publicEmailFailureMessage(mailed) ??
+            publicEmailFailureMessage(mailed, { savedLast4: vaultResendLast4() }) ??
               "The account was created, but the verification email could not be sent. Use Forgot Password on the login page after a minute.",
           );
         }

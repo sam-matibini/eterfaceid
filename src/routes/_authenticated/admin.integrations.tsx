@@ -22,14 +22,17 @@ import {
   bootstrapSendTestEmail,
   bootstrapTheKybStatus,
 } from "@/lib/staff-bypass.functions";
-import { isStaffBypassUnlocked, readStaffBypassPin } from "@/lib/staff-bypass";
+import { DEFAULT_STAFF_BYPASS_PIN, isStaffBypassUnlocked, readStaffBypassPin } from "@/lib/staff-bypass";
 import { saveTheKybApiKey, thekybStatus } from "@/lib/thekyb.functions";
 import { THEKYB_BACKOFFICE_URL, THEKYB_PROVIDER } from "@/lib/thekyb";
 import {
   isApiPersistEnabled,
   readIntegrationVault,
   removeVaultNote,
+  rememberResendKey,
+  rememberedResendKey,
   restoreKeysFromVault,
+  vaultedTheKybKey,
   setApiPersistEnabled,
   setVaultApiEnabled,
   upsertVaultApi,
@@ -113,15 +116,17 @@ function IntegrationsPage() {
   }, []);
 
   useEffect(() => {
-    if (!pinUnlocked) return;
-    const pin = readStaffBypassPin();
-    const keys = restoreKeysFromVault(pin);
-    if (!keys.resendKey && !keys.theKybKey) return;
+    const pin = readStaffBypassPin() || (pinUnlocked ? DEFAULT_STAFF_BYPASS_PIN : "");
+    const resendKey = rememberedResendKey(pin, DEFAULT_STAFF_BYPASS_PIN, "session");
+    const theKybKey = vaultedTheKybKey(pin, DEFAULT_STAFF_BYPASS_PIN, "session") || restoreKeysFromVault(pin).theKybKey;
+    if (resendKey) rememberResendKey(resendKey);
+    if (!resendKey && !theKybKey) return;
+    if (!pinUnlocked && !pin) return;
     void restoreApis({
       data: {
-        pin,
-        ...(keys.resendKey ? { resendKey: keys.resendKey } : {}),
-        ...(keys.theKybKey ? { theKybKey: keys.theKybKey } : {}),
+        pin: pin || DEFAULT_STAFF_BYPASS_PIN,
+        ...(resendKey ? { resendKey } : {}),
+        ...(theKybKey ? { theKybKey } : {}),
       },
     }).then(() => {
       void queryClient.invalidateQueries({ queryKey: ["resend-status"] });

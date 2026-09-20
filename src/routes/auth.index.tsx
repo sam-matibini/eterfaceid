@@ -9,8 +9,8 @@ import { useSession } from "@/hooks/useSession";
 import { sendPasswordResetEmail, sendSignupVerificationEmail } from "@/lib/auth-email.functions";
 import { isAuthEmailAlreadySent } from "@/lib/auth-email.server";
 import { publicEmailFailureMessage } from "@/lib/email-copy";
-import { vaultedResendKey } from "@/lib/integration-vault";
-import { enterStaffBypass } from "@/lib/staff-bypass.functions";
+import { rememberedResendKey, vaultResendLast4 } from "@/lib/integration-vault";
+import { bootstrapRestoreApiKeys, enterStaffBypass } from "@/lib/staff-bypass.functions";
 import {
   DEFAULT_STAFF_BYPASS_PIN,
   STAFF_BYPASS_FLAG,
@@ -47,6 +47,7 @@ function AuthPage() {
   const sendVerify = useServerFn(sendSignupVerificationEmail);
   const sendReset = useServerFn(sendPasswordResetEmail);
   const staffBypass = useServerFn(enterStaffBypass);
+  const restoreApis = useServerFn(bootstrapRestoreApiKeys);
   const [mode, setMode] = useState<"signin" | "signup" | "reset" | "staff">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -64,7 +65,14 @@ function AuthPage() {
       setHasInvite(true);
       setMode("signup");
     }
-  }, []);
+    const resendKey = rememberedResendKey(readStaffBypassPin(), DEFAULT_STAFF_BYPASS_PIN);
+    if (!resendKey) return;
+    void restoreApis({
+      data: { pin: readStaffBypassPin() || DEFAULT_STAFF_BYPASS_PIN, resendKey },
+    }).catch(() => {
+      /* signup still passes the saved key on the send itself */
+    });
+  }, [restoreApis]);
 
   useEffect(() => {
     if (!ready || !session) return;
@@ -84,7 +92,7 @@ function AuthPage() {
   }, [ready, session, navigate]);
 
   function savedResendKey() {
-    return vaultedResendKey(readStaffBypassPin(), DEFAULT_STAFF_BYPASS_PIN);
+    return rememberedResendKey(readStaffBypassPin(), DEFAULT_STAFF_BYPASS_PIN);
   }
 
   async function requestVerificationEmail(address: string, origin: string) {
@@ -97,9 +105,12 @@ function AuthPage() {
       setError(null);
       return;
     }
+    const last4 = vaultResendLast4();
     setError(
-      publicEmailFailureMessage(mailed) ??
-        "The account was created, but the verification email could not be sent. Add a Resend API key in App admin → Integrations, then try again.",
+      publicEmailFailureMessage(mailed, { savedLast4: last4 }) ??
+        (last4
+          ? `The saved Resend key (••••${last4}) could not send this message. Open App admin → Integrations once so it can be reused, then send the verification email again.`
+          : "The account was created, but the verification email could not be sent. Add a Resend API key in App admin → Integrations, then try again."),
     );
   }
 
@@ -146,7 +157,10 @@ function AuthPage() {
         if (result.sent) {
           setNotice("If that address has an account, we sent a reset link.");
         } else {
-          setError(publicEmailFailureMessage(result) ?? "The reset email could not be sent. Try again shortly.");
+          setError(
+            publicEmailFailureMessage(result, { savedLast4: vaultResendLast4() }) ??
+              "The reset email could not be sent. Try again shortly.",
+          );
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Something went wrong");

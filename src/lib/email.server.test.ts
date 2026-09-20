@@ -58,9 +58,16 @@ assert(
 );
 assert(
   publicEmailFailureMessage({ sent: false, reason: "provider_error", detail: "[401] API key is invalid" })?.includes(
-    "Paste a current sending key",
+    "Open App admin → Integrations",
   ),
-  "invalid Resend keys ask for a fresh Integrations paste",
+  "invalid Resend keys point back to the saved Integrations key",
+);
+assert(
+  publicEmailFailureMessage(
+    { sent: false, reason: "not_configured" },
+    { savedLast4: "m9EL" },
+  )?.includes("••••m9EL"),
+  "a key already on file is not treated as missing",
 );
 
 const previous = peekBootstrapResendKey();

@@ -3,8 +3,11 @@ import {
   INTEGRATION_VAULT_KEY,
   isApiPersistEnabled,
   readIntegrationVault,
+  rememberResendKey,
+  rememberedResendKey,
   restoreKeysFromVault,
   setApiPersistEnabled,
+  vaultResendLast4,
   vaultedResendKey,
   upsertVaultApi,
   upsertVaultNote,
@@ -16,12 +19,18 @@ function assert(condition: unknown, message: string) {
 }
 
 const memory = new Map<string, string>();
+const session = new Map<string, string>();
 Object.defineProperty(globalThis, "window", {
   value: {
     localStorage: {
       getItem: (key: string) => memory.get(key) ?? null,
       setItem: (key: string, value: string) => void memory.set(key, value),
       removeItem: (key: string) => void memory.delete(key),
+    },
+    sessionStorage: {
+      getItem: (key: string) => session.get(key) ?? null,
+      setItem: (key: string, value: string) => void session.set(key, value),
+      removeItem: (key: string) => void session.delete(key),
     },
   },
   configurable: true,
@@ -51,7 +60,21 @@ assert(restored.resendKey === "re_test_key_m9EL", "resend key restores with the 
 assert(restored.theKybKey === "kyb-secret-5289", "the kyb key restores with the staff pin");
 assert(restoreKeysFromVault("wrong").resendKey !== "re_test_key_m9EL", "wrong pin does not restore the key");
 assert(vaultedResendKey("wrong", "eterfaceid") === "re_test_key_m9EL", "vaulted key tries pins until one works");
-assert(vaultedResendKey("wrong") === "", "vaulted key stays empty when no pin matches");
+assert(vaultedResendKey("wrong") === "re_test_key_m9EL", "saved keys unwrap with the stable wrap pin");
+assert(vaultResendLast4() === "m9EL", "last4 stays on file");
+assert(rememberedResendKey() === "re_test_key_m9EL", "remembered key comes from the vault");
+assert(rememberResendKey("re_live_from_session") === "re_live_from_session", "live key is cached");
+assert(rememberedResendKey("wrong") === "re_live_from_session", "session cache beats a bad pin");
+
+upsertVaultApi({
+  provider: "resend",
+  apiKey: "re_wrapped_with_session_pin",
+  pin: "session",
+  last4: "pinX",
+});
+session.clear();
+assert(vaultedResendKey("session") === "re_wrapped_with_session_pin", "legacy session wrap still unwraps");
+assert(rememberedResendKey() === "re_wrapped_with_session_pin", "new saves also unwrap with the stable pin");
 
 const rows = vaultAsIntegrationRows();
 assert(rows.some((row) => row.provider === "resend" && row.enabled), "connected services lists resend");
