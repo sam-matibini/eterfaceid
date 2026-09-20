@@ -112,8 +112,8 @@ function CaseDetail() {
     return (
       <ConsoleShell>
         <p className="text-sm text-[var(--signal)]">This case could not be loaded.</p>
-        <Link to="/console" className="mt-4 inline-block text-sm underline underline-offset-4">
-          Back to cases
+        <Link to="/console/cases" className="mt-4 inline-block text-sm underline underline-offset-4">
+          Back to customers
         </Link>
       </ConsoleShell>
     );
@@ -123,13 +123,15 @@ function CaseDetail() {
 
   return (
     <ConsoleShell>
-      <Link to="/console" className="text-sm text-muted-foreground underline underline-offset-4">
-        ← Cases
+      <Link to="/console/cases" className="text-sm text-muted-foreground underline underline-offset-4">
+        ← Customers
       </Link>
 
       <div className="mt-4 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="font-mono text-xs text-muted-foreground">{record.reference}</p>
+          <p className="font-mono text-xs text-muted-foreground">
+            Verification ID {record.reference} · Customer ID {record.id}
+          </p>
           <h1 className="mt-1 font-display text-3xl font-bold tracking-tight">
             {record.subject_name}
           </h1>
@@ -137,16 +139,74 @@ function CaseDetail() {
             {record.case_type} · {record.country ?? "country not recorded"}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <StatusPill tone={record.status}>{statusLabel[record.status as CaseStatus]}</StatusPill>
           <StatusPill tone={record.risk_level}>
             {riskLabel[record.risk_level as RiskLevel]} risk · {record.risk_score}
           </StatusPill>
+          <button
+            type="button"
+            className="rounded-md border border-[var(--rule)] px-3 py-1.5 text-xs"
+            onClick={() => {
+              const blob = new Blob([JSON.stringify({ record, checks: data.checks, owners: data.owners, hits: data.hits, alerts: data.alerts }, null, 2)], {
+                type: "application/json",
+              });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `${record.reference}.json`;
+              a.click();
+              URL.revokeObjectURL(url);
+            }}
+          >
+            Export JSON
+          </button>
+          <button type="button" className="rounded-md border border-[var(--rule)] px-3 py-1.5 text-xs" onClick={() => window.print()}>
+            Download PDF
+          </button>
         </div>
       </div>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
+          <Panel title="Verification Summary">
+            <dl className="grid gap-3 text-sm sm:grid-cols-2">
+              <div>
+                <dt className="text-xs uppercase tracking-widest text-muted-foreground">Created</dt>
+                <dd>{new Date(record.created_at).toLocaleString()}</dd>
+              </div>
+              <div>
+                <dt className="text-xs uppercase tracking-widest text-muted-foreground">Completed</dt>
+                <dd>{record.status === "pending" ? "—" : new Date(record.updated_at).toLocaleString()}</dd>
+              </div>
+              <div>
+                <dt className="text-xs uppercase tracking-widest text-muted-foreground">Status</dt>
+                <dd>{statusLabel[record.status as CaseStatus]}</dd>
+              </div>
+              <div>
+                <dt className="text-xs uppercase tracking-widest text-muted-foreground">Risk / Decision</dt>
+                <dd>
+                  {riskLabel[record.risk_level as RiskLevel]} · {record.status}
+                </dd>
+              </div>
+            </dl>
+            <ul className="mt-4 grid gap-1 text-sm sm:grid-cols-2">
+              {[
+                "Identity Verification",
+                "Document Verification",
+                "Liveness",
+                "Address",
+                "PEP Screening",
+                "Sanctions",
+                "Adverse Media",
+                "Risk Score",
+              ].map((item) => (
+                <li key={item} className="text-muted-foreground">
+                  · {item}
+                </li>
+              ))}
+            </ul>
+          </Panel>
           <Panel title="Checks">
             <table className="w-full text-sm">
               <tbody>

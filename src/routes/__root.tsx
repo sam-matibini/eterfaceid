@@ -137,9 +137,14 @@ function RootComponent() {
     pathname.startsWith("/console") ||
     pathname.startsWith("/admin") ||
     pathname.startsWith("/auth") ||
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/signin") ||
+    pathname.startsWith("/sign-in") ||
     pathname.startsWith("/onboarding") ||
     pathname.startsWith("/invite") ||
-    pathname.startsWith("/verify");
+    pathname.startsWith("/verify") ||
+    pathname.startsWith("/select-organization") ||
+    pathname.startsWith("/security");
 
 
   useEffect(() => {
