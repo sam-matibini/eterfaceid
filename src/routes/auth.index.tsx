@@ -8,6 +8,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
 import { sendPasswordResetEmail, sendSignupVerificationEmail } from "@/lib/auth-email.functions";
 import { publicEmailFailureMessage } from "@/lib/email-copy";
+import { enterStaffBypass } from "@/lib/staff-bypass.functions";
+import { STAFF_BYPASS_FLAG, STAFF_BYPASS_HASH, STAFF_BYPASS_PATH } from "@/lib/staff-bypass";
 
 export const Route = createFileRoute("/auth/")({
   head: () => ({
@@ -34,9 +36,11 @@ function AuthPage() {
   const { session, ready } = useSession();
   const sendVerify = useServerFn(sendSignupVerificationEmail);
   const sendReset = useServerFn(sendPasswordResetEmail);
-  const [mode, setMode] = useState<"signin" | "signup" | "reset">("signin");
+  const staffBypass = useServerFn(enterStaffBypass);
+  const [mode, setMode] = useState<"signin" | "signup" | "reset" | "staff">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [staffPin, setStaffPin] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [hasInvite, setHasInvite] = useState(false);
@@ -54,6 +58,11 @@ function AuthPage() {
 
   useEffect(() => {
     if (!ready || !session) return;
+    if (window.sessionStorage.getItem(STAFF_BYPASS_FLAG) === "1") {
+      window.sessionStorage.removeItem(STAFF_BYPASS_FLAG);
+      void navigate({ to: STAFF_BYPASS_PATH, hash: STAFF_BYPASS_HASH, replace: true });
+      return;
+    }
     void (async () => {
       const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
       if (data?.nextLevel === "aal2" && data.currentLevel !== "aal2") {
@@ -68,6 +77,28 @@ function AuthPage() {
     event.preventDefault();
     setError(null);
     setNotice(null);
+    if (mode === "staff") {
+      if (!staffPin.trim()) {
+        setError("Enter the staff access code");
+        return;
+      }
+      setBusy(true);
+      window.sessionStorage.setItem(STAFF_BYPASS_FLAG, "1");
+      try {
+        const result = await staffBypass({ data: { pin: staffPin.trim() } });
+        const { error: otpError } = await supabase.auth.verifyOtp({
+          token_hash: result.tokenHash,
+          type: "email",
+        });
+        if (otpError) throw otpError;
+      } catch (err) {
+        window.sessionStorage.removeItem(STAFF_BYPASS_FLAG);
+        setError(err instanceof Error ? err.message : "Staff access could not start");
+      } finally {
+        setBusy(false);
+      }
+      return;
+    }
     if (mode === "reset") {
       if (!email.trim()) {
         setError("Enter your work email");
@@ -138,7 +169,15 @@ function AuthPage() {
   }
 
   const title =
-    mode === "signup" ? (hasInvite ? "Create your account" : "Create a company account") : mode === "reset" ? "Reset your password" : "eterfaceID Login";
+    mode === "signup"
+      ? hasInvite
+        ? "Create your account"
+        : "Create a company account"
+      : mode === "reset"
+        ? "Reset your password"
+        : mode === "staff"
+          ? "App admin access"
+          : "eterfaceID Login";
 
   return (
     <AuthFrame
@@ -150,7 +189,9 @@ function AuthPage() {
             ? "The primary administrator creates the company workspace, then invites employees and developers."
             : mode === "reset"
               ? "We will email a reset link if this address has an account."
-              : "Sign in with your work email, then complete MFA if your role requires it."
+              : mode === "staff"
+                ? "Enter the staff access code to open Integrations and paste API keys."
+                : "Sign in with your work email, then complete MFA if your role requires it."
       }
     >
       <form onSubmit={submit} className="space-y-4">
@@ -180,40 +221,66 @@ function AuthPage() {
             </div>
           </div>
         ) : null}
-        <div>
-          <label htmlFor="email" className="text-sm font-medium">
-            Email
-          </label>
-          <input
-            id="email"
-            type="email"
-            value={email}
-            autoComplete="email"
-            onChange={(e) => setEmail(e.target.value)}
-            className={authInputClass}
-          />
-        </div>
-        {mode !== "reset" ? (
+        {mode === "staff" ? (
           <div>
-            <label htmlFor="password" className="text-sm font-medium">
-              Password
+            <label htmlFor="staffPin" className="text-sm font-medium">
+              Staff access code
             </label>
             <input
-              id="password"
+              id="staffPin"
               type="password"
-              value={password}
-              autoComplete={mode === "signin" ? "current-password" : "new-password"}
-              onChange={(e) => setPassword(e.target.value)}
+              value={staffPin}
+              autoComplete="off"
+              onChange={(e) => setStaffPin(e.target.value)}
               className={authInputClass}
             />
           </div>
-        ) : null}
+        ) : (
+          <>
+            <div>
+              <label htmlFor="email" className="text-sm font-medium">
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                autoComplete="email"
+                onChange={(e) => setEmail(e.target.value)}
+                className={authInputClass}
+              />
+            </div>
+            {mode !== "reset" ? (
+              <div>
+                <label htmlFor="password" className="text-sm font-medium">
+                  Password
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  value={password}
+                  autoComplete={mode === "signin" ? "current-password" : "new-password"}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className={authInputClass}
+                />
+              </div>
+            ) : null}
+          </>
+        )}
 
         {error ? <p className="text-sm text-[var(--signal)]">{error}</p> : null}
         {notice ? <p className="text-sm text-muted-foreground">{notice}</p> : null}
 
         <button type="submit" disabled={busy} className={authButtonClass}>
-          {busy ? "Working…" : mode === "signin" ? "Sign In" : mode === "reset" ? "Send reset link" : "Create Account"}
+          {busy
+            ? "Working…"
+            : mode === "signin"
+              ? "Sign In"
+              : mode === "reset"
+                ? "Send reset link"
+                : mode === "staff"
+                  ? "Open Integrations"
+                  : "Create Account"}
         </button>
       </form>
 
@@ -231,21 +298,50 @@ function AuthPage() {
         </button>
       ) : null}
 
-      <button
-        type="button"
-        onClick={() => {
-          setMode(mode === "signin" ? "signup" : "signin");
-          setError(null);
-          setNotice(null);
-        }}
-        className="mt-6 block text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
-      >
-        {mode === "signin" ? "No account yet? Create a company account" : "Already have an account? Sign in"}
-      </button>
+      {mode === "signin" ? (
+        <button
+          type="button"
+          onClick={() => {
+            setMode("staff");
+            setError(null);
+            setNotice(null);
+          }}
+          className="mt-4 block text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
+        >
+          App admin access
+        </button>
+      ) : null}
+
+      {mode === "staff" ? (
+        <button
+          type="button"
+          onClick={() => {
+            setMode("signin");
+            setError(null);
+            setNotice(null);
+          }}
+          className="mt-6 block text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
+        >
+          Back to sign in
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => {
+            setMode(mode === "signin" ? "signup" : "signin");
+            setError(null);
+            setNotice(null);
+          }}
+          className="mt-6 block text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
+        >
+          {mode === "signin" ? "No account yet? Create a company account" : "Already have an account? Sign in"}
+        </button>
+      )}
 
       <p className="mt-8 text-xs text-muted-foreground">
-        Creating a company account makes you the Organization Owner. Live access for other users is granted
-        separately. Privileged roles require MFA.
+        {mode === "staff"
+          ? "This opens App admin → Integrations so Resend and other API keys can be saved. Set STAFF_BYPASS_PIN to replace the bootstrap code, or off to disable it."
+          : "Creating a company account makes you the Organization Owner. Live access for other users is granted separately. Privileged roles require MFA."}
       </p>
     </AuthFrame>
   );
