@@ -2,6 +2,7 @@ import {
   authConfirmUrl,
   authLinkFromGenerate,
   generateLinkTypes,
+  isAuthEmailAlreadySent,
   rewriteAuthActionLink,
   verifyOtpType,
 } from "./auth-email.server";
@@ -9,6 +10,18 @@ import {
 function assert(condition: unknown, message: string) {
   if (!condition) throw new Error(message);
 }
+
+assert(isAuthEmailAlreadySent({ sent: true }), "sent is already sent");
+assert(isAuthEmailAlreadySent({ sent: false, reason: "rate_limited" }), "rate_limited is already sent");
+assert(
+  isAuthEmailAlreadySent({
+    sent: false,
+    reason: "provider_error",
+    detail: "For security purposes, you can only request this after 59 seconds.",
+  }),
+  "supabase cooldown is already sent",
+);
+assert(!isAuthEmailAlreadySent({ sent: false, reason: "not_configured" }), "missing resend is not already sent");
 
 assert(authConfirmUrl("https://eterfaceid.com") === "https://eterfaceid.com/auth/confirm", "confirm url");
 assert(

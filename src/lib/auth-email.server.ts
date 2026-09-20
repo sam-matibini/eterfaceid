@@ -1,5 +1,11 @@
 /** Helpers for account verification and password-reset mail. Safe to unit-test. */
 
+export function isAuthEmailAlreadySent(result: { sent?: boolean; reason?: string; detail?: string }) {
+  if (result.sent) return true;
+  if (result.reason === "rate_limited") return true;
+  return /only request this after|over_email_send_rate_limit|rate limit/i.test(result.detail ?? "");
+}
+
 export function authConfirmUrl(origin: string, next?: string | null) {
   const base = `${origin.replace(/\/$/, "")}/auth/confirm`;
   if (!next) return base;

@@ -99,6 +99,9 @@ async function resendThroughSupabaseAuth(
     options: { emailRedirectTo: redirectTo },
   });
   if (error) {
+    if (/only request this after|over_email_send_rate_limit|rate limit/i.test(error.message)) {
+      return { sent: true as const, reason: "rate_limited" as const };
+    }
     return { sent: false as const, reason: "provider_error" as const, detail: error.message };
   }
   return { sent: true as const };

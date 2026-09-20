@@ -7,6 +7,7 @@ import { AuthFrame, authButtonClass, authInputClass } from "@/components/auth/Au
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
 import { sendPasswordResetEmail, sendSignupVerificationEmail } from "@/lib/auth-email.functions";
+import { isAuthEmailAlreadySent } from "@/lib/auth-email.server";
 import { publicEmailFailureMessage } from "@/lib/email-copy";
 import { enterStaffBypass } from "@/lib/staff-bypass.functions";
 import {
@@ -83,7 +84,7 @@ function AuthPage() {
     const mailed = await sendVerify({
       data: { email: address, origin, next: "/console" },
     });
-    if (mailed.sent || mailed.reason === "rate_limited") {
+    if (isAuthEmailAlreadySent(mailed)) {
       setNotice("We've sent a verification email. Confirm the address, then continue.");
       setError(null);
       return;
