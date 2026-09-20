@@ -29,6 +29,8 @@ async function requireOrgAdmin(supabase: any, userId: string) {
 async function requireStaff(supabase: any, userId: string) {
   const { data } = await supabase.from("platform_staff").select("id").eq("user_id", userId).maybeSingle();
   if (!data) throw new Error("This area is for eterfaceID staff only");
+  const { requireAdminUnlocked } = await import("./admin-gate.server");
+  await requireAdminUnlocked(userId);
   return true;
 }
 
