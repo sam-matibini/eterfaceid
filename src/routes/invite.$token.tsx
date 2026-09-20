@@ -46,15 +46,22 @@ function InvitePage() {
   const [privacy, setPrivacy] = useState(false);
 
   useEffect(() => {
-    window.sessionStorage.setItem("eid_invite_token", token);
     void peek({ data: { token } })
       .then((result) => {
+        window.sessionStorage.setItem("eid_invite_token", token);
         setInfo(result);
         setFirstName(result.firstName);
         setLastName(result.lastName);
       })
-      .catch((err) => setError(err instanceof Error ? err.message : "This invitation is not valid"));
-    // peek is a stable server fn wrapper; token is the invitation secret.
+      .catch((err) => {
+        window.sessionStorage.removeItem("eid_invite_token");
+        const message = err instanceof Error ? err.message : "This invitation is not valid";
+        setError(
+          /missing supabase|service_role|not configured/i.test(message)
+            ? "This invitation link is not valid"
+            : message,
+        );
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 

@@ -411,42 +411,50 @@ export const revokeInvite = createServerFn({ method: "POST" })
 export const peekInvite = createServerFn({ method: "GET" })
   .inputValidator((input) => z.object({ token: z.string().trim().min(10).max(200) }).parse(input))
   .handler(async ({ data }) => {
-    const tokenHash = await sha256Hex(data.token);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: invite } = await supabaseAdmin
-      .from("organization_invites")
-      .select(
-        "id, org_id, email, first_name, last_name, job_title, access_role, user_type, sandbox_access, live_access, permissions, expires_at, accepted_at, revoked_at, invited_by",
-      )
-      .eq("token_hash", tokenHash)
-      .maybeSingle();
-    if (!invite) throw new Error("This invitation link is not valid");
-    if (invite.revoked_at) throw new Error("This invitation was cancelled");
-    if (invite.accepted_at) throw new Error("This invitation has already been used");
-    if (invitationExpired(invite.expires_at)) throw new Error("This invitation has expired");
+    try {
+      const tokenHash = await sha256Hex(data.token);
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data: invite } = await supabaseAdmin
+        .from("organization_invites")
+        .select(
+          "id, org_id, email, first_name, last_name, job_title, access_role, user_type, sandbox_access, live_access, permissions, expires_at, accepted_at, revoked_at, invited_by",
+        )
+        .eq("token_hash", tokenHash)
+        .maybeSingle();
+      if (!invite) throw new Error("This invitation link is not valid");
+      if (invite.revoked_at) throw new Error("This invitation was cancelled");
+      if (invite.accepted_at) throw new Error("This invitation has already been used");
+      if (invitationExpired(invite.expires_at)) throw new Error("This invitation has expired");
 
-    const [{ data: org }, { data: inviter }] = await Promise.all([
-      supabaseAdmin.from("organizations").select("name, legal_name").eq("id", invite.org_id).maybeSingle(),
-      invite.invited_by
-        ? supabaseAdmin.from("profiles").select("full_name, email").eq("id", invite.invited_by).maybeSingle()
-        : Promise.resolve({ data: null }),
-    ]);
+      const [{ data: org }, { data: inviter }] = await Promise.all([
+        supabaseAdmin.from("organizations").select("name, legal_name").eq("id", invite.org_id).maybeSingle(),
+        invite.invited_by
+          ? supabaseAdmin.from("profiles").select("full_name, email").eq("id", invite.invited_by).maybeSingle()
+          : Promise.resolve({ data: null }),
+      ]);
 
-    return {
-      email: invite.email,
-      firstName: invite.first_name ?? "",
-      lastName: invite.last_name ?? "",
-      jobTitle: invite.job_title ?? "",
-      accessRole: invite.access_role,
-      roleLabel: displayRole(null, invite.access_role),
-      userType: invite.user_type,
-      sandboxAccess: invite.sandbox_access,
-      liveAccess: invite.live_access,
-      permissions: invite.permissions ?? [],
-      expiresAt: invite.expires_at,
-      orgName: org?.legal_name || org?.name || "an organization",
-      inviterName: inviter?.full_name ?? inviter?.email ?? "An administrator",
-    };
+      return {
+        email: invite.email,
+        firstName: invite.first_name ?? "",
+        lastName: invite.last_name ?? "",
+        jobTitle: invite.job_title ?? "",
+        accessRole: invite.access_role,
+        roleLabel: displayRole(null, invite.access_role),
+        userType: invite.user_type,
+        sandboxAccess: invite.sandbox_access,
+        liveAccess: invite.live_access,
+        permissions: invite.permissions ?? [],
+        expiresAt: invite.expires_at,
+        orgName: org?.legal_name || org?.name || "an organization",
+        inviterName: inviter?.full_name ?? inviter?.email ?? "An administrator",
+      };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "This invitation link is not valid";
+      if (/missing supabase|service_role|not configured/i.test(message)) {
+        throw new Error("This invitation link is not valid");
+      }
+      throw err instanceof Error ? err : new Error("This invitation link is not valid");
+    }
   });
 
 export const acceptInvite = createServerFn({ method: "POST" })
