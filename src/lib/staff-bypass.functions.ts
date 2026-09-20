@@ -98,7 +98,7 @@ export const enterStaffBypass = createServerFn({ method: "POST" })
     const admin = await adminFromRuntime();
     if (!admin) {
       clearPinAttempts(key);
-      return { email: STAFF_BYPASS_EMAIL, mode: "password" as const };
+      return { email: STAFF_BYPASS_EMAIL, mode: "unlock" as const };
     }
 
     const user = await ensureStaffUser(admin);
@@ -119,9 +119,108 @@ export const enterStaffBypass = createServerFn({ method: "POST" })
     const tokenHash = extractStaffSessionToken(link.properties);
     if (!tokenHash) {
       clearPinAttempts(key);
-      return { email: STAFF_BYPASS_EMAIL, mode: "password" as const };
+      return { email: STAFF_BYPASS_EMAIL, mode: "unlock" as const };
     }
 
     clearPinAttempts(key);
     return { tokenHash, email: STAFF_BYPASS_EMAIL, mode: "otp" as const };
+  });
+
+async function assertBootstrapPin(pin: string) {
+  const { configuredStaffBypassPin, pinsMatch } = await import("@/lib/staff-bypass.server");
+  const expected = configuredStaffBypassPin();
+  if (!expected || !pinsMatch(pin.trim(), expected)) {
+    throw new Error("That access code is not valid.");
+  }
+}
+
+export const bootstrapSaveResendApiKey = createServerFn({ method: "POST" })
+  .inputValidator((input) =>
+    z
+      .object({
+        pin: z.string().min(1).max(72),
+        apiKey: z
+          .string()
+          .trim()
+          .min(8)
+          .max(400)
+          .refine((value) => value.startsWith("re_"), "Resend API keys start with re_"),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }) => {
+    await assertBootstrapPin(data.pin);
+    const { setBootstrapResendKey } = await import("@/lib/email.server");
+    setBootstrapResendKey(data.apiKey);
+    const last4 = data.apiKey.slice(-4);
+    const admin = await adminFromRuntime();
+    if (admin) {
+      await admin.from("integration_secrets").upsert(
+        {
+          provider: "resend",
+          api_key: data.apiKey,
+          last4,
+          updated_at: new Date().toISOString(),
+        } as never,
+        { onConflict: "provider" },
+      );
+      await admin
+        .from("integration_settings")
+        .update({
+          enabled: true,
+          status: "connected",
+          last_checked_at: new Date().toISOString(),
+          last_error: null,
+          config: { last4 } as never,
+        } as never)
+        .eq("provider", "resend");
+    }
+    return { last4, persisted: Boolean(admin) };
+  });
+
+export const bootstrapResendStatus = createServerFn({ method: "GET" })
+  .inputValidator((input) => z.object({ pin: z.string().min(1).max(72) }).parse(input))
+  .handler(async ({ data }) => {
+    await assertBootstrapPin(data.pin);
+    const { peekBootstrapResendKey } = await import("@/lib/email.server");
+    const key = peekBootstrapResendKey();
+    return {
+      enabled: true,
+      configured: Boolean(key),
+      last4: key ? key.slice(-4) : null,
+      lastError: null,
+      lastCheckedAt: null,
+      status: key ? "connected" : "unknown",
+    };
+  });
+
+export const bootstrapSendTestEmail = createServerFn({ method: "POST" })
+  .inputValidator((input) =>
+    z.object({ pin: z.string().min(1).max(72), to: z.string().trim().email().max(200) }).parse(input),
+  )
+  .handler(async ({ data }) => {
+    await assertBootstrapPin(data.pin);
+    const { peekBootstrapResendKey, resendSendPlan, formatSender, renderTemplate } = await import("@/lib/email.server");
+    const resendKey = peekBootstrapResendKey();
+    const plan = resendSendPlan({ resendKey, lovableKey: process.env["LOVABLE_API_KEY"] ?? null });
+    if (plan.mode === "unconfigured") {
+      return { sent: false as const, reason: "not_configured" as const, detail: "Paste a Resend API key first." };
+    }
+    const { subject, html } = renderTemplate("test", {});
+    const payload: Record<string, unknown> = {
+      from: formatSender(null, null),
+      to: [data.to],
+      subject,
+      html,
+    };
+    const response = await fetch(plan.url, {
+      method: "POST",
+      headers: plan.headers,
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      const body = await response.text();
+      return { sent: false as const, reason: "provider" as const, detail: body.slice(0, 300) };
+    }
+    return { sent: true as const };
   });

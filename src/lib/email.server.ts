@@ -276,9 +276,20 @@ async function senderIdentity(admin: Admin) {
   };
 }
 
+let bootstrapResendKey: string | null = null;
+
+export function setBootstrapResendKey(apiKey: string) {
+  bootstrapResendKey = apiKey.trim();
+  process.env["RESEND_API_KEY"] = bootstrapResendKey;
+}
+
+export function peekBootstrapResendKey() {
+  return bootstrapResendKey ?? process.env["RESEND_API_KEY"]?.trim() ?? null;
+}
+
 async function storedResendKey(admin: Admin) {
-  const fromEnv = process.env["RESEND_API_KEY"]?.trim();
-  if (fromEnv) return fromEnv;
+  const fromBootstrap = peekBootstrapResendKey();
+  if (fromBootstrap) return fromBootstrap;
   try {
     const { data } = await admin
       .from("integration_secrets")

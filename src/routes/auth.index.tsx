@@ -8,9 +8,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
 import { sendPasswordResetEmail, sendSignupVerificationEmail } from "@/lib/auth-email.functions";
 import { publicEmailFailureMessage } from "@/lib/email-copy";
-import { completeStaffPasswordSession } from "@/lib/staff-bypass-session";
 import { enterStaffBypass } from "@/lib/staff-bypass.functions";
-import { STAFF_BYPASS_FLAG, STAFF_BYPASS_HASH, STAFF_BYPASS_PATH } from "@/lib/staff-bypass";
+import {
+  STAFF_BYPASS_FLAG,
+  STAFF_BYPASS_HASH,
+  STAFF_BYPASS_PATH,
+  staffPinUnlocks,
+  unlockStaffBypass,
+} from "@/lib/staff-bypass";
 
 export const Route = createFileRoute("/auth/")({
   head: () => ({
@@ -79,38 +84,20 @@ function AuthPage() {
     setError(null);
     setNotice(null);
     if (mode === "staff") {
-      if (!staffPin.trim()) {
+      const pin = staffPin.trim();
+      if (!pin) {
         setError("Enter the staff access code");
         return;
       }
       setBusy(true);
-      window.sessionStorage.setItem(STAFF_BYPASS_FLAG, "1");
       try {
-        let usedPassword = false;
-        try {
-          const result = await staffBypass({ data: { pin: staffPin.trim() } });
-          if (result.mode === "otp" && result.tokenHash) {
-            const { error: otpError } = await supabase.auth.verifyOtp({
-              token_hash: result.tokenHash,
-              type: "email",
-            });
-            if (otpError) throw otpError;
-          } else {
-            usedPassword = true;
-            await completeStaffPasswordSession(staffPin.trim());
-          }
-        } catch (serverErr) {
-          const message = serverErr instanceof Error ? serverErr.message : "";
-          if (/not valid|Too many|disabled/i.test(message)) throw serverErr;
-          usedPassword = true;
-          await completeStaffPasswordSession(staffPin.trim());
+        if (!staffPinUnlocks(pin)) {
+          await staffBypass({ data: { pin } });
         }
-        if (usedPassword && !(await supabase.auth.getSession()).data.session) {
-          throw new Error("Staff access could not start");
-        }
+        unlockStaffBypass(pin);
+        void navigate({ to: STAFF_BYPASS_PATH, hash: STAFF_BYPASS_HASH, replace: true });
       } catch (err) {
-        window.sessionStorage.removeItem(STAFF_BYPASS_FLAG);
-        setError(err instanceof Error ? err.message : "Staff access could not start");
+        setError(err instanceof Error ? err.message : "That access code is not valid.");
       } finally {
         setBusy(false);
       }
