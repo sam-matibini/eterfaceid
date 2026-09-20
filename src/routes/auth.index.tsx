@@ -79,6 +79,32 @@ function AuthPage() {
     })();
   }, [ready, session, navigate]);
 
+  async function requestVerificationEmail(address: string, origin: string) {
+    const mailed = await sendVerify({
+      data: { email: address, origin, next: "/console" },
+    });
+    if (mailed.sent || mailed.reason === "rate_limited") {
+      setNotice("We've sent a verification email. Confirm the address, then continue.");
+      setError(null);
+      return;
+    }
+    const { error: resendError } = await supabase.auth.resend({
+      type: "signup",
+      email: address,
+      options: { emailRedirectTo: `${origin}/auth/confirm?next=/console` },
+    });
+    if (resendError) {
+      setError(
+        publicEmailFailureMessage(mailed) ??
+          resendError.message ??
+          "The account was created, but the verification email could not be sent. Try signing in after a minute, or use Forgot Password.",
+      );
+      return;
+    }
+    setNotice("We've sent a verification email. Confirm the address, then continue.");
+    setError(null);
+  }
+
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     setError(null);
@@ -110,7 +136,9 @@ function AuthPage() {
       }
       setBusy(true);
       try {
-        const result = await sendReset({ data: { email: email.trim(), origin: window.location.origin } });
+        const result = await sendReset({
+          data: { email: email.trim(), origin: window.location.origin, next: "/auth" },
+        });
         if (result.sent || result.reason === "rate_limited") {
           setNotice("If that address has an account, we sent a reset link.");
         } else {
@@ -136,27 +164,18 @@ function AuthPage() {
     try {
       if (mode === "signup") {
         window.sessionStorage.setItem("eid_admin_name", `${firstName.trim()} ${lastName.trim()}`.trim());
+        const origin = window.location.origin;
         const { data, error: signUpError } = await supabase.auth.signUp({
           email: parsed.data.email,
           password: parsed.data.password,
           options: {
-            emailRedirectTo: window.location.origin,
+            emailRedirectTo: `${origin}/auth/confirm?next=/console`,
             data: { full_name: `${firstName.trim()} ${lastName.trim()}`.trim() },
           },
         });
         if (signUpError) throw signUpError;
         if (!data.session) {
-          const mailed = await sendVerify({
-            data: { email: parsed.data.email, origin: window.location.origin },
-          });
-          if (mailed.sent || mailed.reason === "rate_limited") {
-            setNotice("We've sent a verification email. Confirm the address, then continue.");
-          } else {
-            setError(
-              publicEmailFailureMessage(mailed) ??
-                "The account was created, but the verification email could not be sent. Try signing in after a minute, or use Forgot Password.",
-            );
-          }
+          await requestVerificationEmail(parsed.data.email, origin);
         }
       } else {
         const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -274,6 +293,20 @@ function AuthPage() {
 
         {error ? <p className="text-sm text-[var(--signal)]">{error}</p> : null}
         {notice ? <p className="text-sm text-muted-foreground">{notice}</p> : null}
+        {mode === "signup" && notice ? (
+          <button
+            type="button"
+            className="text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
+            disabled={busy}
+            onClick={() => {
+              if (!email.trim()) return;
+              setBusy(true);
+              void requestVerificationEmail(email.trim(), window.location.origin).finally(() => setBusy(false));
+            }}
+          >
+            Send the verification email again
+          </button>
+        ) : null}
 
         <button type="submit" disabled={busy} className={authButtonClass}>
           {busy

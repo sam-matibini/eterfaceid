@@ -25,6 +25,7 @@ import { Route as SigninRouteImport } from './routes/signin'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
 import { Route as AuthenticatedSelectOrganizationRouteImport } from './routes/_authenticated/select-organization'
 import { Route as AuthIndexRouteImport } from './routes/auth.index'
+import { Route as AuthConfirmRouteImport } from './routes/auth.confirm'
 import { Route as AuthMfaRouteImport } from './routes/auth.mfa'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as SolutionsIndexRouteImport } from './routes/solutions.index'
@@ -171,6 +172,11 @@ const AuthenticatedSelectOrganizationRoute =
 const AuthIndexRoute = AuthIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthConfirmRoute = AuthConfirmRouteImport.update({
+  id: '/confirm',
+  path: '/confirm',
   getParentRoute: () => AuthRoute,
 } as any)
 const AuthMfaRoute = AuthMfaRouteImport.update({
@@ -571,6 +577,7 @@ export interface FileRoutesByFullPath {
   '/signin': typeof SigninRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/select-organization': typeof AuthenticatedSelectOrganizationRoute
+  '/auth/confirm': typeof AuthConfirmRoute
   '/auth/mfa': typeof AuthMfaRoute
   '/invite/$token': typeof InviteTokenRoute
   '/solutions/aml-screening': typeof SolutionsAmlScreeningRoute
@@ -654,6 +661,7 @@ export interface FileRoutesByTo {
   '/signin': typeof SigninRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/select-organization': typeof AuthenticatedSelectOrganizationRoute
+  '/auth/confirm': typeof AuthConfirmRoute
   '/auth/mfa': typeof AuthMfaRoute
   '/invite/$token': typeof InviteTokenRoute
   '/solutions/aml-screening': typeof SolutionsAmlScreeningRoute
@@ -740,6 +748,7 @@ export interface FileRoutesById {
   '/signin': typeof SigninRoute
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/_authenticated/select-organization': typeof AuthenticatedSelectOrganizationRoute
+  '/auth/confirm': typeof AuthConfirmRoute
   '/auth/mfa': typeof AuthMfaRoute
   '/invite/$token': typeof InviteTokenRoute
   '/solutions/aml-screening': typeof SolutionsAmlScreeningRoute
@@ -826,6 +835,7 @@ export interface FileRouteTypes {
     | '/signin'
     | '/onboarding'
     | '/select-organization'
+    | '/auth/confirm'
     | '/auth/mfa'
     | '/invite/$token'
     | '/solutions/aml-screening'
@@ -909,6 +919,7 @@ export interface FileRouteTypes {
     | '/signin'
     | '/onboarding'
     | '/select-organization'
+    | '/auth/confirm'
     | '/auth/mfa'
     | '/invite/$token'
     | '/solutions/aml-screening'
@@ -994,6 +1005,7 @@ export interface FileRouteTypes {
     | '/signin'
     | '/_authenticated/onboarding'
     | '/_authenticated/select-organization'
+    | '/auth/confirm'
     | '/auth/mfa'
     | '/invite/$token'
     | '/solutions/aml-screening'
@@ -1211,6 +1223,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/auth/'
       preLoaderRoute: typeof AuthIndexRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/auth/confirm': {
+      id: '/auth/confirm'
+      path: '/confirm'
+      fullPath: '/auth/confirm'
+      preLoaderRoute: typeof AuthConfirmRouteImport
       parentRoute: typeof AuthRoute
     }
     '/auth/mfa': {
@@ -1764,11 +1783,13 @@ const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
 interface AuthRouteChildren {
+  AuthConfirmRoute: typeof AuthConfirmRoute
   AuthMfaRoute: typeof AuthMfaRoute
   AuthIndexRoute: typeof AuthIndexRoute
 }
 
 const AuthRouteChildren: AuthRouteChildren = {
+  AuthConfirmRoute: AuthConfirmRoute,
   AuthMfaRoute: AuthMfaRoute,
   AuthIndexRoute: AuthIndexRoute,
 }

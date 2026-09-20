@@ -86,14 +86,14 @@ function InvitePage() {
         email: info.email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/invite/${token}`,
+          emailRedirectTo: `${window.location.origin}/auth/confirm?next=/invite/${token}`,
           data: { full_name: `${firstName} ${lastName}`.trim() },
         },
       });
       if (signUpError) throw signUpError;
       if (!data.session) {
         const mailed = await sendVerify({
-          data: { email: info.email, origin: window.location.origin },
+          data: { email: info.email, origin: window.location.origin, next: `/invite/${token}` },
         });
         if (mailed.sent || mailed.reason === "rate_limited") {
           setNotice(`We've sent a verification email to ${info.email}. Confirm it, then return here.`);
