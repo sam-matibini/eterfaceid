@@ -16,6 +16,7 @@ import {
 } from "@/lib/platform.functions";
 import {
   bootstrapResendStatus,
+  bootstrapRestoreApiKeys,
   bootstrapSaveResendApiKey,
   bootstrapSaveTheKybApiKey,
   bootstrapSendTestEmail,
@@ -24,6 +25,17 @@ import {
 import { isStaffBypassUnlocked, readStaffBypassPin } from "@/lib/staff-bypass";
 import { saveTheKybApiKey, thekybStatus } from "@/lib/thekyb.functions";
 import { THEKYB_BACKOFFICE_URL, THEKYB_PROVIDER } from "@/lib/thekyb";
+import {
+  isApiPersistEnabled,
+  readIntegrationVault,
+  removeVaultNote,
+  restoreKeysFromVault,
+  setApiPersistEnabled,
+  setVaultApiEnabled,
+  upsertVaultApi,
+  upsertVaultNote,
+  vaultAsIntegrationRows,
+} from "@/lib/integration-vault";
 
 export const Route = createFileRoute("/_authenticated/admin/integrations")({
   head: () => ({
@@ -37,28 +49,34 @@ export const Route = createFileRoute("/_authenticated/admin/integrations")({
 
 function IntegrationsPage() {
   const queryClient = useQueryClient();
+  const pinUnlocked = isStaffBypassUnlocked();
+  const vault = useQuery({
+    queryKey: ["integration-vault"],
+    queryFn: async () => readIntegrationVault(),
+  });
   const integrations = useQuery({
-    queryKey: ["integrations"],
+    queryKey: ["integrations", pinUnlocked],
     queryFn: async () => {
+      if (pinUnlocked) return vaultAsIntegrationRows();
       try {
         return await fetchIntegrations();
       } catch {
-        return [];
+        return vaultAsIntegrationRows();
       }
     },
   });
   const notepad = useQuery({
-    queryKey: ["api-notepad"],
+    queryKey: ["api-notepad", pinUnlocked],
     queryFn: async () => {
+      if (pinUnlocked) return readIntegrationVault().notes;
       try {
         return await fetchApiNotepad();
       } catch {
-        return [];
+        return readIntegrationVault().notes;
       }
     },
   });
   const toggle = useServerFn(setIntegrationEnabled);
-  const pinUnlocked = isStaffBypassUnlocked();
   const test = useServerFn(sendTestEmail);
   const bootstrapTest = useServerFn(bootstrapSendTestEmail);
   const resendInfo = useServerFn(resendStatus);
@@ -77,6 +95,8 @@ function IntegrationsPage() {
   const saveKey = useServerFn(saveTheKybApiKey);
   const bootstrapStatusTheKyb = useServerFn(bootstrapTheKybStatus);
   const bootstrapSaveTheKyb = useServerFn(bootstrapSaveTheKybApiKey);
+  const restoreApis = useServerFn(bootstrapRestoreApiKeys);
+  const [persistApis, setPersistApis] = useState(true);
   const theKyb = useQuery({
     queryKey: ["thekyb-status", pinUnlocked],
     queryFn: () =>
@@ -87,6 +107,28 @@ function IntegrationsPage() {
     queryFn: () =>
       pinUnlocked ? bootstrapStatus({ data: { pin: readStaffBypassPin() } }) : resendInfo({}),
   });
+
+  useEffect(() => {
+    setPersistApis(isApiPersistEnabled());
+  }, []);
+
+  useEffect(() => {
+    if (!pinUnlocked) return;
+    const pin = readStaffBypassPin();
+    const keys = restoreKeysFromVault(pin);
+    if (!keys.resendKey && !keys.theKybKey) return;
+    void restoreApis({
+      data: {
+        pin,
+        ...(keys.resendKey ? { resendKey: keys.resendKey } : {}),
+        ...(keys.theKybKey ? { theKybKey: keys.theKybKey } : {}),
+      },
+    }).then(() => {
+      void queryClient.invalidateQueries({ queryKey: ["resend-status"] });
+      void queryClient.invalidateQueries({ queryKey: ["thekyb-status"] });
+      void queryClient.invalidateQueries({ queryKey: ["integrations"] });
+    });
+  }, [pinUnlocked, restoreApis, queryClient]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -101,8 +143,17 @@ function IntegrationsPage() {
   }, []);
 
   const switching = useMutation({
-    mutationFn: async (input: { provider: string; enabled: boolean }) => toggle({ data: input }),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["integrations"] }),
+    mutationFn: async (input: { provider: string; enabled: boolean }) => {
+      if (pinUnlocked) {
+        setVaultApiEnabled(input.provider, input.enabled);
+        return { ok: true };
+      }
+      return toggle({ data: input });
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["integrations"] });
+      void queryClient.invalidateQueries({ queryKey: ["integration-vault"] });
+    },
   });
 
   const testing = useMutation({
@@ -124,41 +175,88 @@ function IntegrationsPage() {
       purpose: string | null;
       status: string;
       notes: string | null;
-    }) => saveEntry({ data: input }),
+    }) => {
+      if (pinUnlocked) {
+        upsertVaultNote({
+          id: input.id,
+          title: input.title,
+          purpose: input.purpose,
+          status: input.status as ApiNotepadEntry["status"],
+          notes: input.notes,
+        });
+        return { ok: true };
+      }
+      return saveEntry({ data: input });
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["api-notepad"] });
+      void queryClient.invalidateQueries({ queryKey: ["integration-vault"] });
       setEditing(null);
       setForm({ title: "", purpose: "", status: "idea", notes: "" });
     },
   });
 
   const deletingEntry = useMutation({
-    mutationFn: async (id: string) => removeEntry({ data: { id } }),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["api-notepad"] }),
+    mutationFn: async (id: string) => {
+      if (pinUnlocked) {
+        removeVaultNote(id);
+        return { ok: true };
+      }
+      return removeEntry({ data: { id } });
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["api-notepad"] });
+      void queryClient.invalidateQueries({ queryKey: ["integration-vault"] });
+    },
   });
 
   const savingKey = useMutation({
-    mutationFn: async () =>
-      pinUnlocked
-        ? bootstrapSaveTheKyb({ data: { pin: readStaffBypassPin(), apiKey: theKybKey.trim() } })
-        : saveKey({ data: { apiKey: theKybKey.trim() } }),
+    mutationFn: async () => {
+      const apiKey = theKybKey.trim();
+      const pin = readStaffBypassPin();
+      const remember = () => {
+        if (isApiPersistEnabled() && apiKey.length >= 8) {
+          upsertVaultApi({ provider: THEKYB_PROVIDER, apiKey, pin: pin || "session", last4: apiKey.slice(-4) });
+        }
+      };
+      try {
+        const result = pinUnlocked
+          ? await bootstrapSaveTheKyb({ data: { pin, apiKey } })
+          : await saveKey({ data: { apiKey } });
+        remember();
+        return result;
+      } catch (error) {
+        remember();
+        throw error;
+      }
+    },
     onSuccess: () => {
       setTheKybKey("");
       void queryClient.invalidateQueries({ queryKey: ["thekyb-status"] });
       void queryClient.invalidateQueries({ queryKey: ["integrations"] });
       void queryClient.invalidateQueries({ queryKey: ["api-notepad"] });
+      void queryClient.invalidateQueries({ queryKey: ["integration-vault"] });
     },
   });
 
   const savingResend = useMutation({
-    mutationFn: async () =>
-      pinUnlocked
-        ? bootstrapSaveResend({ data: { pin: readStaffBypassPin(), apiKey: resendKey.trim() } })
-        : saveResend({ data: { apiKey: resendKey.trim() } }),
+    mutationFn: async () => {
+      const apiKey = resendKey.trim();
+      const pin = readStaffBypassPin();
+      const result = pinUnlocked
+        ? await bootstrapSaveResend({ data: { pin, apiKey } })
+        : await saveResend({ data: { apiKey } });
+      if (isApiPersistEnabled()) {
+        upsertVaultApi({ provider: "resend", apiKey, pin: pin || "session", last4: apiKey.slice(-4) });
+      }
+      return result;
+    },
     onSuccess: () => {
       setResendKey("");
       void queryClient.invalidateQueries({ queryKey: ["resend-status"] });
       void queryClient.invalidateQueries({ queryKey: ["integrations"] });
+      void queryClient.invalidateQueries({ queryKey: ["api-notepad"] });
+      void queryClient.invalidateQueries({ queryKey: ["integration-vault"] });
     },
   });
 
@@ -179,9 +277,51 @@ function IntegrationsPage() {
         Outside services the platform can use. Keys are held in the secure store and never shown here.
       </p>
 
+      <div className="mt-8">
+        <Panel title="Save APIs to the system">
+          <label className="flex items-start gap-3 text-sm">
+            <input
+              type="checkbox"
+              className="mt-1"
+              checked={persistApis}
+              onChange={(event) => {
+                const next = event.target.checked;
+                setPersistApis(next);
+                setApiPersistEnabled(next);
+                void queryClient.invalidateQueries({ queryKey: ["integration-vault"] });
+                void queryClient.invalidateQueries({ queryKey: ["integrations"] });
+                void queryClient.invalidateQueries({ queryKey: ["api-notepad"] });
+              }}
+            />
+            <span>
+              Keep Resend, The KYB and notepad entries for future sessions. Keys are restored when you unlock
+              with the staff access code, so a Worker restart does not drop the connections.
+            </span>
+          </label>
+          {(vault.data?.apis.length ?? 0) > 0 ? (
+            <p className="mt-3 text-xs text-muted-foreground">
+              Saved now:{" "}
+              {vault.data?.apis
+                .map((row) => `${row.label}${row.last4 ? ` (••••${row.last4})` : ""}`)
+                .join(", ")}
+              .
+            </p>
+          ) : (
+            <p className="mt-3 text-xs text-muted-foreground">
+              Nothing stored yet. Leave this on, then save a key — it is recorded here automatically.
+            </p>
+          )}
+        </Panel>
+      </div>
+
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
         <Panel title="Connected services">
           <div className="space-y-4 text-sm">
+            {(integrations.data ?? []).length === 0 ? (
+              <p className="text-muted-foreground">
+                No APIs saved yet. Turn on Save APIs to the system, then save Resend or The KYB.
+              </p>
+            ) : null}
             {(integrations.data ?? []).map((row: any) => (
               <div key={row.id} className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--rule)]/60 pb-4 last:border-0">
                 <div>

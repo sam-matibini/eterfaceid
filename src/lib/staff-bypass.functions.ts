@@ -255,6 +255,32 @@ export const bootstrapSendTestEmail = createServerFn({ method: "POST" })
     return { sent: true as const };
   });
 
+export const bootstrapRestoreApiKeys = createServerFn({ method: "POST" })
+  .inputValidator((input) =>
+    z
+      .object({
+        pin: z.string().min(1).max(72),
+        resendKey: z.string().trim().max(400).optional(),
+        theKybKey: z.string().trim().max(400).optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }) => {
+    await assertBootstrapPin(data.pin);
+    const restored: string[] = [];
+    if (data.resendKey?.startsWith("re_")) {
+      const { setBootstrapResendKey } = await import("@/lib/email.server");
+      setBootstrapResendKey(data.resendKey);
+      restored.push("resend");
+    }
+    if (data.theKybKey && data.theKybKey.length >= 8) {
+      const { setBootstrapTheKybKey } = await import("@/lib/thekyb.server");
+      setBootstrapTheKybKey(data.theKybKey);
+      restored.push("thekyb");
+    }
+    return { restored };
+  });
+
 export const bootstrapTheKybStatus = createServerFn({ method: "GET" })
   .inputValidator((input) => z.object({ pin: z.string().min(1).max(72) }).parse(input))
   .handler(async ({ data }) => {
