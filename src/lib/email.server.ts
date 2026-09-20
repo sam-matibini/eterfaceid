@@ -2,7 +2,55 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { NOTIFICATION_EVENT_LIST, type NotificationEvent } from "@/lib/notification-events";
 
-const GATEWAY_URL = "https://connector-gateway.lovable.dev/resend";
+export const RESEND_PROVIDER = "resend";
+export const DEFAULT_FROM_NAME = "eterfaceID";
+export const DEFAULT_FROM_ADDRESS = "support@eterfaceid.com";
+export const RESEND_API_URL = "https://api.resend.com/emails";
+export const RESEND_GATEWAY_URL = "https://connector-gateway.lovable.dev/resend/emails";
+
+export function formatSender(name?: string | null, address?: string | null) {
+  const fromName = (name ?? "").trim() || DEFAULT_FROM_NAME;
+  const fromAddress = (address ?? "").trim() || DEFAULT_FROM_ADDRESS;
+  return `${fromName} <${fromAddress}>`;
+}
+
+export function resendSendPlan(keys: { resendKey?: string | null; lovableKey?: string | null }) {
+  const resendKey = keys.resendKey?.trim() ?? "";
+  const lovableKey = keys.lovableKey?.trim() ?? "";
+  if (resendKey.startsWith("re_")) {
+    return {
+      mode: "direct" as const,
+      url: RESEND_API_URL,
+      headers: {
+        "content-type": "application/json",
+        Authorization: `Bearer ${resendKey}`,
+      },
+    };
+  }
+  if (resendKey && lovableKey) {
+    return {
+      mode: "gateway" as const,
+      url: RESEND_GATEWAY_URL,
+      headers: {
+        "content-type": "application/json",
+        Authorization: `Bearer ${lovableKey}`,
+        "X-Connection-Api-Key": resendKey,
+      },
+    };
+  }
+  return { mode: "unconfigured" as const };
+}
+
+export function parseProviderError(status: number, body: string) {
+  const trimmed = body.trim();
+  try {
+    const parsed = JSON.parse(trimmed) as { message?: string; name?: string };
+    if (parsed.message) return `[${status}] ${parsed.message}`;
+  } catch {
+    /* keep raw body */
+  }
+  return `[${status}] ${trimmed || "provider error"}`.slice(0, 500);
+}
 
 type Admin = SupabaseClient<Database>;
 
@@ -138,6 +186,30 @@ export function renderTemplate(
           footer,
         ),
       };
+    case "account.verify":
+      return {
+        subject: "Confirm your eterfaceID email",
+        html: layout(
+          "Confirm your email",
+          p(`Hello ${data["name"] ?? "there"},`) +
+            p("Confirm this email address to finish creating your eterfaceID account.") +
+            button(data["link"] ?? "#", "Confirm email") +
+            p("If you did not create an account, you can ignore this message."),
+          footer,
+        ),
+      };
+    case "account.password_reset":
+      return {
+        subject: "Reset your eterfaceID password",
+        html: layout(
+          "Reset your password",
+          p(`Hello ${data["name"] ?? "there"},`) +
+            p("Use the button below to choose a new password for your eterfaceID account.") +
+            button(data["link"] ?? "#", "Reset password") +
+            p("If you did not ask for a reset, you can ignore this message."),
+          footer,
+        ),
+      };
     case "account.mfa_enabled":
       return {
         subject: "Multi-factor authentication is on",
@@ -195,12 +267,28 @@ export function renderTemplate(
 async function senderIdentity(admin: Admin) {
   const { data } = await admin
     .from("app_settings")
-    .select("email_from_name, email_from_address, legal_name")
+    .select("email_from_name, email_from_address, legal_name, support_email")
     .limit(1)
     .maybeSingle();
-  const name = data?.email_from_name || data?.legal_name || "eterfaceID";
-  const address = data?.email_from_address || "onboarding@resend.dev";
-  return `${name} <${address}>`;
+  return {
+    from: formatSender(data?.email_from_name || data?.legal_name, data?.email_from_address),
+    replyTo: data?.support_email?.trim() || null,
+  };
+}
+
+async function storedResendKey(admin: Admin) {
+  const fromEnv = process.env["RESEND_API_KEY"]?.trim();
+  if (fromEnv) return fromEnv;
+  try {
+    const { data } = await admin
+      .from("integration_secrets")
+      .select("api_key")
+      .eq("provider", RESEND_PROVIDER)
+      .maybeSingle();
+    return (data as { api_key?: string } | null)?.api_key?.trim() || null;
+  } catch {
+    return null;
+  }
 }
 
 async function notificationEnabled(admin: Admin, orgId: string | null, event: NotificationEvent) {
@@ -214,6 +302,8 @@ async function notificationEnabled(admin: Admin, orgId: string | null, event: No
   return data ? data.enabled : true;
 }
 
+export type SendNotificationResult = { sent: boolean; reason?: string; detail?: string };
+
 /** Sends one notification through Resend and records the outcome. Never throws. */
 export async function sendNotification(
   admin: Admin,
@@ -223,7 +313,7 @@ export async function sendNotification(
     orgId?: string | null;
     data?: Record<string, string>;
   },
-): Promise<{ sent: boolean; reason?: string }> {
+): Promise<SendNotificationResult> {
   const recipients = (Array.isArray(opts.to) ? opts.to : [opts.to]).filter(Boolean);
   if (!recipients.length) return { sent: false, reason: "no_recipient" };
 
@@ -235,15 +325,17 @@ export async function sendNotification(
   const { data: integration } = await admin
     .from("integration_settings")
     .select("enabled")
-    .eq("provider", "resend")
+    .eq("provider", RESEND_PROVIDER)
     .maybeSingle();
   if (integration && integration.enabled === false) return { sent: false, reason: "integration_off" };
 
-  const lovableKey = process.env["LOVABLE_API_KEY"];
-  const resendKey = process.env["RESEND_API_KEY"];
   const { subject, html } = renderTemplate(opts.event, opts.data ?? {});
+  const plan = resendSendPlan({
+    resendKey: await storedResendKey(admin),
+    lovableKey: process.env["LOVABLE_API_KEY"] ?? null,
+  });
 
-  if (!lovableKey || !resendKey) {
+  if (plan.mode === "unconfigured") {
     await admin.from("email_log").insert(
       recipients.map((r) => ({
         org_id: orgId,
@@ -251,41 +343,43 @@ export async function sendNotification(
         recipient: r,
         subject,
         status: "failed",
-        error_detail: "Email service is not connected",
+        error_detail: "Resend is not connected. Add a Resend API key in App admin → Integrations.",
       })),
     );
-    return { sent: false, reason: "not_configured" };
+    return { sent: false, reason: "not_configured", detail: "Resend API key is missing" };
   }
 
-  const from = await senderIdentity(admin);
+  const { from, replyTo } = await senderIdentity(admin);
   let ok = true;
+  let lastError: string | null = null;
 
   for (const recipient of recipients) {
     let status = "sent";
     let providerId: string | null = null;
     let errorDetail: string | null = null;
     try {
-      const res = await fetch(`${GATEWAY_URL}/emails`, {
+      const payload: Record<string, unknown> = { from, to: [recipient], subject, html };
+      if (replyTo) payload["reply_to"] = replyTo;
+      const res = await fetch(plan.url, {
         method: "POST",
-        headers: {
-          "content-type": "application/json",
-          Authorization: `Bearer ${lovableKey}`,
-          "X-Connection-Api-Key": resendKey,
-        },
-        body: JSON.stringify({ from, to: [recipient], subject, html }),
+        headers: plan.headers,
+        body: JSON.stringify(payload),
       });
+      const raw = await res.text();
       if (!res.ok) {
         status = "failed";
         ok = false;
-        errorDetail = `[${res.status}] ${await res.text()}`;
+        errorDetail = parseProviderError(res.status, raw);
+        lastError = errorDetail;
       } else {
-        const body = (await res.json()) as { id?: string };
+        const body = raw ? (JSON.parse(raw) as { id?: string }) : {};
         providerId = body.id ?? null;
       }
     } catch (err) {
       status = "failed";
       ok = false;
       errorDetail = err instanceof Error ? err.message : "send failed";
+      lastError = errorDetail;
     }
     await admin.from("email_log").insert({
       org_id: orgId,
@@ -300,10 +394,14 @@ export async function sendNotification(
 
   await admin
     .from("integration_settings")
-    .update({ last_checked_at: new Date().toISOString(), status: ok ? "connected" : "error" })
-    .eq("provider", "resend");
+    .update({
+      last_checked_at: new Date().toISOString(),
+      status: ok ? "connected" : "error",
+      last_error: ok ? null : lastError,
+    } as never)
+    .eq("provider", RESEND_PROVIDER);
 
-  return ok ? { sent: true } : { sent: false, reason: "provider_error" };
+  return ok ? { sent: true } : { sent: false, reason: "provider_error", ...(lastError ? { detail: lastError } : {}) };
 }
 
 /** Admin + analyst email addresses for an organization. */

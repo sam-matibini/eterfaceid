@@ -6,6 +6,7 @@ import { AuthFrame, authButtonClass, authInputClass } from "@/components/auth/Au
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
 import { acceptInvite, peekInvite } from "@/lib/teams.functions";
+import { sendSignupVerificationEmail } from "@/lib/auth-email.functions";
 
 export const Route = createFileRoute("/invite/$token")({
   ssr: false,
@@ -24,6 +25,7 @@ function InvitePage() {
   const { session, ready } = useSession();
   const peek = useServerFn(peekInvite);
   const join = useServerFn(acceptInvite);
+  const sendVerify = useServerFn(sendSignupVerificationEmail);
 
   const [info, setInfo] = useState<{
     email: string;
@@ -89,7 +91,17 @@ function InvitePage() {
       });
       if (signUpError) throw signUpError;
       if (!data.session) {
-        setNotice(`We've sent a verification email to ${info.email}. Confirm it, then return here.`);
+        const mailed = await sendVerify({
+          data: { email: info.email, origin: window.location.origin },
+        });
+        if (mailed.sent || mailed.reason === "rate_limited") {
+          setNotice(`We've sent a verification email to ${info.email}. Confirm it, then return here.`);
+        } else {
+          setError(
+            mailed.detail ??
+              "The account was created, but the verification email could not be sent. Use Forgot Password on the login page after a minute.",
+          );
+        }
         return;
       }
       await join({

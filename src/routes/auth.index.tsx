@@ -1,10 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 
 import { AuthFrame, authButtonClass, authInputClass } from "@/components/auth/AuthFrame";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
+import { sendPasswordResetEmail, sendSignupVerificationEmail } from "@/lib/auth-email.functions";
 
 export const Route = createFileRoute("/auth/")({
   head: () => ({
@@ -29,6 +31,8 @@ const credentials = z.object({
 function AuthPage() {
   const navigate = useNavigate();
   const { session, ready } = useSession();
+  const sendVerify = useServerFn(sendSignupVerificationEmail);
+  const sendReset = useServerFn(sendPasswordResetEmail);
   const [mode, setMode] = useState<"signin" | "signup" | "reset">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -70,11 +74,17 @@ function AuthPage() {
       }
       setBusy(true);
       try {
-        const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-          redirectTo: `${window.location.origin}/auth`,
-        });
-        if (resetError) throw resetError;
-        setNotice("If that address has an account, we sent a reset link.");
+        const result = await sendReset({ data: { email: email.trim(), origin: window.location.origin } });
+        if (result.sent || result.reason === "rate_limited") {
+          setNotice("If that address has an account, we sent a reset link.");
+        } else {
+          setError(
+            result.detail ??
+              (result.reason === "not_configured"
+                ? "Email delivery is not connected yet. Ask an administrator to add the Resend API key."
+                : "The reset email could not be sent. Try again shortly."),
+          );
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Something went wrong");
       } finally {
@@ -105,7 +115,19 @@ function AuthPage() {
         });
         if (signUpError) throw signUpError;
         if (!data.session) {
-          setNotice("We've sent a verification email. Confirm the address, then continue.");
+          const mailed = await sendVerify({
+            data: { email: parsed.data.email, origin: window.location.origin },
+          });
+          if (mailed.sent || mailed.reason === "rate_limited") {
+            setNotice("We've sent a verification email. Confirm the address, then continue.");
+          } else {
+            setError(
+              mailed.detail ??
+                (mailed.reason === "not_configured"
+                  ? "The account was created, but email delivery is not connected. Add a Resend API key in App admin → Integrations."
+                  : "The account was created, but the verification email could not be sent. Try signing in after a minute, or use Forgot Password."),
+            );
+          }
         }
       } else {
         const { error: signInError } = await supabase.auth.signInWithPassword({

@@ -34,9 +34,13 @@ export const NOTIFICATION_EVENT_LIST = [
   { event: "report.available", label: "Report available", description: "A compliance report is ready to download.", group: "compliance" },
 ] as const;
 
-export type NotificationEvent = (typeof NOTIFICATION_EVENT_LIST)[number]["event"] | "test";
+export type NotificationEvent =
+  | (typeof NOTIFICATION_EVENT_LIST)[number]["event"]
+  | "test"
+  | "account.verify";
 
 export const NOTIFICATION_EVENTS: Record<string, string> = Object.fromEntries(
   NOTIFICATION_EVENT_LIST.map((e) => [e.event, e.label]),
 );
 NOTIFICATION_EVENTS["test"] = "Test message";
+NOTIFICATION_EVENTS["account.verify"] = "Email verification";

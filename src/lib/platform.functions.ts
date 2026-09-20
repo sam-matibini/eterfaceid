@@ -313,6 +313,80 @@ export const sendTestEmail = createServerFn({ method: "POST" })
     return result;
   });
 
+export const resendStatus = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await requireStaff(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: setting } = await context.supabase
+      .from("integration_settings")
+      .select("enabled, last_error, last_checked_at, status")
+      .eq("provider", "resend")
+      .maybeSingle();
+    let last4: string | null = null;
+    try {
+      const { data: secret } = await supabaseAdmin
+        .from("integration_secrets")
+        .select("last4")
+        .eq("provider", "resend")
+        .maybeSingle();
+      last4 = (secret as { last4?: string } | null)?.last4 ?? null;
+    } catch {
+      /* table may not exist until the migration is applied */
+    }
+    const envConfigured = Boolean(process.env["RESEND_API_KEY"]?.trim());
+    return {
+      enabled: setting?.enabled !== false,
+      configured: envConfigured || Boolean(last4),
+      last4,
+      lastError: setting?.last_error ?? null,
+      lastCheckedAt: setting?.last_checked_at ?? null,
+      status: setting?.status ?? "unknown",
+    };
+  });
+
+export const saveResendApiKey = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        apiKey: z
+          .string()
+          .trim()
+          .min(8)
+          .max(400)
+          .refine((value) => value.startsWith("re_"), "Resend API keys start with re_"),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await requireStaff(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const last4 = data.apiKey.slice(-4);
+    await supabaseAdmin.from("integration_secrets").upsert(
+      {
+        provider: "resend",
+        api_key: data.apiKey,
+        last4,
+        updated_at: new Date().toISOString(),
+        updated_by: context.userId,
+      } as never,
+      { onConflict: "provider" },
+    );
+    process.env["RESEND_API_KEY"] = data.apiKey;
+    await supabaseAdmin
+      .from("integration_settings")
+      .update({
+        enabled: true,
+        status: "connected",
+        last_checked_at: new Date().toISOString(),
+        last_error: null,
+        config: { last4 } as never,
+      } as never)
+      .eq("provider", "resend");
+    return { last4 };
+  });
+
 export const setNotificationPreference = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>

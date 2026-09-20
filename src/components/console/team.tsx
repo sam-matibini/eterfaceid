@@ -40,6 +40,7 @@ export function TeamPanel({ isAdmin }: { isAdmin: boolean }) {
     permissions: defaultPermissions("developer") as PermissionCode[],
   });
   const [inviteLink, setInviteLink] = useState<string | null>(null);
+  const [inviteEmailed, setInviteEmailed] = useState<{ sent: boolean; reason?: string; detail?: string } | null>(null);
 
   const team = useQuery({ queryKey: ["team"], queryFn: fetchTeam });
   const refresh = () => {
@@ -87,6 +88,7 @@ export function TeamPanel({ isAdmin }: { isAdmin: boolean }) {
       });
       setOpen(false);
       setInviteLink(`${window.location.origin}/invite/${result.token}`);
+      setInviteEmailed(result.emailed);
       refresh();
     },
   });
@@ -110,6 +112,7 @@ export function TeamPanel({ isAdmin }: { isAdmin: boolean }) {
     mutationFn: async (id: string) => resend({ data: { id, origin: window.location.origin } }),
     onSuccess: (result) => {
       setInviteLink(`${window.location.origin}/invite/${result.token}`);
+      setInviteEmailed(result.emailed);
       refresh();
     },
   });
@@ -314,7 +317,9 @@ export function TeamPanel({ isAdmin }: { isAdmin: boolean }) {
       {inviteLink ? (
         <div className="mt-4 border border-[var(--signal)] bg-[var(--paper-deep)] p-3">
           <p className="text-xs uppercase tracking-widest text-[var(--signal)]">
-            Invitation sent. Share this link if the email does not arrive.
+            {inviteEmailed?.sent
+              ? "Invitation emailed. Share this link if it does not arrive."
+              : `Invitation created, but email was not sent${inviteEmailed?.detail ? `: ${inviteEmailed.detail}` : inviteEmailed?.reason ? ` (${inviteEmailed.reason})` : ""}. Share this link.`}
           </p>
           <code className="mt-2 block break-all font-mono text-xs">{inviteLink}</code>
         </div>
