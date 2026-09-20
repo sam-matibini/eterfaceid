@@ -33,7 +33,7 @@ export function lockStaffBypass() {
 export const PIN_ATTEMPT_WINDOW_MS = 15 * 60 * 1000;
 export const PIN_ATTEMPT_MAX = 8;
 
-export const FALLBACK_SUPABASE_URL = "https://euuexozkxjuvyuikevrx.supabase.co";
+export { FALLBACK_SUPABASE_URL } from "@/lib/supabase-public-env";
 
 export function applyWorkerEnv(env: unknown) {
   if (!env || typeof env !== "object") return;
