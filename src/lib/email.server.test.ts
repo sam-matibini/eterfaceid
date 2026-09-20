@@ -1,16 +1,30 @@
-import { formatSender, parseProviderError, renderTemplate, resendSendPlan } from "./email.server";
+import {
+  formatSender,
+  normalizeResendFromAddress,
+  parseProviderError,
+  renderTemplate,
+  resendSendPlan,
+} from "./email.server";
 import { publicEmailFailureMessage } from "./email-copy";
 
 function assert(condition: unknown, message: string) {
   if (!condition) throw new Error(message);
 }
 
-assert(formatSender(null, null) === "eterfaceID <support@eterfaceid.com>", "default sender is eterfaceid.com");
+assert(formatSender(null, null) === "eterfaceID <info@verify.eterfaceid.com>", "default sender uses the verified mailbox");
 assert(
-  formatSender("eterfaceID", "support@eterfaceid.com") === "eterfaceID <support@eterfaceid.com>",
-  "named sender",
+  formatSender("eterfaceID", "support@eterfaceid.com") === "eterfaceID <support@verify.eterfaceid.com>",
+  "apex eterfaceid.com is remapped to the verified subdomain",
 );
-assert(formatSender("  ", "  ") === "eterfaceID <support@eterfaceid.com>", "blank sender falls back");
+assert(formatSender("  ", "  ") === "eterfaceID <info@verify.eterfaceid.com>", "blank sender falls back");
+assert(
+  normalizeResendFromAddress("alerts@eterfaceid.com") === "alerts@verify.eterfaceid.com",
+  "local part is kept when remapping",
+);
+assert(
+  normalizeResendFromAddress("info@verify.eterfaceid.com") === "info@verify.eterfaceid.com",
+  "already-verified addresses stay",
+);
 
 const direct = resendSendPlan({ resendKey: "re_test_key", lovableKey: null });
 assert(direct.mode === "direct", "own Resend API keys send directly");

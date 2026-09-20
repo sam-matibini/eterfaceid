@@ -263,8 +263,8 @@ function IntegrationsPage() {
               Resend → API Keys
             </a>
             , then paste it here. Emails go out from{" "}
-            <span className="font-medium text-foreground">support@eterfaceid.com</span> unless you change the sender
-            under Company details.
+            <span className="font-medium text-foreground">info@verify.eterfaceid.com</span> (the domain verified in
+            Resend). Apex @eterfaceid.com addresses are remapped to that domain automatically.
           </p>
           <form
             className="mt-4 flex flex-wrap gap-2"
