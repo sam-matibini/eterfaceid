@@ -31,6 +31,13 @@ export function AdminShell({ children }: { children: ReactNode }) {
     if (ready && !isStaff) void navigate({ to: "/console", replace: true });
   }, [ready, isStaff, navigate]);
 
+  const gate = useQuery({
+    queryKey: ["admin-gate", user?.id],
+    enabled: Boolean(user?.id) && isStaff,
+    queryFn: () => adminGateStatus(),
+    staleTime: 60_000,
+  });
+
   async function signOut() {
     await queryClient.cancelQueries();
     queryClient.clear();
@@ -38,10 +45,23 @@ export function AdminShell({ children }: { children: ReactNode }) {
     void navigate({ to: "/auth", replace: true });
   }
 
+  async function lock() {
+    await lockAdmin();
+    queryClient.clear();
+    void gate.refetch();
+  }
+
   if (!ready) {
     return <div className="p-10 text-sm text-muted-foreground">Loading…</div>;
   }
   if (!isStaff) return null;
+  if (gate.isLoading) {
+    return <div className="p-10 text-sm text-muted-foreground">Loading…</div>;
+  }
+  if (!gate.data?.unlocked) {
+    return <AdminUnlock onUnlocked={() => void gate.refetch()} />;
+  }
+
 
   return (
     <div className="flex min-h-screen flex-col bg-[var(--paper)]">
