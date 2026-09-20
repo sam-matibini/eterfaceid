@@ -1,4 +1,5 @@
 import { formatSender, parseProviderError, renderTemplate, resendSendPlan } from "./email.server";
+import { publicEmailFailureMessage } from "./email-copy";
 
 function assert(condition: unknown, message: string) {
   if (!condition) throw new Error(message);
@@ -32,5 +33,12 @@ assert(reset.html.includes("https://example.com/reset"), "reset link");
 
 const parsed = parseProviderError(403, JSON.stringify({ message: "The eterfaceid.com domain is not verified." }));
 assert(parsed.includes("not verified"), "Resend JSON errors are readable");
+
+assert(
+  publicEmailFailureMessage({ sent: false, reason: "not_configured", detail: "Missing SUPABASE_SERVICE_ROLE_KEY" })?.includes(
+    "Resend API key",
+  ),
+  "env leaks are hidden from end users",
+);
 
 console.log("email.server.test.ts passed");

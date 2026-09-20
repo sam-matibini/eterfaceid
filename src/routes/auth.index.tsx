@@ -7,6 +7,7 @@ import { AuthFrame, authButtonClass, authInputClass } from "@/components/auth/Au
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
 import { sendPasswordResetEmail, sendSignupVerificationEmail } from "@/lib/auth-email.functions";
+import { publicEmailFailureMessage } from "@/lib/email-copy";
 
 export const Route = createFileRoute("/auth/")({
   head: () => ({
@@ -78,12 +79,7 @@ function AuthPage() {
         if (result.sent || result.reason === "rate_limited") {
           setNotice("If that address has an account, we sent a reset link.");
         } else {
-          setError(
-            result.detail ??
-              (result.reason === "not_configured"
-                ? "Email delivery is not connected yet. Ask an administrator to add the Resend API key."
-                : "The reset email could not be sent. Try again shortly."),
-          );
+          setError(publicEmailFailureMessage(result) ?? "The reset email could not be sent. Try again shortly.");
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Something went wrong");
@@ -122,10 +118,8 @@ function AuthPage() {
             setNotice("We've sent a verification email. Confirm the address, then continue.");
           } else {
             setError(
-              mailed.detail ??
-                (mailed.reason === "not_configured"
-                  ? "The account was created, but email delivery is not connected. Add a Resend API key in App admin → Integrations."
-                  : "The account was created, but the verification email could not be sent. Try signing in after a minute, or use Forgot Password."),
+              publicEmailFailureMessage(mailed) ??
+                "The account was created, but the verification email could not be sent. Try signing in after a minute, or use Forgot Password.",
             );
           }
         }
