@@ -10,6 +10,24 @@ function digest(value: string) {
   return createHash("sha256").update(value.normalize("NFKC"), "utf8").digest();
 }
 
+export function resolveSupabaseAdminCredentials(env: Record<string, string | undefined>) {
+  const url = (env["SUPABASE_URL"] ?? env["VITE_SUPABASE_URL"] ?? "").trim();
+  const serviceRole = (
+    env["SUPABASE_SERVICE_ROLE_KEY"] ??
+    env["SUPABASE_SECRET_KEY"] ??
+    env["SERVICE_ROLE_KEY"] ??
+    ""
+  ).trim();
+  return {
+    url: url || null,
+    serviceRole: serviceRole || null,
+  };
+}
+
+export async function readRuntimeEnv(): Promise<Record<string, string | undefined>> {
+  return { ...process.env };
+}
+
 export function configuredStaffBypassPin(env: NodeJS.Dict<string> = process.env): string | null {
   const raw = env["STAFF_BYPASS_PIN"]?.trim() ?? "";
   if (raw && /^(off|disabled|false|0)$/i.test(raw)) return null;

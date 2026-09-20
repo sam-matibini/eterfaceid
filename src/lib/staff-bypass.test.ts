@@ -5,6 +5,7 @@ import {
   STAFF_BYPASS_HASH,
   STAFF_BYPASS_PATH,
 } from "./staff-bypass";
+import { applyWorkerEnv, FALLBACK_SUPABASE_URL } from "./staff-bypass";
 import {
   clearPinAttempts,
   configuredStaffBypassPin,
@@ -12,6 +13,7 @@ import {
   extractStaffSessionToken,
   pinsMatch,
   resetPinAttemptsForTests,
+  resolveSupabaseAdminCredentials,
 } from "./staff-bypass.server";
 
 function assert(condition: unknown, message: string) {
@@ -22,6 +24,22 @@ assert(STAFF_BYPASS_EMAIL === "ops@eterfaceid.com", "bootstrap email");
 assert(STAFF_BYPASS_PATH === "/admin/integrations", "lands on integrations");
 assert(STAFF_BYPASS_HASH === "notepad", "opens the API notepad");
 assert(DEFAULT_STAFF_BYPASS_PIN === "eterfaceid", "bootstrap pin");
+
+assert(FALLBACK_SUPABASE_URL.includes("supabase.co"), "public supabase url fallback");
+
+const fromVite = resolveSupabaseAdminCredentials({
+  VITE_SUPABASE_URL: "https://example.supabase.co",
+  SUPABASE_SERVICE_ROLE_KEY: "service-role",
+});
+assert(fromVite.url === "https://example.supabase.co", "falls back to VITE_SUPABASE_URL");
+assert(fromVite.serviceRole === "service-role", "reads service role");
+assert(resolveSupabaseAdminCredentials({}).serviceRole === null, "missing service role is null");
+assert(resolveSupabaseAdminCredentials({}).url === null, "missing url is null");
+
+const previousUrl = process.env["TEST_WORKER_BIND"];
+applyWorkerEnv({ TEST_WORKER_BIND: "bound-value", skip: 1 });
+assert(process.env["TEST_WORKER_BIND"] === "bound-value", "worker bindings copy onto process.env");
+if (previousUrl === undefined) delete process.env["TEST_WORKER_BIND"];
 
 assert(configuredStaffBypassPin({}) === DEFAULT_STAFF_BYPASS_PIN, "default pin when unset");
 assert(configuredStaffBypassPin({ STAFF_BYPASS_PIN: "  secret-pin  " }) === "secret-pin", "env pin wins");

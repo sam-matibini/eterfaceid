@@ -1,9 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
+import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 
-import { STAFF_BYPASS_EMAIL } from "@/lib/staff-bypass";
+import { FALLBACK_SUPABASE_URL, STAFF_BYPASS_EMAIL } from "@/lib/staff-bypass";
 
 const pinInput = z.object({
   pin: z.string().min(1, "Enter the staff access code").max(72),
@@ -18,11 +19,6 @@ async function attemptKey() {
   } catch {
     return "local";
   }
-}
-
-async function adminClient() {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  return supabaseAdmin;
 }
 
 async function findUserByEmail(admin: SupabaseClient<Database>, email: string): Promise<User | null> {
@@ -64,6 +60,16 @@ async function dropMfaFactors(admin: SupabaseClient<Database>, userId: string) {
   }
 }
 
+async function adminFromRuntime() {
+  const { readRuntimeEnv, resolveSupabaseAdminCredentials } = await import("@/lib/staff-bypass.server");
+  const creds = resolveSupabaseAdminCredentials(await readRuntimeEnv());
+  const url = creds.url ?? FALLBACK_SUPABASE_URL;
+  if (!creds.serviceRole) return null;
+  return createClient<Database>(url, creds.serviceRole, {
+    auth: { persistSession: false, autoRefreshToken: false, storage: undefined },
+  });
+}
+
 export const enterStaffBypass = createServerFn({ method: "POST" })
   .inputValidator((input) => pinInput.parse(input))
   .handler(async ({ data }) => {
@@ -89,15 +95,10 @@ export const enterStaffBypass = createServerFn({ method: "POST" })
       throw new Error("That access code is not valid.");
     }
 
-    let admin: SupabaseClient<Database>;
-    try {
-      admin = await adminClient();
-    } catch (err) {
-      throw new Error(
-        err instanceof Error
-          ? err.message
-          : "Staff bootstrap needs SUPABASE_SERVICE_ROLE_KEY. Connect Supabase in Lovable Cloud.",
-      );
+    const admin = await adminFromRuntime();
+    if (!admin) {
+      clearPinAttempts(key);
+      return { email: STAFF_BYPASS_EMAIL, mode: "password" as const };
     }
 
     const user = await ensureStaffUser(admin);
@@ -116,8 +117,11 @@ export const enterStaffBypass = createServerFn({ method: "POST" })
     if (linkError) throw new Error(linkError.message);
 
     const tokenHash = extractStaffSessionToken(link.properties);
-    if (!tokenHash) throw new Error("Could not start a staff session.");
+    if (!tokenHash) {
+      clearPinAttempts(key);
+      return { email: STAFF_BYPASS_EMAIL, mode: "password" as const };
+    }
 
     clearPinAttempts(key);
-    return { tokenHash, email: STAFF_BYPASS_EMAIL };
+    return { tokenHash, email: STAFF_BYPASS_EMAIL, mode: "otp" as const };
   });
