@@ -17,6 +17,7 @@ import {
 import {
   bootstrapResendStatus,
   bootstrapSaveResendApiKey,
+  bootstrapSaveTheKybApiKey,
   bootstrapSendTestEmail,
 } from "@/lib/staff-bypass.functions";
 import { isStaffBypassUnlocked, readStaffBypassPin } from "@/lib/staff-bypass";
@@ -73,6 +74,7 @@ function IntegrationsPage() {
   const [theKybKey, setTheKybKey] = useState("");
   const statusFn = useServerFn(thekybStatus);
   const saveKey = useServerFn(saveTheKybApiKey);
+  const bootstrapSaveTheKyb = useServerFn(bootstrapSaveTheKybApiKey);
   const theKyb = useQuery({
     queryKey: ["thekyb-status"],
     enabled: !pinUnlocked,
@@ -134,7 +136,10 @@ function IntegrationsPage() {
   });
 
   const savingKey = useMutation({
-    mutationFn: async () => saveKey({ data: { apiKey: theKybKey.trim() } }),
+    mutationFn: async () =>
+      pinUnlocked
+        ? bootstrapSaveTheKyb({ data: { pin: readStaffBypassPin(), apiKey: theKybKey.trim() } })
+        : saveKey({ data: { apiKey: theKybKey.trim() } }),
     onSuccess: () => {
       setTheKybKey("");
       void queryClient.invalidateQueries({ queryKey: ["thekyb-status"] });
@@ -256,8 +261,8 @@ function IntegrationsPage() {
               Resend → API Keys
             </a>
             , then paste it here. Emails go out from{" "}
-            <span className="font-medium text-foreground">support@eterfaceid.com</span> unless you change the sender
-            under Company details.
+            <span className="font-medium text-foreground">support@verify.eterfaceid.com</span> (the domain verified in
+            Resend).
           </p>
           <form
             className="mt-4 flex flex-wrap gap-2"

@@ -224,3 +224,27 @@ export const bootstrapSendTestEmail = createServerFn({ method: "POST" })
     }
     return { sent: true as const };
   });
+
+export const bootstrapSaveTheKybApiKey = createServerFn({ method: "POST" })
+  .inputValidator((input) =>
+    z.object({ pin: z.string().min(1).max(72), apiKey: z.string().trim().min(8).max(400) }).parse(input),
+  )
+  .handler(async ({ data }) => {
+    await assertBootstrapPin(data.pin);
+    const { setBootstrapTheKybKey } = await import("@/lib/thekyb.server");
+    setBootstrapTheKybKey(data.apiKey);
+    const last4 = data.apiKey.slice(-4);
+    const admin = await adminFromRuntime();
+    if (admin) {
+      await admin.from("integration_secrets").upsert(
+        {
+          provider: "thekyb",
+          api_key: data.apiKey,
+          last4,
+          updated_at: new Date().toISOString(),
+        } as never,
+        { onConflict: "provider" },
+      );
+    }
+    return { last4, persisted: Boolean(admin) };
+  });

@@ -42,7 +42,15 @@ export type TheKybProfile = {
   [key: string]: unknown;
 };
 
+let bootstrapTheKybKey: string | null = null;
+
+export function setBootstrapTheKybKey(apiKey: string) {
+  bootstrapTheKybKey = apiKey.trim();
+  process.env["THEKYB_API_KEY"] = bootstrapTheKybKey;
+}
+
 async function storedApiKey(): Promise<string | null> {
+  if (bootstrapTheKybKey) return bootstrapTheKybKey;
   const fromEnv = process.env["THEKYB_API_KEY"]?.trim();
   if (fromEnv) return fromEnv;
   try {
