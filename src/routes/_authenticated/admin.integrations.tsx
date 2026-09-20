@@ -14,6 +14,12 @@ import {
   sendTestEmail,
   setIntegrationEnabled,
 } from "@/lib/platform.functions";
+import {
+  bootstrapResendStatus,
+  bootstrapSaveResendApiKey,
+  bootstrapSendTestEmail,
+} from "@/lib/staff-bypass.functions";
+import { isStaffBypassUnlocked, readStaffBypassPin } from "@/lib/staff-bypass";
 import { saveTheKybApiKey, thekybStatus } from "@/lib/thekyb.functions";
 import { THEKYB_BACKOFFICE_URL, THEKYB_PROVIDER } from "@/lib/thekyb";
 
@@ -29,12 +35,34 @@ export const Route = createFileRoute("/_authenticated/admin/integrations")({
 
 function IntegrationsPage() {
   const queryClient = useQueryClient();
-  const integrations = useQuery({ queryKey: ["integrations"], queryFn: fetchIntegrations });
-  const notepad = useQuery({ queryKey: ["api-notepad"], queryFn: fetchApiNotepad });
+  const integrations = useQuery({
+    queryKey: ["integrations"],
+    queryFn: async () => {
+      try {
+        return await fetchIntegrations();
+      } catch {
+        return [];
+      }
+    },
+  });
+  const notepad = useQuery({
+    queryKey: ["api-notepad"],
+    queryFn: async () => {
+      try {
+        return await fetchApiNotepad();
+      } catch {
+        return [];
+      }
+    },
+  });
   const toggle = useServerFn(setIntegrationEnabled);
+  const pinUnlocked = isStaffBypassUnlocked();
   const test = useServerFn(sendTestEmail);
+  const bootstrapTest = useServerFn(bootstrapSendTestEmail);
   const resendInfo = useServerFn(resendStatus);
+  const bootstrapStatus = useServerFn(bootstrapResendStatus);
   const saveResend = useServerFn(saveResendApiKey);
+  const bootstrapSaveResend = useServerFn(bootstrapSaveResendApiKey);
   const saveEntry = useServerFn(saveApiNotepadEntry);
   const removeEntry = useServerFn(deleteApiNotepadEntry);
   const [testTo, setTestTo] = useState("");
@@ -45,8 +73,16 @@ function IntegrationsPage() {
   const [theKybKey, setTheKybKey] = useState("");
   const statusFn = useServerFn(thekybStatus);
   const saveKey = useServerFn(saveTheKybApiKey);
-  const theKyb = useQuery({ queryKey: ["thekyb-status"], queryFn: () => statusFn({}) });
-  const resend = useQuery({ queryKey: ["resend-status"], queryFn: () => resendInfo({}) });
+  const theKyb = useQuery({
+    queryKey: ["thekyb-status"],
+    enabled: !pinUnlocked,
+    queryFn: () => statusFn({}),
+  });
+  const resend = useQuery({
+    queryKey: ["resend-status", pinUnlocked],
+    queryFn: () =>
+      pinUnlocked ? bootstrapStatus({ data: { pin: readStaffBypassPin() } }) : resendInfo({}),
+  });
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -66,7 +102,10 @@ function IntegrationsPage() {
   });
 
   const testing = useMutation({
-    mutationFn: async () => test({ data: { to: testTo.trim() } }),
+    mutationFn: async () =>
+      pinUnlocked
+        ? bootstrapTest({ data: { pin: readStaffBypassPin(), to: testTo.trim() } })
+        : test({ data: { to: testTo.trim() } }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["integrations"] });
       void queryClient.invalidateQueries({ queryKey: ["email-log"] });
@@ -105,7 +144,10 @@ function IntegrationsPage() {
   });
 
   const savingResend = useMutation({
-    mutationFn: async () => saveResend({ data: { apiKey: resendKey.trim() } }),
+    mutationFn: async () =>
+      pinUnlocked
+        ? bootstrapSaveResend({ data: { pin: readStaffBypassPin(), apiKey: resendKey.trim() } })
+        : saveResend({ data: { apiKey: resendKey.trim() } }),
     onSuccess: () => {
       setResendKey("");
       void queryClient.invalidateQueries({ queryKey: ["resend-status"] });
