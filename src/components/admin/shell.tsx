@@ -95,6 +95,13 @@ export function AdminShell({ children }: { children: ReactNode }) {
             <span className="hidden opacity-70 sm:inline">{user?.email}</span>
             <button
               type="button"
+              onClick={() => void lock()}
+              className="rounded-md border border-background/30 px-3 py-1.5 text-sm transition-colors hover:bg-background/10"
+            >
+              Lock admin
+            </button>
+            <button
+              type="button"
               onClick={signOut}
               className="rounded-md border border-background/30 px-3 py-1.5 text-sm transition-colors hover:bg-background/10"
             >
