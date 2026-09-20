@@ -31,13 +31,12 @@ export async function completeStaffPasswordSession(pin: string) {
     password: pin,
     options: { data: { full_name: "eterfaceID staff" } },
   });
-  if (created.error) {
-    throw new Error(signedIn.error?.message ?? created.error.message);
+  if (!created.error && created.data.session) {
+    await claimStaffSeat();
+    return;
   }
-  if (!created.data.session) {
-    throw new Error(
-      "Staff sign-in needs the bootstrap account. Publish the latest database migration, then try the access code again.",
-    );
-  }
-  await claimStaffSeat();
+
+  throw new Error(
+    "The staff bootstrap account is waiting on the database migration. Publish so Lovable applies supabase/migrations, then enter the access code again.",
+  );
 }
