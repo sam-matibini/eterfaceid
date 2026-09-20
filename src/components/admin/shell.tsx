@@ -115,6 +115,71 @@ export function AdminShell({ children }: { children: ReactNode }) {
   );
 }
 
+function AdminUnlock({ onUnlocked }: { onUnlocked: () => void }) {
+  const [code, setCode] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function submit(event: React.FormEvent) {
+    event.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      const result = await unlockAdmin({ data: { code } });
+      if (result.ok) {
+        setCode("");
+        onUnlocked();
+        return;
+      }
+      setError(
+        result.reason === "throttled"
+          ? "Too many attempts. Try again in a few minutes."
+          : "Incorrect code",
+      );
+    } catch {
+      setError("Could not check the code. Try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-[var(--paper)] px-6">
+      <form
+        onSubmit={submit}
+        className="w-full max-w-sm rounded-lg border border-[var(--rule)] bg-background p-8"
+      >
+        <p className="font-display text-lg font-bold tracking-tight">
+          <span>eterface</span>
+          <span className="text-[var(--signal)]">ID</span>
+          <span className="ml-2 align-middle text-xs font-medium uppercase tracking-widest text-muted-foreground">
+            App admin
+          </span>
+        </p>
+        <h1 className="mt-6 text-sm font-medium">Enter access code</h1>
+        <p className="mt-1 text-xs text-muted-foreground">
+          This area needs a second code as well as your account.
+        </p>
+        <input
+          type="password"
+          value={code}
+          autoComplete="one-time-code"
+          autoFocus
+          onChange={(e) => setCode(e.target.value)}
+          className={`${inputClass} mt-4`}
+        />
+        {error ? <p className="mt-3 text-sm text-[var(--signal)]">{error}</p> : null}
+        <button type="submit" disabled={busy || code.length === 0} className={`${buttonClass} mt-4 w-full`}>
+          {busy ? "Checking…" : "Unlock"}
+        </button>
+        <Link to="/console" className="mt-4 block text-xs text-muted-foreground underline underline-offset-4">
+          Back to console
+        </Link>
+      </form>
+    </div>
+  );
+}
+
 export function Field({
   label,
   children,
