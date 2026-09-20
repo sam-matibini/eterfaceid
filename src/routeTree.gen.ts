@@ -18,9 +18,13 @@ import { Route as ComplianceRouteImport } from './routes/compliance'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as DevelopersRouteImport } from './routes/developers'
 import { Route as IndustriesRouteImport } from './routes/industries'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as PricingRouteImport } from './routes/pricing'
+import { Route as SignInRouteImport } from './routes/sign-in'
+import { Route as SigninRouteImport } from './routes/signin'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
 import { Route as AuthenticatedSelectOrganizationRouteImport } from './routes/_authenticated/select-organization'
+import { Route as AuthIndexRouteImport } from './routes/auth.index'
 import { Route as AuthMfaRouteImport } from './routes/auth.mfa'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as SolutionsIndexRouteImport } from './routes/solutions.index'
@@ -133,9 +137,24 @@ const IndustriesRoute = IndustriesRouteImport.update({
   path: '/industries',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PricingRoute = PricingRouteImport.update({
   id: '/pricing',
   path: '/pricing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignInRoute = SignInRouteImport.update({
+  id: '/sign-in',
+  path: '/sign-in',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SigninRoute = SigninRouteImport.update({
+  id: '/signin',
+  path: '/signin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
@@ -149,6 +168,11 @@ const AuthenticatedSelectOrganizationRoute =
     path: '/select-organization',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthIndexRoute = AuthIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthRoute,
+} as any)
 const AuthMfaRoute = AuthMfaRouteImport.update({
   id: '/mfa',
   path: '/mfa',
@@ -541,7 +565,10 @@ export interface FileRoutesByFullPath {
   '/contact': typeof ContactRoute
   '/developers': typeof DevelopersRoute
   '/industries': typeof IndustriesRoute
+  '/login': typeof LoginRoute
   '/pricing': typeof PricingRoute
+  '/sign-in': typeof SignInRoute
+  '/signin': typeof SigninRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/select-organization': typeof AuthenticatedSelectOrganizationRoute
   '/auth/mfa': typeof AuthMfaRoute
@@ -551,6 +578,7 @@ export interface FileRoutesByFullPath {
   '/solutions/fraud-risk': typeof SolutionsFraudRiskRoute
   '/solutions/person-verification': typeof SolutionsPersonVerificationRoute
   '/verify/$token': typeof VerifyTokenRoute
+  '/auth/': typeof AuthIndexRoute
   '/solutions/': typeof SolutionsIndexRoute
   '/admin/applications': typeof AuthenticatedAdminApplicationsRoute
   '/admin/billing': typeof AuthenticatedAdminBillingRoute
@@ -615,13 +643,15 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/auth': typeof AuthRouteWithChildren
   '/careers': typeof CareersRoute
   '/compliance': typeof ComplianceRoute
   '/contact': typeof ContactRoute
   '/developers': typeof DevelopersRoute
   '/industries': typeof IndustriesRoute
+  '/login': typeof LoginRoute
   '/pricing': typeof PricingRoute
+  '/sign-in': typeof SignInRoute
+  '/signin': typeof SigninRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/select-organization': typeof AuthenticatedSelectOrganizationRoute
   '/auth/mfa': typeof AuthMfaRoute
@@ -631,6 +661,7 @@ export interface FileRoutesByTo {
   '/solutions/fraud-risk': typeof SolutionsFraudRiskRoute
   '/solutions/person-verification': typeof SolutionsPersonVerificationRoute
   '/verify/$token': typeof VerifyTokenRoute
+  '/auth': typeof AuthIndexRoute
   '/solutions': typeof SolutionsIndexRoute
   '/admin/applications': typeof AuthenticatedAdminApplicationsRoute
   '/admin/billing': typeof AuthenticatedAdminBillingRoute
@@ -703,7 +734,10 @@ export interface FileRoutesById {
   '/contact': typeof ContactRoute
   '/developers': typeof DevelopersRoute
   '/industries': typeof IndustriesRoute
+  '/login': typeof LoginRoute
   '/pricing': typeof PricingRoute
+  '/sign-in': typeof SignInRoute
+  '/signin': typeof SigninRoute
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/_authenticated/select-organization': typeof AuthenticatedSelectOrganizationRoute
   '/auth/mfa': typeof AuthMfaRoute
@@ -713,6 +747,7 @@ export interface FileRoutesById {
   '/solutions/fraud-risk': typeof SolutionsFraudRiskRoute
   '/solutions/person-verification': typeof SolutionsPersonVerificationRoute
   '/verify/$token': typeof VerifyTokenRoute
+  '/auth/': typeof AuthIndexRoute
   '/solutions/': typeof SolutionsIndexRoute
   '/_authenticated/admin/applications': typeof AuthenticatedAdminApplicationsRoute
   '/_authenticated/admin/billing': typeof AuthenticatedAdminBillingRoute
@@ -785,7 +820,10 @@ export interface FileRouteTypes {
     | '/contact'
     | '/developers'
     | '/industries'
+    | '/login'
     | '/pricing'
+    | '/sign-in'
+    | '/signin'
     | '/onboarding'
     | '/select-organization'
     | '/auth/mfa'
@@ -795,6 +833,7 @@ export interface FileRouteTypes {
     | '/solutions/fraud-risk'
     | '/solutions/person-verification'
     | '/verify/$token'
+    | '/auth/'
     | '/solutions/'
     | '/admin/applications'
     | '/admin/billing'
@@ -859,13 +898,15 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/about'
-    | '/auth'
     | '/careers'
     | '/compliance'
     | '/contact'
     | '/developers'
     | '/industries'
+    | '/login'
     | '/pricing'
+    | '/sign-in'
+    | '/signin'
     | '/onboarding'
     | '/select-organization'
     | '/auth/mfa'
@@ -875,6 +916,7 @@ export interface FileRouteTypes {
     | '/solutions/fraud-risk'
     | '/solutions/person-verification'
     | '/verify/$token'
+    | '/auth'
     | '/solutions'
     | '/admin/applications'
     | '/admin/billing'
@@ -946,7 +988,10 @@ export interface FileRouteTypes {
     | '/contact'
     | '/developers'
     | '/industries'
+    | '/login'
     | '/pricing'
+    | '/sign-in'
+    | '/signin'
     | '/_authenticated/onboarding'
     | '/_authenticated/select-organization'
     | '/auth/mfa'
@@ -956,6 +1001,7 @@ export interface FileRouteTypes {
     | '/solutions/fraud-risk'
     | '/solutions/person-verification'
     | '/verify/$token'
+    | '/auth/'
     | '/solutions/'
     | '/_authenticated/admin/applications'
     | '/_authenticated/admin/billing'
@@ -1028,7 +1074,10 @@ export interface RootRouteChildren {
   ContactRoute: typeof ContactRoute
   DevelopersRoute: typeof DevelopersRoute
   IndustriesRoute: typeof IndustriesRoute
+  LoginRoute: typeof LoginRoute
   PricingRoute: typeof PricingRoute
+  SignInRoute: typeof SignInRoute
+  SigninRoute: typeof SigninRoute
   InviteTokenRoute: typeof InviteTokenRoute
   SolutionsAmlScreeningRoute: typeof SolutionsAmlScreeningRoute
   SolutionsBusinessVerificationRoute: typeof SolutionsBusinessVerificationRoute
@@ -1115,11 +1164,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndustriesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/pricing': {
       id: '/pricing'
       path: '/pricing'
       fullPath: '/pricing'
       preLoaderRoute: typeof PricingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sign-in': {
+      id: '/sign-in'
+      path: '/sign-in'
+      fullPath: '/sign-in'
+      preLoaderRoute: typeof SignInRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/signin': {
+      id: '/signin'
+      path: '/signin'
+      fullPath: '/signin'
+      preLoaderRoute: typeof SigninRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/onboarding': {
@@ -1135,6 +1205,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/select-organization'
       preLoaderRoute: typeof AuthenticatedSelectOrganizationRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/auth/': {
+      id: '/auth/'
+      path: '/'
+      fullPath: '/auth/'
+      preLoaderRoute: typeof AuthIndexRouteImport
+      parentRoute: typeof AuthRoute
     }
     '/auth/mfa': {
       id: '/auth/mfa'
@@ -1688,10 +1765,12 @@ const AuthenticatedRouteRouteWithChildren =
 
 interface AuthRouteChildren {
   AuthMfaRoute: typeof AuthMfaRoute
+  AuthIndexRoute: typeof AuthIndexRoute
 }
 
 const AuthRouteChildren: AuthRouteChildren = {
   AuthMfaRoute: AuthMfaRoute,
+  AuthIndexRoute: AuthIndexRoute,
 }
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
@@ -1776,7 +1855,10 @@ const rootRouteChildren: RootRouteChildren = {
   ContactRoute: ContactRoute,
   DevelopersRoute: DevelopersRoute,
   IndustriesRoute: IndustriesRoute,
+  LoginRoute: LoginRoute,
   PricingRoute: PricingRoute,
+  SignInRoute: SignInRoute,
+  SigninRoute: SigninRoute,
   InviteTokenRoute: InviteTokenRoute,
   SolutionsAmlScreeningRoute: SolutionsAmlScreeningRoute,
   SolutionsBusinessVerificationRoute: SolutionsBusinessVerificationRoute,
