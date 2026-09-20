@@ -4,13 +4,26 @@ import { NOTIFICATION_EVENT_LIST, type NotificationEvent } from "@/lib/notificat
 
 export const RESEND_PROVIDER = "resend";
 export const DEFAULT_FROM_NAME = "eterfaceID";
-export const DEFAULT_FROM_ADDRESS = "support@eterfaceid.com";
+export const VERIFIED_RESEND_DOMAIN = "verify.eterfaceid.com";
+export const DEFAULT_FROM_ADDRESS = `support@${VERIFIED_RESEND_DOMAIN}`;
+
+export function normalizeResendFromAddress(address?: string | null) {
+  const raw = (address ?? "").trim() || DEFAULT_FROM_ADDRESS;
+  const at = raw.lastIndexOf("@");
+  if (at < 1) return DEFAULT_FROM_ADDRESS;
+  const local = raw.slice(0, at);
+  const domain = raw.slice(at + 1).toLowerCase();
+  if (domain === "eterfaceid.com" || domain === "www.eterfaceid.com") {
+    return `${local}@${VERIFIED_RESEND_DOMAIN}`;
+  }
+  return raw;
+}
 export const RESEND_API_URL = "https://api.resend.com/emails";
 export const RESEND_GATEWAY_URL = "https://connector-gateway.lovable.dev/resend/emails";
 
 export function formatSender(name?: string | null, address?: string | null) {
   const fromName = (name ?? "").trim() || DEFAULT_FROM_NAME;
-  const fromAddress = (address ?? "").trim() || DEFAULT_FROM_ADDRESS;
+  const fromAddress = normalizeResendFromAddress(address);
   return `${fromName} <${fromAddress}>`;
 }
 
