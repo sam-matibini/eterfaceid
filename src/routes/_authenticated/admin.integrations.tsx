@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { AdminShell, buttonClass, ghostButtonClass, inputClass } from "@/components/admin/shell";
 import { Panel, StatusPill } from "@/components/console/shell";
@@ -41,11 +41,24 @@ function IntegrationsPage() {
   const [resendKey, setResendKey] = useState("");
   const [editing, setEditing] = useState<ApiNotepadEntry | null>(null);
   const [form, setForm] = useState({ title: "", purpose: "", status: "idea" as ApiNotepadEntry["status"], notes: "" });
+  const notepadTitleRef = useRef<HTMLInputElement>(null);
   const [theKybKey, setTheKybKey] = useState("");
   const statusFn = useServerFn(thekybStatus);
   const saveKey = useServerFn(saveTheKybApiKey);
   const theKyb = useQuery({ queryKey: ["thekyb-status"], queryFn: () => statusFn({}) });
   const resend = useQuery({ queryKey: ["resend-status"], queryFn: () => resendInfo({}) });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.location.hash.replace("#", "") !== "notepad") return;
+    setForm({
+      title: "Resend",
+      purpose: "Transactional email for invites, verification, password reset and alerts",
+      status: "keys_needed",
+      notes: "Create a sending-access key at resend.com/api-keys and paste it in the Resend API key field above.",
+    });
+    window.requestAnimationFrame(() => notepadTitleRef.current?.focus());
+  }, []);
 
   const switching = useMutation({
     mutationFn: async (input: { provider: string; enabled: boolean }) => toggle({ data: input }),
@@ -279,10 +292,11 @@ function IntegrationsPage() {
       </div>
 
       <div className="mt-8">
-        <Panel title="API wish list">
+        <Panel title="API notepad">
           <p id="notepad" className="text-sm text-muted-foreground">
             APIs you want to add to the platform. Record them here; connecting one needs its keys, which always go
-            into the secure store and are never shown. The KYB is listed so you can paste its key above.
+            into the secure store and are never shown. Paste the Resend sending key in the Resend API key field
+            above, then save this notepad row.
           </p>
 
           <form
@@ -300,9 +314,10 @@ function IntegrationsPage() {
             }}
           >
             <input
+              ref={notepadTitleRef}
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
-              placeholder="API name (e.g. Interac verification)"
+              placeholder="API name (e.g. Resend)"
               className={inputClass}
             />
             <select
@@ -330,7 +345,7 @@ function IntegrationsPage() {
             />
             <div className="flex items-center gap-2 md:col-span-2">
               <button type="submit" className={buttonClass} disabled={savingEntry.isPending}>
-                {editing ? "Save changes" : "Add to wish list"}
+                {editing ? "Save changes" : "Add to notepad"}
               </button>
               {editing ? (
                 <button
