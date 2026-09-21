@@ -7,6 +7,7 @@ import { AuthFrame, authButtonClass, authInputClass } from "@/components/auth/Au
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
 import { sendPasswordResetEmail, sendSignupVerificationEmail } from "@/lib/auth-email.functions";
+import { authCallbackUrl, continueSignedIn } from "@/lib/after-auth";
 import { publicEmailFailureMessage } from "@/lib/email-copy";
 import { enterStaffBypass } from "@/lib/staff-bypass.functions";
 import {
@@ -71,12 +72,8 @@ function AuthPage() {
       return;
     }
     void (async () => {
-      const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-      if (data?.nextLevel === "aal2" && data.currentLevel !== "aal2") {
-        void navigate({ to: "/auth/mfa", replace: true });
-        return;
-      }
-      void navigate({ to: "/console", replace: true });
+      const next = await continueSignedIn();
+      void navigate({ to: next, replace: true });
     })();
   }, [ready, session, navigate]);
 
@@ -142,7 +139,7 @@ function AuthPage() {
           email: parsed.data.email,
           password: parsed.data.password,
           options: {
-            emailRedirectTo: window.location.origin,
+            emailRedirectTo: authCallbackUrl(window.location.origin),
             data: { full_name: `${firstName.trim()} ${lastName.trim()}`.trim() },
           },
         });

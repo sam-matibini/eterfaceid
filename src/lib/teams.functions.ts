@@ -334,11 +334,32 @@ export const createOrganization = createServerFn({ method: "POST" })
     const already = await createdOrgId(db, context.userId, null);
     if (already) {
       await joinCreatorIfNeeded(db, context.userId, already);
+      try {
+        await writeOrganizationProfile(
+          admin,
+          context.supabase,
+          already,
+          {
+            name: data.name,
+            legal_name: legalName,
+            registration_number: data.registrationNumber || null,
+            country,
+            address_line1: data.addressLine1 || null,
+            city: data.city || null,
+            region: data.region || null,
+            postal_code: data.postalCode || null,
+            website: data.website || null,
+          },
+          liveOrganizationProfileUpdate({ name: data.name }),
+        );
+      } catch {
+        /* existing company still opens the dashboard */
+      }
       return { orgId: already, existing: true };
     }
 
     const slug = slugify(data.name);
-    const inserted = await writeWithFallback(
+    let inserted = await writeWithFallback(
       async (payload) => {
         const result = await db
           .from("organizations")
@@ -363,6 +384,34 @@ export const createOrganization = createServerFn({ method: "POST" })
       },
       liveOrganizationInsert({ name: data.name, slug, createdBy: context.userId }),
     );
+    if (inserted.error && isUniqueConflict(inserted.error.message)) {
+      const retrySlug = slugify(data.name);
+      inserted = await writeWithFallback(
+        async (payload) => {
+          const result = await db
+            .from("organizations")
+            .insert(payload as never)
+            .select("id, name")
+            .maybeSingle();
+          return { data: result.data as { id: string; name: string } | null, error: result.error };
+        },
+        {
+          name: data.name,
+          legal_name: legalName,
+          slug: retrySlug,
+          created_by: context.userId,
+          primary_admin_user_id: context.userId,
+          registration_number: data.registrationNumber || null,
+          country,
+          address_line1: data.addressLine1 || null,
+          city: data.city || null,
+          region: data.region || null,
+          postal_code: data.postalCode || null,
+          website: data.website || null,
+        },
+        liveOrganizationInsert({ name: data.name, slug: retrySlug, createdBy: context.userId }),
+      );
+    }
     if (inserted.error || !inserted.data?.id) {
       throw new Error(inserted.error?.message ?? "The company could not be created");
     }

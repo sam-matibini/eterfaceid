@@ -6,7 +6,7 @@ import { computeEffectiveOwnership, fiftyPercentRule, type OwnerRow } from "@/li
 import { validateAddress } from "@/lib/address-rules";
 import { normalizeCountry } from "@/lib/company-country";
 import { normalizeName, scoreMatch } from "@/lib/name-match";
-import { isIgnorableSideWrite, isMissingColumnError, isUniqueConflict } from "@/lib/schema-fallback";
+import { isIgnorableSideWrite, isMissingColumnError, isUniqueConflict, writeWithFallback } from "@/lib/schema-fallback";
 
 export const CONTRACT_VERSION = "v1";
 
@@ -285,27 +285,54 @@ export const submitLiveApplication = createServerFn({ method: "POST" })
       reviewer_id: null,
       reviewer_note: null,
     };
+    const fallback = {
+      org_id: membership.org_id,
+      legal_name: data.legal_name,
+      status: "pending",
+      submitted_by: context.userId,
+    };
 
     const { data: existing } = await supabaseAdmin
       .from("org_applications")
       .select("id, status")
       .eq("org_id", membership.org_id)
       .in("status", ["draft", "pending"])
+      .order("created_at", { ascending: false })
+      .limit(1)
       .maybeSingle();
 
     let id: string;
     if (existing) {
-      const { error } = await supabaseAdmin.from("org_applications").update(payload as never).eq("id", (existing as any).id);
-      if (error) throw new Error(error.message);
-      id = (existing as any).id;
+      const updated = await writeWithFallback(
+        async (body) => {
+          const result = await supabaseAdmin
+            .from("org_applications")
+            .update(body as never)
+            .eq("id", (existing as { id: string }).id)
+            .select("id")
+            .maybeSingle();
+          return { data: result.data as { id: string } | null, error: result.error };
+        },
+        payload,
+        fallback,
+      );
+      if (updated.error || !updated.data?.id) throw new Error(updated.error?.message ?? "The application could not be saved");
+      id = updated.data.id;
     } else {
-      const { data: row, error } = await supabaseAdmin
-        .from("org_applications")
-        .insert(payload as never)
-        .select("id")
-        .single();
-      if (error) throw new Error(error.message);
-      id = (row as any).id;
+      const inserted = await writeWithFallback(
+        async (body) => {
+          const result = await supabaseAdmin
+            .from("org_applications")
+            .insert(body as never)
+            .select("id")
+            .maybeSingle();
+          return { data: result.data as { id: string } | null, error: result.error };
+        },
+        payload,
+        fallback,
+      );
+      if (inserted.error || !inserted.data?.id) throw new Error(inserted.error?.message ?? "The application could not be submitted");
+      id = inserted.data.id;
     }
 
     await supabaseAdmin.from("audit_events").insert({

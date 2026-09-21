@@ -13,6 +13,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { supabase } from "@/integrations/supabase/client";
+import { authCallbackUrl, isAuthCallbackLocation } from "@/lib/after-auth";
 import { Header } from "../components/site/Header";
 import { Footer } from "../components/site/Footer";
 
@@ -155,6 +156,20 @@ function RootComponent() {
     });
     return () => data.subscription.unsubscribe();
   }, [router, queryClient]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (
+      pathname.startsWith("/auth") ||
+      pathname.startsWith("/invite") ||
+      pathname.startsWith("/verify") ||
+      pathname.startsWith("/onboarding")
+    ) {
+      return;
+    }
+    if (!isAuthCallbackLocation(window.location.search, window.location.hash)) return;
+    window.location.replace(`${authCallbackUrl(window.location.origin)}${window.location.search}${window.location.hash}`);
+  }, [pathname]);
 
   if (bareLayout) {
     return (

@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { ConsoleShell, Panel, StatusPill } from "@/components/console/shell";
 import { useOrganization, useRoles } from "@/hooks/useSession";
 import { supabase } from "@/integrations/supabase/client";
+import { COUNTRY_OPTIONS, countrySelectValue } from "@/lib/company-country";
 import { acceptContract, submitLiveApplication } from "@/lib/go-live.functions";
 
 export const Route = createFileRoute("/_authenticated/console/go-live")({
@@ -89,7 +90,7 @@ function GoLivePage() {
   const [form, setForm] = useState({
     legal_name: "",
     registration_number: "",
-    country: "Canada",
+    country: "CA",
     address_line1: "",
     city: "",
     region: "",
@@ -154,7 +155,7 @@ function GoLivePage() {
         ...current,
         legal_name: String(app?.["legal_name"] ?? org?.["legal_name"] ?? org?.["name"] ?? ""),
         registration_number: String(app?.["registration_number"] ?? org?.["registration_number"] ?? ""),
-        country: String(app?.["country"] ?? org?.["country"] ?? current.country),
+        country: countrySelectValue(String(app?.["country"] ?? org?.["country"] ?? current.country)),
         address_line1: String(app?.["address_line1"] ?? org?.["address_line1"] ?? ""),
         city: String(app?.["city"] ?? org?.["city"] ?? ""),
         region: String(app?.["region"] ?? org?.["region"] ?? ""),
@@ -246,11 +247,17 @@ function GoLivePage() {
                 />
               </Field>
               <Field label="Country">
-                <input
+                <select
                   className={inputClass}
-                  value={form.country}
+                  value={countrySelectValue(form.country)}
                   onChange={(e) => setForm({ ...form, country: e.target.value })}
-                />
+                >
+                  {COUNTRY_OPTIONS.map((option) => (
+                    <option key={option.code} value={option.code}>
+                      {option.name}
+                    </option>
+                  ))}
+                </select>
               </Field>
               <Field label="Street address">
                 <input

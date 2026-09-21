@@ -1,10 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { AuthFrame, authButtonClass, authInputClass } from "@/components/auth/AuthFrame";
 import { setActiveOrganization, useOrganization } from "@/hooks/useSession";
+import { COUNTRY_OPTIONS, countrySelectValue } from "@/lib/company-country";
 import { acceptInvite, createOrganization } from "@/lib/teams.functions";
 
 export const Route = createFileRoute("/_authenticated/onboarding")({
@@ -28,7 +29,7 @@ function OnboardingPage() {
     name: "",
     legalName: "",
     registrationNumber: "",
-    country: "Canada",
+    country: "CA",
     addressLine1: "",
     city: "",
     region: "",
@@ -63,7 +64,7 @@ function OnboardingPage() {
       window.sessionStorage.removeItem("eid_invite_token");
       window.sessionStorage.removeItem("eid_company");
       await queryClient.invalidateQueries({ queryKey: ["my-org"] });
-      void navigate({ to: "/security/mfa", replace: true });
+      void navigate({ to: "/console", replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
@@ -125,7 +126,20 @@ function OnboardingPage() {
             value={form.registrationNumber}
             onChange={(v) => setForm({ ...form, registrationNumber: v })}
           />
-          <Field label="Country" value={form.country} onChange={(v) => setForm({ ...form, country: v })} />
+          <Field label="Country">
+            <select
+              required
+              value={countrySelectValue(form.country)}
+              onChange={(e) => setForm({ ...form, country: e.target.value })}
+              className={authInputClass}
+            >
+              {COUNTRY_OPTIONS.map((option) => (
+                <option key={option.code} value={option.code}>
+                  {option.name}
+                </option>
+              ))}
+            </select>
+          </Field>
           <Field
             label="Business Address"
             value={form.addressLine1}
@@ -188,17 +202,21 @@ function Field({
   value,
   onChange,
   required,
+  children,
 }: {
   label: string;
-  value: string;
-  onChange: (v: string) => void;
+  value?: string;
+  onChange?: (v: string) => void;
   required?: boolean;
+  children?: ReactNode;
 }) {
   return (
     <label className="block text-sm font-medium">
       {label}
       {required ? " *" : ""}
-      <input required={required} value={value} onChange={(e) => onChange(e.target.value)} className={authInputClass} />
+      {children ?? (
+        <input required={required} value={value} onChange={(e) => onChange?.(e.target.value)} className={authInputClass} />
+      )}
     </label>
   );
 }

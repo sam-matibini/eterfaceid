@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
+import { authCallbackUrl } from "@/lib/after-auth";
 
 const originSchema = z
   .string()
@@ -60,7 +61,7 @@ async function deliverAuthLink(
     const { data, error } = await admin.auth.admin.generateLink({
       type,
       email,
-      options: { redirectTo: origin },
+      options: { redirectTo: authCallbackUrl(origin) },
     });
     if (error) throw error;
     link = data.properties.action_link ?? null;

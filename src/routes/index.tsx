@@ -1,13 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Container, CTASection, Section } from "@/components/site/primitives";
 import { solutionsGroup } from "@/components/site/nav-data";
-import { ProductFilm } from "@/components/site/ProductFilm";
-import screeningFilm from "@/assets/screening-workflow.mp4";
-import screeningPoster from "@/assets/screening-workflow-poster.png";
-import transactionFilm from "@/assets/transaction-monitoring.mp4";
-import transactionPoster from "@/assets/transaction-monitoring-poster.png";
-import fintechFilm from "@/assets/fintech-real-time-monitoring.mp4";
-import fintechPoster from "@/assets/fintech-real-time-monitoring-poster.png";
 import verifyPeopleImage from "@/assets/verify-people-workflow.jpg";
 import verifyBusinessImage from "@/assets/verify-business-workflow.jpg";
 import continuousScreeningImage from "@/assets/continuous-screening-workflow.jpg";
@@ -71,48 +64,31 @@ function Home() {
   return (
     <>
       <section className="border-b border-rule">
-        <Container className="grid gap-14 py-20 md:py-28 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
-          <div>
-            <p className="text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-signal">
-              KYC &middot; KYB &middot; AML
-            </p>
-            <h1 className="mt-5 max-w-[17ch] text-[2.6rem] font-semibold leading-[1.04] text-ink md:text-[4rem]">
-              One interface for identity, entities and financial crime.
-            </h1>
-            <p className="mt-7 max-w-[58ch] text-[1.05rem] leading-[1.65] text-ink-soft">
-              eterfaceID verifies the people and businesses you onboard, screens them against
-              sanctions and politically exposed person lists, and keeps watching after the
-              account is open — through one API and one review console.
-            </p>
-            <div className="mt-9 flex flex-wrap gap-3">
-              <Link
-                to="/contact"
-                className="rounded-sm bg-primary px-5 py-3 text-[0.88rem] font-medium text-primary-foreground transition-colors hover:bg-ink"
-              >
-                Book a walkthrough
-              </Link>
-              <Link
-                to="/developers"
-                className="rounded-sm border border-ink/25 px-5 py-3 text-[0.88rem] font-medium text-ink transition-colors hover:border-ink"
-              >
-                Read the API docs
-              </Link>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <ProductFilm
-              src={screeningFilm}
-              poster={screeningPoster}
-              title="Screening in motion"
-              description="Lists resolve and a reviewable match is explained."
-            />
-            <ProductFilm
-              src={transactionFilm}
-              poster={transactionPoster}
-              title="Monitoring in motion"
-              description="A suspicious pattern becomes an analyst alert."
-            />
+        <Container className="py-20 md:py-28">
+          <p className="text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-signal">
+            KYC &middot; KYB &middot; AML
+          </p>
+          <h1 className="mt-5 max-w-[17ch] text-[2.6rem] font-semibold leading-[1.04] text-ink md:text-[4rem]">
+            One interface for identity, entities and financial crime.
+          </h1>
+          <p className="mt-7 max-w-[58ch] text-[1.05rem] leading-[1.65] text-ink-soft">
+            eterfaceID verifies the people and businesses you onboard, screens them against
+            sanctions and politically exposed person lists, and keeps watching after the
+            account is open — through one API and one review console.
+          </p>
+          <div className="mt-9 flex flex-wrap gap-3">
+            <Link
+              to="/contact"
+              className="rounded-sm bg-primary px-5 py-3 text-[0.88rem] font-medium text-primary-foreground transition-colors hover:bg-ink"
+            >
+              Book a walkthrough
+            </Link>
+            <Link
+              to="/developers"
+              className="rounded-sm border border-ink/25 px-5 py-3 text-[0.88rem] font-medium text-ink transition-colors hover:border-ink"
+            >
+              Read the API docs
+            </Link>
           </div>
         </Container>
       </section>
@@ -185,11 +161,13 @@ function Home() {
               Explore transaction monitoring
             </Link>
           </div>
-          <ProductFilm
-            src={fintechFilm}
-            poster={fintechPoster}
-            title="Fintech monitoring in real time"
-            description="Live payment and counterparty signals become a focused analyst review."
+          <img
+            src={continuousScreeningImage}
+            alt="Compliance analyst reviewing live payment, identity and screening signals"
+            width={1536}
+            height={1024}
+            loading="lazy"
+            className="aspect-[16/10] w-full border border-rule object-cover"
           />
         </Container>
       </section>

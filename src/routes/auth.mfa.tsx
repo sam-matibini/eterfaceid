@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 
 import { AuthFrame, authButtonClass, authInputClass } from "@/components/auth/AuthFrame";
 import { supabase } from "@/integrations/supabase/client";
+import { continueSignedIn } from "@/lib/after-auth";
 import { useSession } from "@/hooks/useSession";
 
 export const Route = createFileRoute("/auth/mfa")({
@@ -47,7 +48,8 @@ function MfaChallengePage() {
         code: code.trim(),
       });
       if (verifyError) throw verifyError;
-      void navigate({ to: "/console", replace: true });
+      const next = await continueSignedIn({ skipMfa: true });
+      void navigate({ to: next, replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : "That code could not be verified");
     } finally {

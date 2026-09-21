@@ -12,7 +12,7 @@ import {
 } from "./schema-fallback";
 import { withCreatorOnTeam } from "./team-view";
 import { validateAddress } from "./address-rules";
-import { normalizeCountry } from "./company-country";
+import { normalizeCountry, countrySelectValue } from "./company-country";
 
 function assert(condition: unknown, message: string) {
   if (!condition) throw new Error(message);
@@ -51,6 +51,8 @@ assert(normalizeCountry("CANADA") === "CA", "uppercase name maps");
 assert(normalizeCountry("ca") === "CA", "iso is uppercased");
 assert(normalizeCountry("Winnipeg") === "Winnipeg", "unknown names are kept");
 assert(normalizeCountry("  ") === null, "blank is null");
+assert(countrySelectValue("Canada") === "CA", "select uses ISO");
+assert(countrySelectValue("Winnipeg") === "CA", "unknown country falls back to Canada");
 
 const canadaAddress = validateAddress({
   line1: "310-112 Market Avenue",
