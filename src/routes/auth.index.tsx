@@ -113,25 +113,6 @@ function AuthPage() {
     void navigate({ to: "/console", replace: true });
   }
 
-  async function continueAsAdmin() {
-    setMode("staff");
-    setError(null);
-    setNotice(null);
-  }
-
-  async function useDifferentAccount() {
-    setBusy(true);
-    setError(null);
-    try {
-      await supabase.auth.signOut();
-      setMode("signin");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not sign out");
-    } finally {
-      setBusy(false);
-    }
-  }
-
   async function requestVerificationEmail(address: string, origin: string) {
     const resendKey = savedResendKey();
     const mailed = await sendVerify({
@@ -277,35 +258,6 @@ function AuthPage() {
                 : "Sign in with your work email, then complete MFA if your role requires it."
       }
     >
-      {ready && session && mode === "signin" ? (
-        <div className="space-y-3">
-          <p className="text-sm text-foreground">
-            Signed in as <span className="font-medium">{session.user.email}</span>
-          </p>
-          <p className="text-sm text-muted-foreground">
-            Continue as a company user, or open App admin with the staff access code.
-          </p>
-          <button type="button" className={authButtonClass} disabled={busy} onClick={() => void continueAsUser()}>
-            Continue as company user
-          </button>
-          <button
-            type="button"
-            className={`${authButtonClass} bg-background text-foreground border border-[var(--rule)]`}
-            disabled={busy}
-            onClick={() => void continueAsAdmin()}
-          >
-            App admin login
-          </button>
-          <button
-            type="button"
-            className="block pt-2 text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
-            disabled={busy}
-            onClick={() => void useDifferentAccount()}
-          >
-            Sign in with a different account
-          </button>
-        </div>
-      ) : (
       <form onSubmit={submit} className="space-y-4">
         {mode === "signup" ? (
           <div className="grid gap-4 sm:grid-cols-2">
@@ -409,9 +361,8 @@ function AuthPage() {
                   : "Create Account"}
         </button>
       </form>
-      )}
 
-      {mode === "signin" && !(ready && session) ? (
+      {mode === "signin" ? (
         <button
           type="button"
           onClick={() => {
@@ -425,7 +376,18 @@ function AuthPage() {
         </button>
       ) : null}
 
-      {mode === "signin" && !(ready && session) ? (
+      {mode === "signin" && ready && session ? (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void continueAsUser()}
+          className="mt-4 block text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
+        >
+          Already signed in as {session.user.email}? Enter the console
+        </button>
+      ) : null}
+
+      {mode === "signin" ? (
         <button
           type="button"
           onClick={() => {
@@ -451,7 +413,7 @@ function AuthPage() {
         >
           Back to sign in
         </button>
-      ) : ready && session && mode === "signin" ? null : (
+      ) : (
         <button
           type="button"
           onClick={() => {

@@ -1,11 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Menu, X } from "lucide-react";
-import { useOrganization, useSession } from "@/hooks/useSession";
-import { isStaffBypassUnlocked } from "@/lib/staff-bypass";
 import { megaMenu, solutionsGroup } from "./nav-data";
 import { BrandLogo } from "./BrandLogo";
-
 
 const topLevel = [
   { label: "Solutions", panel: true },
@@ -19,17 +16,6 @@ export function Header() {
   const [panelOpen, setPanelOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
-  const { session } = useSession();
-  const { organization, ready } = useOrganization();
-  const consoleTo =
-    session && ready && organization
-      ? "/console"
-      : isStaffBypassUnlocked()
-        ? "/admin/integrations"
-        : session && ready && !organization
-          ? "/onboarding"
-          : "/console";
-
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -88,14 +74,6 @@ export function Header() {
             >
               Company
             </Link>
-            {session ? (
-              <Link
-                to={consoleTo}
-                className="text-[0.875rem] text-ink-soft transition-colors hover:text-ink"
-              >
-                Console
-              </Link>
-            ) : null}
             <Link
               to="/auth"
               className="text-[0.875rem] text-ink-soft transition-colors hover:text-ink"
@@ -109,7 +87,6 @@ export function Header() {
               Talk to us
             </Link>
           </div>
-
 
           <button
             type="button"
@@ -179,7 +156,6 @@ export function Header() {
               { label: "About us", to: "/about" },
               { label: "Careers", to: "/careers" },
               { label: "Contact us", to: "/contact" },
-              ...(session ? [{ label: "Console", to: consoleTo }] : []),
               { label: "Sign in", to: "/auth" },
             ].map((l) => (
               <li key={l.to}>
