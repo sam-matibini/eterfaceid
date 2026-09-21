@@ -6,6 +6,7 @@ import { ConsoleShell, inkButtonClass, Panel, StatusPill } from "@/components/co
 import { useOrganization, useRoles } from "@/hooks/useSession";
 import { classifyCase, PURPOSE_LABEL } from "@/lib/case-purpose";
 import { fetchDashboardStats, fetchCases, statusLabel, type CaseStatus } from "@/lib/console";
+import { isStaffBypassUnlocked } from "@/lib/staff-bypass";
 
 export const Route = createFileRoute("/_authenticated/console/")({
   head: () => ({
@@ -64,7 +65,7 @@ function HomePage() {
     };
   }, [rows]);
   const recent = rows.slice(0, 8);
-  const canInvite = isAdmin || has("users.manage");
+  const canInvite = isAdmin || has("users.manage") || isStaffBypassUnlocked();
 
   return (
     <ConsoleShell>

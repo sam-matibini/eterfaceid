@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 
-import { fieldClass, inkButtonClass, Panel, StatusPill } from "@/components/console/shell";
+import { compactFieldClass, inkButtonClass, Panel, StatusPill } from "@/components/console/shell";
 import { useRoles } from "@/hooks/useSession";
 import {
   PURPOSE_LABEL,
@@ -258,20 +258,20 @@ function StartInquiryForm({
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder={subjectLabel}
-          className={`${fieldClass} max-w-xs flex-1`}
+          className={`${compactFieldClass} min-w-[12rem] flex-1`}
         />
         <input
           value={country}
           onChange={(e) => setCountry(e.target.value)}
           placeholder="Country"
           maxLength={2}
-          className={`${fieldClass} w-20 uppercase`}
+          className={`${compactFieldClass} w-20 uppercase`}
         />
         <input
           value={reference}
           onChange={(e) => setReference(e.target.value)}
           placeholder={purpose === "employee" ? "HR / employee ID" : "Your reference"}
-          className={`${fieldClass} max-w-[12rem]`}
+          className={`${compactFieldClass} w-44`}
         />
         <button type="submit" disabled={mutation.isPending} className={inkButtonClass}>
           {mutation.isPending ? "Creating…" : "Create"}

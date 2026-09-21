@@ -28,7 +28,7 @@ const navGroups: NavGroup[] = [
     label: "Identity",
     items: [
       { to: "/console/inquiries", label: "Inquiries", permission: "kyc.reports.view" },
-      { to: "/console/kyc", label: "Verifications", permission: "kyc.reports.view" },
+      { to: "/console/verifications", label: "Verifications", permission: "kyc.reports.view" },
       { to: "/console/watchlists", label: "Watchlists", permission: "aml.results.view" },
       { to: "/console/reports", label: "Reports", permission: "reports.download" },
     ],
@@ -117,6 +117,7 @@ export function ConsoleShell({ children }: { children: ReactNode }) {
     if (item.external) return false;
     if (item.exact) return pathname === item.to;
     if (item.to === "/console/kyc" && pathname.startsWith("/console/employees")) return false;
+    if (item.to === "/console/kyc" && pathname.startsWith("/console/verifications")) return false;
     return pathname === item.to || pathname.startsWith(`${item.to}/`);
   }
 
@@ -415,5 +416,7 @@ export function Panel({
 
 export const fieldClass =
   "h-10 w-full rounded-md border border-[var(--rule)] bg-background px-3 text-sm outline-none focus-visible:border-[var(--signal)]";
+export const compactFieldClass =
+  "h-10 rounded-md border border-[var(--rule)] bg-background px-3 text-sm outline-none focus-visible:border-[var(--signal)]";
 export const inkButtonClass =
   "h-10 rounded-md bg-[var(--ink)] px-4 text-sm text-background transition-opacity hover:opacity-90 disabled:opacity-50";

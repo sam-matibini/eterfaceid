@@ -66,6 +66,7 @@ import { Route as AuthenticatedConsoleSettingsRouteImport } from './routes/_auth
 import { Route as AuthenticatedConsoleTeamRouteImport } from './routes/_authenticated/console.team'
 import { Route as AuthenticatedConsoleTransactionsRouteImport } from './routes/_authenticated/console.transactions'
 import { Route as AuthenticatedConsoleUsersRouteImport } from './routes/_authenticated/console.users'
+import { Route as AuthenticatedConsoleVerificationsRouteImport } from './routes/_authenticated/console.verifications'
 import { Route as AuthenticatedConsoleWatchlistsRouteImport } from './routes/_authenticated/console.watchlists'
 import { Route as AuthenticatedConsoleWebhooksRouteImport } from './routes/_authenticated/console.webhooks'
 import { Route as AuthenticatedSecurityMfaRouteImport } from './routes/_authenticated/security.mfa'
@@ -416,6 +417,12 @@ const AuthenticatedConsoleUsersRoute =
     path: '/console/users',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedConsoleVerificationsRoute =
+  AuthenticatedConsoleVerificationsRouteImport.update({
+    id: '/console/verifications',
+    path: '/console/verifications',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedConsoleWatchlistsRoute =
   AuthenticatedConsoleWatchlistsRouteImport.update({
     id: '/console/watchlists',
@@ -682,6 +689,7 @@ export interface FileRoutesByFullPath {
   '/console/team': typeof AuthenticatedConsoleTeamRoute
   '/console/transactions': typeof AuthenticatedConsoleTransactionsRoute
   '/console/users': typeof AuthenticatedConsoleUsersRouteWithChildren
+  '/console/verifications': typeof AuthenticatedConsoleVerificationsRoute
   '/console/watchlists': typeof AuthenticatedConsoleWatchlistsRoute
   '/console/webhooks': typeof AuthenticatedConsoleWebhooksRoute
   '/security/mfa': typeof AuthenticatedSecurityMfaRoute
@@ -775,6 +783,7 @@ export interface FileRoutesByTo {
   '/console/settings': typeof AuthenticatedConsoleSettingsRoute
   '/console/team': typeof AuthenticatedConsoleTeamRoute
   '/console/transactions': typeof AuthenticatedConsoleTransactionsRoute
+  '/console/verifications': typeof AuthenticatedConsoleVerificationsRoute
   '/console/watchlists': typeof AuthenticatedConsoleWatchlistsRoute
   '/console/webhooks': typeof AuthenticatedConsoleWebhooksRoute
   '/security/mfa': typeof AuthenticatedSecurityMfaRoute
@@ -872,6 +881,7 @@ export interface FileRoutesById {
   '/_authenticated/console/team': typeof AuthenticatedConsoleTeamRoute
   '/_authenticated/console/transactions': typeof AuthenticatedConsoleTransactionsRoute
   '/_authenticated/console/users': typeof AuthenticatedConsoleUsersRouteWithChildren
+  '/_authenticated/console/verifications': typeof AuthenticatedConsoleVerificationsRoute
   '/_authenticated/console/watchlists': typeof AuthenticatedConsoleWatchlistsRoute
   '/_authenticated/console/webhooks': typeof AuthenticatedConsoleWebhooksRoute
   '/_authenticated/security/mfa': typeof AuthenticatedSecurityMfaRoute
@@ -969,6 +979,7 @@ export interface FileRouteTypes {
     | '/console/team'
     | '/console/transactions'
     | '/console/users'
+    | '/console/verifications'
     | '/console/watchlists'
     | '/console/webhooks'
     | '/security/mfa'
@@ -1062,6 +1073,7 @@ export interface FileRouteTypes {
     | '/console/settings'
     | '/console/team'
     | '/console/transactions'
+    | '/console/verifications'
     | '/console/watchlists'
     | '/console/webhooks'
     | '/security/mfa'
@@ -1158,6 +1170,7 @@ export interface FileRouteTypes {
     | '/_authenticated/console/team'
     | '/_authenticated/console/transactions'
     | '/_authenticated/console/users'
+    | '/_authenticated/console/verifications'
     | '/_authenticated/console/watchlists'
     | '/_authenticated/console/webhooks'
     | '/_authenticated/security/mfa'
@@ -1636,6 +1649,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedConsoleUsersRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/console/verifications': {
+      id: '/_authenticated/console/verifications'
+      path: '/console/verifications'
+      fullPath: '/console/verifications'
+      preLoaderRoute: typeof AuthenticatedConsoleVerificationsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/console/watchlists': {
       id: '/_authenticated/console/watchlists'
       path: '/console/watchlists'
@@ -1947,6 +1967,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedConsoleTeamRoute: typeof AuthenticatedConsoleTeamRoute
   AuthenticatedConsoleTransactionsRoute: typeof AuthenticatedConsoleTransactionsRoute
   AuthenticatedConsoleUsersRoute: typeof AuthenticatedConsoleUsersRouteWithChildren
+  AuthenticatedConsoleVerificationsRoute: typeof AuthenticatedConsoleVerificationsRoute
   AuthenticatedConsoleWatchlistsRoute: typeof AuthenticatedConsoleWatchlistsRoute
   AuthenticatedConsoleWebhooksRoute: typeof AuthenticatedConsoleWebhooksRoute
   AuthenticatedSecurityMfaRoute: typeof AuthenticatedSecurityMfaRoute
@@ -1991,6 +2012,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedConsoleTeamRoute: AuthenticatedConsoleTeamRoute,
   AuthenticatedConsoleTransactionsRoute: AuthenticatedConsoleTransactionsRoute,
   AuthenticatedConsoleUsersRoute: AuthenticatedConsoleUsersRouteWithChildren,
+  AuthenticatedConsoleVerificationsRoute:
+    AuthenticatedConsoleVerificationsRoute,
   AuthenticatedConsoleWatchlistsRoute: AuthenticatedConsoleWatchlistsRoute,
   AuthenticatedConsoleWebhooksRoute: AuthenticatedConsoleWebhooksRoute,
   AuthenticatedSecurityMfaRoute: AuthenticatedSecurityMfaRoute,

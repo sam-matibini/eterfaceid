@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 
 import { CasesWorkspace } from "@/components/console/cases-workspace";
-import { ConsoleShell, fieldClass, inkButtonClass, Panel } from "@/components/console/shell";
+import { ConsoleShell, compactFieldClass, inkButtonClass, Panel } from "@/components/console/shell";
 import { screenName } from "@/lib/screening.functions";
 
 export const Route = createFileRoute("/_authenticated/console/aml")({
@@ -44,7 +44,7 @@ function AmlPage() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Name to screen"
-              className={`${fieldClass} max-w-xs flex-1`}
+              className={`${compactFieldClass} max-w-xs flex-1`}
             />
             <button type="submit" disabled={testSearch.isPending} className={inkButtonClass}>
               Screen
