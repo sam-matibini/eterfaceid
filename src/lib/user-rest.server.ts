@@ -20,6 +20,13 @@ export async function callerAccessToken() {
   }
 }
 
+export type UserRestResult<T> = {
+  data: T | null;
+  error: string | null;
+  status: number;
+  location: string | null;
+};
+
 export async function userRest<T = unknown>(
   table: string,
   options: {
@@ -29,19 +36,25 @@ export async function userRest<T = unknown>(
     prefer?: string;
     token?: string | null;
   } = {},
-): Promise<{ data: T | null; error: string | null; status: number }> {
+): Promise<UserRestResult<T>> {
   const { publicSupabasePublishableKey, publicSupabaseUrl } = await import("@/lib/supabase-public-env");
   const token = options.token ?? (await callerAccessToken());
-  if (!token) return { data: null, error: "Not signed in", status: 401 };
+  if (!token) return { data: null, error: "Not signed in", status: 401, location: null };
   const key = publicSupabasePublishableKey();
   const response = await fetch(`${publicSupabaseUrl()}/rest/v1/${table}${options.query ? `?${options.query}` : ""}`, {
     method: options.method ?? "GET",
     headers: userRestHeaders(key, token, options.prefer),
     body: options.body === undefined ? undefined : JSON.stringify(options.body),
   });
+  const location = response.headers.get("location");
   const text = await response.text();
   if (!text) {
-    return { data: null, error: response.ok ? null : `HTTP ${response.status}`, status: response.status };
+    return {
+      data: null,
+      error: response.ok ? null : `HTTP ${response.status}`,
+      status: response.status,
+      location,
+    };
   }
   try {
     const parsed = JSON.parse(text) as T | { message?: string; error?: string };
@@ -50,11 +63,11 @@ export async function userRest<T = unknown>(
         parsed && typeof parsed === "object"
           ? ("message" in parsed && parsed.message) || ("error" in parsed && parsed.error) || text
           : text;
-      return { data: null, error: String(message), status: response.status };
+      return { data: null, error: String(message), status: response.status, location };
     }
-    return { data: parsed as T, error: null, status: response.status };
+    return { data: parsed as T, error: null, status: response.status, location };
   } catch {
-    return { data: null, error: response.ok ? null : text.slice(0, 300), status: response.status };
+    return { data: null, error: response.ok ? null : text.slice(0, 300), status: response.status, location };
   }
 }
 

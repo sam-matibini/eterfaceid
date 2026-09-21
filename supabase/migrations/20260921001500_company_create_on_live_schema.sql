@@ -41,6 +41,31 @@ $$;
 REVOKE ALL ON FUNCTION public.create_company_workspace(text, text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.create_company_workspace(text, text) TO authenticated;
 
+-- Same-transaction join: creating an organization also inserts the creator as admin,
+-- so first-company signup works even when members-admin-write is circular.
+CREATE OR REPLACE FUNCTION public.add_organization_creator()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF NEW.created_by IS NULL THEN
+    RETURN NEW;
+  END IF;
+  INSERT INTO public.organization_members (org_id, user_id, role)
+  VALUES (NEW.id, NEW.created_by, 'admin')
+  ON CONFLICT (org_id, user_id) DO NOTHING;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS organizations_add_creator ON public.organizations;
+CREATE TRIGGER organizations_add_creator
+  AFTER INSERT ON public.organizations
+  FOR EACH ROW
+  EXECUTE FUNCTION public.add_organization_creator();
+
 -- Optional profile columns. Safe if they already exist.
 ALTER TABLE public.organizations
   ADD COLUMN IF NOT EXISTS legal_name text,

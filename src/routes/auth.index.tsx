@@ -116,7 +116,7 @@ function AuthPage() {
   async function requestVerificationEmail(address: string, origin: string) {
     const resendKey = savedResendKey();
     const mailed = await sendVerify({
-      data: { email: address, origin, next: "/console", ...(resendKey ? { resendKey } : {}) },
+      data: { email: address, origin, next: "/onboarding", ...(resendKey ? { resendKey } : {}) },
     });
     if (isAuthEmailAlreadySent(mailed)) {
       setNotice("We've sent a verification email. Confirm the address, then continue.");
@@ -201,7 +201,7 @@ function AuthPage() {
           email: parsed.data.email,
           password: parsed.data.password,
           options: {
-            emailRedirectTo: `${origin}/auth/confirm?next=/console`,
+            emailRedirectTo: `${origin}/auth/confirm?next=/onboarding`,
             data: { full_name: `${firstName.trim()} ${lastName.trim()}`.trim() },
           },
         });

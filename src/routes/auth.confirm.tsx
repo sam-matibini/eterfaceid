@@ -26,7 +26,7 @@ function AuthConfirmPage() {
     let active = true;
     void (async () => {
       const url = new URL(window.location.href);
-      const next = url.searchParams.get("next") || "/console";
+      const next = url.searchParams.get("next") || "/onboarding";
       const code = url.searchParams.get("code");
       const eid = url.searchParams.get("eid");
       const tokenHash = url.searchParams.get("token_hash") ?? url.searchParams.get("token");

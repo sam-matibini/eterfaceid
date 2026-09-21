@@ -18,6 +18,14 @@ export function isMissingRpcError(message: string) {
   return /Could not find the function /i.test(message) || /PGRST202/i.test(message);
 }
 
+export function isRlsError(message: string) {
+  return /row-level security|42501|permission denied/i.test(message);
+}
+
+export function isUniqueConflict(message: string) {
+  return /duplicate key|already exists|23505|unique constraint/i.test(message);
+}
+
 export function omitField<T extends Record<string, unknown>>(row: T, key: string) {
   const next = { ...row };
   delete next[key];

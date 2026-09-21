@@ -1,6 +1,8 @@
 import {
   isMissingRpcError,
   isMissingSchemaError,
+  isRlsError,
+  isUniqueConflict,
   missingSchemaPart,
   omitField,
   writeIgnoringUnknownColumns,
@@ -23,6 +25,8 @@ assert(
   "missing rpc",
 );
 assert(!isMissingRpcError("new row violates row-level security policy for table \"organizations\""), "rls is not missing rpc");
+assert(isRlsError("new row violates row-level security policy for table \"organizations\""), "org rls");
+assert(isUniqueConflict("duplicate key value violates unique constraint \"organizations_slug_key\""), "slug conflict");
 assert(omitField({ a: 1, b: 2 }, "a").b === 2 && !("a" in omitField({ a: 1, b: 2 }, "a")), "omit field");
 
 const attempts: Array<Record<string, unknown>> = [];

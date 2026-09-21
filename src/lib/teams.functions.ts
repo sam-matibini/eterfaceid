@@ -14,7 +14,15 @@ import {
   type UserType,
 } from "@/lib/access";
 import { randomToken, sha256Hex } from "@/lib/crypto-hash";
-import { isMissingRpcError, isMissingSchemaError, writeIgnoringUnknownColumns } from "@/lib/schema-compat";
+import {
+  companyCreateErrorMessage,
+  liveMemberInsert,
+  liveOrganizationInsert,
+  newCompanyId,
+  resolveInsertedCompany,
+  restAcceptedWrite,
+} from "@/lib/create-company";
+import { isMissingRpcError, isMissingSchemaError, isUniqueConflict, writeIgnoringUnknownColumns } from "@/lib/schema-compat";
 import { callerAccessToken, firstRow, userRest, userRpc } from "@/lib/user-rest.server";
 
 const accessRoleSchema = z.enum(["administrator", "developer", "compliance", "analyst", "viewer"]);
@@ -119,7 +127,16 @@ export const createOrganization = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { projectRest, supabaseServiceRoleKey } = await import("@/lib/supabase-project");
     const db = context.supabase;
+    let already: MembershipRow | null = null;
+    try {
+      already = await membershipForOrg(db, context.userId);
+    } catch {
+      already = null;
+    }
+    if (already) return { orgId: already.org_id, existing: true };
+
     const legalName = data.legalName?.trim() || data.name;
     const profile = {
       legal_name: legalName,
@@ -133,37 +150,65 @@ export const createOrganization = createServerFn({ method: "POST" })
     };
     const slug = slugify(data.name);
     const userToken = await callerAccessToken();
+    if (!userToken) throw new Error("Sign in again after confirming your email, then create the company dashboard.");
+
+    const known = { id: newCompanyId(), name: data.name };
     const rpc = await userRpc<string>("create_company_workspace", { _name: data.name, _slug: slug }, userToken);
+    if (rpc.error && !isMissingRpcError(rpc.error)) {
+      throw new Error(companyCreateErrorMessage(rpc.error));
+    }
     const rpcId = firstRow(rpc.data);
     let org: { id: string; name: string } | null =
       rpcId && !rpc.error ? { id: String(rpcId), name: data.name } : null;
 
+    if (!org && supabaseServiceRoleKey()) {
+      const found = await projectRest<Array<{ id: string; name: string }>>("organizations", {
+        query: `created_by=eq.${context.userId}&select=id,name&order=created_at.desc&limit=1`,
+      });
+      const row = firstRow(found.data);
+      if (row && !found.error) org = { id: String(row.id), name: String(row.name ?? data.name) };
+    }
+
     if (!org) {
       const created = await writeIgnoringUnknownColumns(async (payload) => {
-        const result = await userRest<Array<{ id: string; name: string }>>("organizations", {
+        const viaUser = await userRest<Array<{ id: string; name: string }>>("organizations", {
           method: "POST",
-          query: "select=id,name",
-          prefer: "return=representation",
+          prefer: "return=minimal",
           body: payload,
           token: userToken,
         });
-        if (!result.error) return { data: firstRow(result.data), error: null };
-        const viaClient = await db.from("organizations").insert(payload as never).select("id, name").maybeSingle();
-        if (!viaClient.error) return { data: viaClient.data, error: null };
-        const viaAdmin = await supabaseAdmin.from("organizations").insert(payload as never).select("id, name").maybeSingle();
-        return { data: viaAdmin.data, error: viaAdmin.error ?? viaClient.error ?? { message: result.error } };
-      }, {
-        name: data.name,
-        slug,
-        created_by: context.userId,
-        primary_admin_user_id: context.userId,
-        ...profile,
-      });
-      if (created.error || !created.data) {
-        throw new Error(created.error?.message ?? "The company could not be created");
+        if (restAcceptedWrite(viaUser)) {
+          const resolved = resolveInsertedCompany(known, viaUser);
+          return { data: resolved.org, error: resolved.error ? { message: resolved.error } : null };
+        }
+        if (isMissingSchemaError(viaUser.error ?? "")) {
+          return { data: null, error: { message: viaUser.error ?? "" } };
+        }
+        if (supabaseServiceRoleKey()) {
+          const viaAdmin = await projectRest<Array<{ id: string; name: string }>>("organizations", {
+            method: "POST",
+            query: "select=id,name",
+            prefer: "return=representation",
+            body: payload,
+          });
+          if (restAcceptedWrite(viaAdmin) || isUniqueConflict(viaAdmin.error ?? "")) {
+            const resolved = resolveInsertedCompany(known, viaAdmin);
+            return { data: resolved.org, error: resolved.error ? { message: resolved.error } : null };
+          }
+          if (isMissingSchemaError(viaAdmin.error ?? "")) {
+            return { data: null, error: { message: viaAdmin.error ?? "" } };
+          }
+        }
+        return { data: null, error: { message: viaUser.error ?? "The company could not be created" } };
+      }, liveOrganizationInsert({ id: known.id, name: data.name, slug, createdBy: context.userId }));
+      const resolved = resolveInsertedCompany(known, created);
+      if (!resolved.org) {
+        throw new Error(companyCreateErrorMessage(resolved.error ?? created.error?.message ?? "The company could not be created"));
       }
-      org = created.data as { id: string; name: string };
+      org = resolved.org;
     }
+
+    if (!org) throw new Error("The company could not be created");
 
     if (!rpcId || rpc.error || isMissingRpcError(String(rpc.error ?? ""))) {
       const member = await writeIgnoringUnknownColumns(async (payload) => {
@@ -173,25 +218,35 @@ export const createOrganization = createServerFn({ method: "POST" })
           body: payload,
           token: userToken,
         });
-        if (!viaUser.error) return { data: { ok: true }, error: null };
+        if (restAcceptedWrite(viaUser)) return { data: { ok: true }, error: null };
+        if (isMissingSchemaError(viaUser.error ?? "")) {
+          return { data: null, error: { message: viaUser.error ?? "" } };
+        }
+        if (supabaseServiceRoleKey()) {
+          const viaAdmin = await projectRest("organization_members", {
+            method: "POST",
+            prefer: "return=minimal",
+            body: payload,
+          });
+          if (restAcceptedWrite(viaAdmin)) return { data: { ok: true }, error: null };
+          if (isMissingSchemaError(viaAdmin.error ?? "")) {
+            return { data: null, error: { message: viaAdmin.error ?? "" } };
+          }
+        }
         const viaClient = await db.from("organization_members").insert(payload as never);
-        if (!viaClient.error) return { data: { ok: true }, error: null };
-        const viaAdmin = await supabaseAdmin.from("organization_members").insert(payload as never);
-        return { data: viaAdmin.error ? null : { ok: true }, error: viaAdmin.error ?? { message: viaUser.error } };
-      }, {
-        org_id: org.id,
-        user_id: context.userId,
-        role: "admin",
-        access_role: "owner",
-        is_owner: true,
-        user_type: "employee",
-        sandbox_access: true,
-        live_access: true,
-        permissions: defaultPermissions("owner"),
-        mfa_required: true,
-        status: "active",
-      });
-      if (member.error) throw new Error(member.error.message);
+        if (!viaClient.error || isUniqueConflict(viaClient.error.message)) {
+          return { data: { ok: true }, error: null };
+        }
+        const viaAdminClient = await supabaseAdmin.from("organization_members").insert(payload as never);
+        if (!viaAdminClient.error || isUniqueConflict(viaAdminClient.error.message)) {
+          return { data: { ok: true }, error: null };
+        }
+        return {
+          data: null,
+          error: viaAdminClient.error ?? viaClient.error ?? { message: viaUser.error ?? "Could not open the company dashboard" },
+        };
+      }, liveMemberInsert({ orgId: org.id, userId: context.userId }));
+      if (member.error) throw new Error(companyCreateErrorMessage(member.error.message));
     }
 
     const environments = await writeIgnoringUnknownColumns(async (payload) => {
@@ -207,21 +262,26 @@ export const createOrganization = createServerFn({ method: "POST" })
       /* environments are optional on the live project */
     }
 
-    await writeIgnoringUnknownColumns(async (payload) => {
-      const result = await userRest("org_applications", {
-        method: "POST",
-        prefer: "return=minimal",
-        body: payload,
-        token: userToken,
+    try {
+      await writeIgnoringUnknownColumns(async (payload) => {
+        const result = await userRest("org_applications", {
+          method: "POST",
+          prefer: "return=minimal",
+          body: payload,
+          token: userToken,
+        });
+        if (restAcceptedWrite(result)) return { data: { ok: true }, error: null };
+        return { data: { ok: true }, error: null };
+      }, {
+        org_id: org.id,
+        legal_name: legalName,
+        ...profile,
+        submitted_by: context.userId,
+        status: "draft",
       });
-      return { data: result.error ? null : { ok: true }, error: result.error ? { message: result.error } : null };
-    }, {
-      org_id: org.id,
-      legal_name: legalName,
-      ...profile,
-      submitted_by: context.userId,
-      status: "draft",
-    });
+    } catch {
+      /* company profile is optional until Go live */
+    }
 
     try {
       await db.from("audit_events").insert({

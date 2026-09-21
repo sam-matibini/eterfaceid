@@ -17,5 +17,6 @@ assert(headers.Authorization !== `Bearer ${publishable}`, "RLS would fail if the
 assert(firstRow([{ id: "org-1" }])?.id === "org-1", "first row from array");
 assert(firstRow({ id: "org-2" })?.id === "org-2", "first row from object");
 assert(firstRow(null) === null, "empty rest payload");
+assert(firstRow([]) === null, "empty array");
 
 console.log("user-rest.server.test.ts passed");
