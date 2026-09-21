@@ -41,8 +41,13 @@ export function TeamPanel({ isAdmin }: { isAdmin: boolean }) {
   });
   const [inviteLink, setInviteLink] = useState<string | null>(null);
   const [inviteEmailed, setInviteEmailed] = useState<{ sent: boolean; reason?: string; detail?: string } | null>(null);
+  const [addedNotice, setAddedNotice] = useState<string | null>(null);
 
-  const team = useQuery({ queryKey: ["team"], queryFn: fetchTeam });
+  const team = useQuery({
+    queryKey: ["team", organization?.orgId],
+    enabled: Boolean(organization?.orgId),
+    queryFn: () => fetchTeam(organization?.orgId),
+  });
   const refresh = () => {
     void queryClient.invalidateQueries({ queryKey: ["team"] });
     void queryClient.invalidateQueries({ queryKey: ["my-org"] });
@@ -71,10 +76,12 @@ export function TeamPanel({ isAdmin }: { isAdmin: boolean }) {
           sandboxAccess: form.sandboxAccess,
           liveAccess: form.liveAccess,
           permissions: form.permissions,
+          orgId: organization?.orgId,
           origin: window.location.origin,
         },
       }),
     onSuccess: (result) => {
+      const email = form.email;
       setForm({
         firstName: "",
         lastName: "",
@@ -87,8 +94,15 @@ export function TeamPanel({ isAdmin }: { isAdmin: boolean }) {
         permissions: defaultPermissions("developer"),
       });
       setOpen(false);
-      setInviteLink(`${window.location.origin}/invite/${result.token}`);
-      setInviteEmailed(result.emailed);
+      if (result.added) {
+        setInviteLink(null);
+        setInviteEmailed(null);
+        setAddedNotice(`${email} was added to the company.`);
+      } else {
+        setAddedNotice(`Invitation ready for ${email}.`);
+        setInviteLink(`${window.location.origin}/invite/${result.token}`);
+        setInviteEmailed(result.emailed);
+      }
       refresh();
     },
   });
@@ -128,16 +142,20 @@ export function TeamPanel({ isAdmin }: { isAdmin: boolean }) {
 
   return (
     <Panel
-      title={organization ? `${organization.name} — Users & Teams` : "Users & Teams"}
+      title={organization ? `${organization.name} — Team` : "Team"}
       action={
         isAdmin ? (
           <button type="button" className={inkButtonClass} onClick={() => setOpen((v) => !v)}>
-            {open ? "Close" : "Add User"}
+            {open ? "Close" : "Add teammate"}
           </button>
         ) : undefined
       }
     >
       <div className="space-y-4 text-sm">
+        {team.isLoading ? <p className="text-muted-foreground">Loading team…</p> : null}
+        {team.isError ? (
+          <p className="text-[var(--signal)]">{(team.error as Error).message}</p>
+        ) : null}
         {(team.data?.members ?? []).map((member) => (
           <div key={member.userId} className="flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -184,7 +202,7 @@ export function TeamPanel({ isAdmin }: { isAdmin: boolean }) {
             </div>
           </div>
         ))}
-        {(team.data?.members ?? []).length === 0 ? (
+        {(team.data?.members ?? []).length === 0 && !team.isLoading ? (
           <p className="text-muted-foreground">No team members yet.</p>
         ) : null}
       </div>
@@ -197,7 +215,7 @@ export function TeamPanel({ isAdmin }: { isAdmin: boolean }) {
           }}
           className="mt-5 space-y-4 border-t border-[var(--rule)] pt-5"
         >
-          <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">Add Team Member</p>
+          <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">Add teammate</p>
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="text-xs uppercase tracking-widest text-muted-foreground">
               First Name *
@@ -309,10 +327,12 @@ export function TeamPanel({ isAdmin }: { isAdmin: boolean }) {
           ) : null}
 
           <button type="submit" disabled={sendInvite.isPending} className={inkButtonClass}>
-            {sendInvite.isPending ? "Sending…" : "Send Invitation"}
+            {sendInvite.isPending ? "Saving…" : "Add to company"}
           </button>
         </form>
       ) : null}
+
+      {addedNotice ? <p className="mt-3 text-sm text-[var(--verify)]">{addedNotice}</p> : null}
 
       {inviteLink ? (
         <div className="mt-4 border border-[var(--signal)] bg-[var(--paper-deep)] p-3">

@@ -56,6 +56,7 @@ import { Route as AuthenticatedConsoleReportsRouteImport } from './routes/_authe
 import { Route as AuthenticatedConsoleRolesRouteImport } from './routes/_authenticated/console.roles'
 import { Route as AuthenticatedConsoleSecurityRouteImport } from './routes/_authenticated/console.security'
 import { Route as AuthenticatedConsoleSettingsRouteImport } from './routes/_authenticated/console.settings'
+import { Route as AuthenticatedConsoleTeamRouteImport } from './routes/_authenticated/console.team'
 import { Route as AuthenticatedConsoleTransactionsRouteImport } from './routes/_authenticated/console.transactions'
 import { Route as AuthenticatedConsoleUsersRouteImport } from './routes/_authenticated/console.users'
 import { Route as AuthenticatedConsoleWatchlistsRouteImport } from './routes/_authenticated/console.watchlists'
@@ -350,6 +351,12 @@ const AuthenticatedConsoleSettingsRoute =
     path: '/console/settings',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedConsoleTeamRoute =
+  AuthenticatedConsoleTeamRouteImport.update({
+    id: '/console/team',
+    path: '/console/team',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedConsoleTransactionsRoute =
   AuthenticatedConsoleTransactionsRouteImport.update({
     id: '/console/transactions',
@@ -601,6 +608,7 @@ export interface FileRoutesByFullPath {
   '/console/roles': typeof AuthenticatedConsoleRolesRoute
   '/console/security': typeof AuthenticatedConsoleSecurityRoute
   '/console/settings': typeof AuthenticatedConsoleSettingsRoute
+  '/console/team': typeof AuthenticatedConsoleTeamRoute
   '/console/transactions': typeof AuthenticatedConsoleTransactionsRoute
   '/console/users': typeof AuthenticatedConsoleUsersRoute
   '/console/watchlists': typeof AuthenticatedConsoleWatchlistsRoute
@@ -684,6 +692,7 @@ export interface FileRoutesByTo {
   '/console/roles': typeof AuthenticatedConsoleRolesRoute
   '/console/security': typeof AuthenticatedConsoleSecurityRoute
   '/console/settings': typeof AuthenticatedConsoleSettingsRoute
+  '/console/team': typeof AuthenticatedConsoleTeamRoute
   '/console/transactions': typeof AuthenticatedConsoleTransactionsRoute
   '/console/users': typeof AuthenticatedConsoleUsersRoute
   '/console/watchlists': typeof AuthenticatedConsoleWatchlistsRoute
@@ -770,6 +779,7 @@ export interface FileRoutesById {
   '/_authenticated/console/roles': typeof AuthenticatedConsoleRolesRoute
   '/_authenticated/console/security': typeof AuthenticatedConsoleSecurityRoute
   '/_authenticated/console/settings': typeof AuthenticatedConsoleSettingsRoute
+  '/_authenticated/console/team': typeof AuthenticatedConsoleTeamRoute
   '/_authenticated/console/transactions': typeof AuthenticatedConsoleTransactionsRoute
   '/_authenticated/console/users': typeof AuthenticatedConsoleUsersRoute
   '/_authenticated/console/watchlists': typeof AuthenticatedConsoleWatchlistsRoute
@@ -856,6 +866,7 @@ export interface FileRouteTypes {
     | '/console/roles'
     | '/console/security'
     | '/console/settings'
+    | '/console/team'
     | '/console/transactions'
     | '/console/users'
     | '/console/watchlists'
@@ -939,6 +950,7 @@ export interface FileRouteTypes {
     | '/console/roles'
     | '/console/security'
     | '/console/settings'
+    | '/console/team'
     | '/console/transactions'
     | '/console/users'
     | '/console/watchlists'
@@ -1024,6 +1036,7 @@ export interface FileRouteTypes {
     | '/_authenticated/console/roles'
     | '/_authenticated/console/security'
     | '/_authenticated/console/settings'
+    | '/_authenticated/console/team'
     | '/_authenticated/console/transactions'
     | '/_authenticated/console/users'
     | '/_authenticated/console/watchlists'
@@ -1430,6 +1443,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedConsoleSettingsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/console/team': {
+      id: '/_authenticated/console/team'
+      path: '/console/team'
+      fullPath: '/console/team'
+      preLoaderRoute: typeof AuthenticatedConsoleTeamRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/console/transactions': {
       id: '/_authenticated/console/transactions'
       path: '/console/transactions'
@@ -1709,6 +1729,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedConsoleRolesRoute: typeof AuthenticatedConsoleRolesRoute
   AuthenticatedConsoleSecurityRoute: typeof AuthenticatedConsoleSecurityRoute
   AuthenticatedConsoleSettingsRoute: typeof AuthenticatedConsoleSettingsRoute
+  AuthenticatedConsoleTeamRoute: typeof AuthenticatedConsoleTeamRoute
   AuthenticatedConsoleTransactionsRoute: typeof AuthenticatedConsoleTransactionsRoute
   AuthenticatedConsoleUsersRoute: typeof AuthenticatedConsoleUsersRoute
   AuthenticatedConsoleWatchlistsRoute: typeof AuthenticatedConsoleWatchlistsRoute
@@ -1746,6 +1767,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedConsoleRolesRoute: AuthenticatedConsoleRolesRoute,
   AuthenticatedConsoleSecurityRoute: AuthenticatedConsoleSecurityRoute,
   AuthenticatedConsoleSettingsRoute: AuthenticatedConsoleSettingsRoute,
+  AuthenticatedConsoleTeamRoute: AuthenticatedConsoleTeamRoute,
   AuthenticatedConsoleTransactionsRoute: AuthenticatedConsoleTransactionsRoute,
   AuthenticatedConsoleUsersRoute: AuthenticatedConsoleUsersRoute,
   AuthenticatedConsoleWatchlistsRoute: AuthenticatedConsoleWatchlistsRoute,
