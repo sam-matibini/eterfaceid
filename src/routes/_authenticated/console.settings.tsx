@@ -21,7 +21,7 @@ function SettingsPage() {
     <ConsoleShell>
       <h1 className="font-display text-3xl font-bold tracking-tight">Settings</h1>
       <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-        Notifications, security, API configuration and billing. Team members and keys now live under Organization
+        Notifications, security, API configuration and billing. Team members and keys live under Organization
         and Developers.
       </p>
       <div className="mt-6 flex flex-wrap gap-3 text-sm">
@@ -34,8 +34,8 @@ function SettingsPage() {
         <Link to="/console/billing" className="underline underline-offset-4">
           Billing
         </Link>
-        <Link to="/console/users" className="underline underline-offset-4">
-          Users & Teams
+        <Link to="/console/team" className="underline underline-offset-4">
+          Team
         </Link>
       </div>
       <div className="mt-8 max-w-2xl">

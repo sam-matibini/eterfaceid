@@ -11,6 +11,7 @@ import {
   type AppRole,
   type PermissionCode,
 } from "@/lib/access";
+import { isMissingColumnError, liveMemberInsert } from "@/lib/schema-fallback";
 
 const ACTIVE_ORG_KEY = "eid_active_org";
 
@@ -78,7 +79,7 @@ export function useOrganization() {
         .eq("user_id", user!.id)
         .order("created_at");
       const { data, error } =
-        full.error && /does not exist|schema cache/i.test(full.error.message)
+        full.error && isMissingColumnError(full.error.message)
           ? await supabase
               .from("organization_members")
               .select("org_id, role, organizations(id, name, slug, live_access)")
@@ -110,18 +111,47 @@ export function useOrganization() {
           orgId: row.org_id,
           role: row.role,
           accessRole: row.access_role ?? inferAccessRole(row.role),
-          isOwner: Boolean(row.is_owner),
+          isOwner: Boolean(row.is_owner) || row.role === "admin",
           name: org?.name ?? "Your team",
           legalName: org?.legal_name ?? org?.name ?? "Your team",
           orgLiveAccess: org?.live_access ?? "locked",
           sandboxAccess: row.sandbox_access !== false,
-          liveAccess: Boolean(row.live_access),
+          liveAccess: Boolean(row.live_access) || row.role === "admin",
           permissions: row.permissions ?? [],
-          mfaRequired: Boolean(row.mfa_required),
+          mfaRequired: Boolean(row.mfa_required) || row.role === "admin",
           jobTitle: row.job_title ?? null,
           userType: row.user_type ?? "employee",
         };
       });
+      const seen = new Set(memberships.map((row) => row.orgId));
+      const owned = await supabase.from("organizations").select("id, name, legal_name").eq("created_by", user!.id);
+      if (!owned.error) {
+        for (const org of owned.data ?? []) {
+          if (seen.has(org.id)) continue;
+          const join = await supabase.rpc("join_created_company" as never, { _org_id: org.id } as never);
+          if (join.error) {
+            await supabase.from("organization_members").insert(
+              liveMemberInsert({ orgId: org.id, userId: user!.id, role: "admin" }) as never,
+            );
+          }
+          memberships.push({
+            orgId: org.id,
+            role: "admin",
+            accessRole: "owner",
+            isOwner: true,
+            name: org.name ?? "Your team",
+            legalName: org.legal_name ?? org.name ?? "Your team",
+            orgLiveAccess: "locked",
+            sandboxAccess: true,
+            liveAccess: true,
+            permissions: [],
+            mfaRequired: true,
+            jobTitle: null,
+            userType: "employee",
+          });
+          seen.add(org.id);
+        }
+      }
       if (!memberships.length) return { memberships: [], current: null as OrganizationMembership | null };
       const stored = readStoredOrg();
       const current = memberships.find((m) => m.orgId === stored) ?? memberships[0];
