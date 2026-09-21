@@ -10,6 +10,16 @@ export function isUniqueConflict(message: string | null | undefined) {
   return /duplicate key|unique constraint|already exists/i.test(message);
 }
 
+export function isRlsError(message: string | null | undefined) {
+  if (!message) return false;
+  return /row-level security|rls policy|violates row-level security/i.test(message);
+}
+
+/** Side writes (go-live drafts, audit) must never fail company or team saves. */
+export function isIgnorableSideWrite(message: string | null | undefined) {
+  return isMissingColumnError(message) || isUniqueConflict(message) || isRlsError(message);
+}
+
 export function alreadyOnTeamMessage(email?: string) {
   return email
     ? `${email} is already on this team.`

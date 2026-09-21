@@ -1,12 +1,15 @@
 import {
   alreadyOnTeamMessage,
   dedupeByUserId,
+  isIgnorableSideWrite,
   isMissingColumnError,
+  isRlsError,
   isUniqueConflict,
   liveInviteInsert,
   liveMemberInsert,
   liveOrganizationProfileUpdate,
 } from "./schema-fallback";
+import { withCreatorOnTeam } from "./team-view";
 import { normalizeCountry } from "./company-country";
 
 function assert(condition: unknown, message: string) {
@@ -19,6 +22,12 @@ assert(!isUniqueConflict("permission denied"), "not unique");
 assert(isMissingColumnError("Could not find the 'legal_name' column of 'organizations' in the schema cache"), "missing column");
 assert(isMissingColumnError('column "access_role" of relation "organization_members" does not exist'), "pg missing");
 assert(!isMissingColumnError("new row violates row-level security"), "rls is not missing column");
+assert(
+  isRlsError('new row violates row-level security policy for table "org_applications"'),
+  "org_applications rls",
+);
+assert(isIgnorableSideWrite('new row violates row-level security policy for table "org_applications"'), "ignore rls");
+assert(!isRlsError("permission denied for table organizations"), "permission denied is not rls");
 
 assert(alreadyOnTeamMessage("sam@efin.money") === "sam@efin.money is already on this team.", "email message");
 
@@ -29,6 +38,11 @@ const members = dedupeByUserId([
 ]);
 assert(members.length === 2, "dedupes user ids");
 assert(members[0]?.name === "One", "keeps the first row");
+
+const listed = withCreatorOnTeam([], { userId: "owner-1", email: "sam@efin.money", fullName: "Sam" });
+assert(listed.length === 1 && listed[0]?.isOwner === true, "creator appears on an empty team");
+assert(listed[0]?.email === "sam@efin.money", "creator email is shown");
+assert(withCreatorOnTeam(listed, { userId: "owner-1" }).length === 1, "creator is not duplicated");
 
 assert(normalizeCountry("Canada") === "CA", "canada maps");
 assert(normalizeCountry("ca") === "CA", "iso is uppercased");

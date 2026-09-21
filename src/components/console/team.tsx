@@ -15,13 +15,14 @@ import {
   type PermissionCode,
   type UserType,
 } from "@/lib/access";
-import { fetchTeam } from "@/lib/console";
-import { inviteMember, removeMember, resendInvite, revokeInvite, setMemberRole } from "@/lib/teams.functions";
+import { publicEmailFailureMessage } from "@/lib/email-copy";
+import { inviteMember, listTeam, removeMember, resendInvite, revokeInvite, setMemberRole } from "@/lib/teams.functions";
 
 export function TeamPanel({ isAdmin }: { isAdmin: boolean }) {
   const queryClient = useQueryClient();
   const { organization } = useOrganization();
   const invite = useServerFn(inviteMember);
+  const loadTeam = useServerFn(listTeam);
   const cancelInvite = useServerFn(revokeInvite);
   const resend = useServerFn(resendInvite);
   const changeRole = useServerFn(setMemberRole);
@@ -46,7 +47,7 @@ export function TeamPanel({ isAdmin }: { isAdmin: boolean }) {
   const team = useQuery({
     queryKey: ["team", organization?.orgId],
     enabled: Boolean(organization?.orgId),
-    queryFn: () => fetchTeam(organization?.orgId),
+    queryFn: () => loadTeam({ data: { orgId: organization?.orgId } }),
   });
   const refresh = () => {
     void queryClient.invalidateQueries({ queryKey: ["team"] });
@@ -339,7 +340,7 @@ export function TeamPanel({ isAdmin }: { isAdmin: boolean }) {
           <p className="text-xs uppercase tracking-widest text-[var(--signal)]">
             {inviteEmailed?.sent
               ? "Invitation emailed. Share this link if it does not arrive."
-              : `Invitation created, but email was not sent${inviteEmailed?.detail ? `: ${inviteEmailed.detail}` : inviteEmailed?.reason ? ` (${inviteEmailed.reason})` : ""}. Share this link.`}
+              : `Invitation created, but email was not sent. ${publicEmailFailureMessage(inviteEmailed ?? { sent: false }) ?? ""} Share this link.`}
           </p>
           <code className="mt-2 block break-all font-mono text-xs">{inviteLink}</code>
         </div>

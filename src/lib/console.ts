@@ -191,15 +191,15 @@ export async function fetchApiRequestLogs() {
 export async function fetchOrganizationProfile(orgId: string) {
   const { data, error } = await supabase.from("organizations").select("*").eq("id", orgId).maybeSingle();
   if (error) throw error;
-  const application = await supabase
-    .from("org_applications")
-    .select("*")
-    .eq("org_id", orgId)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  const org = (data ?? {}) as Record<string, unknown>;
-  const app = (application.data ?? {}) as Record<string, unknown>;
+    const application = await supabase
+      .from("org_applications")
+      .select("*")
+      .eq("org_id", orgId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const org = (data ?? {}) as Record<string, unknown>;
+    const app = (application.error ? {} : (application.data ?? {})) as Record<string, unknown>;
   return {
     id: (org["id"] as string | undefined) ?? orgId,
     name: String(org["name"] ?? app["legal_name"] ?? ""),

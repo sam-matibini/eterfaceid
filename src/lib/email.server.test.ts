@@ -35,10 +35,9 @@ const parsed = parseProviderError(403, JSON.stringify({ message: "The eterfaceid
 assert(parsed.includes("not verified"), "Resend JSON errors are readable");
 
 assert(
-  publicEmailFailureMessage({ sent: false, reason: "not_configured", detail: "Missing SUPABASE_SERVICE_ROLE_KEY" })?.includes(
-    "Resend API key",
-  ),
-  "env leaks are hidden from end users",
+  publicEmailFailureMessage({ sent: false, reason: "not_configured", detail: "Resend API key is missing" }) ===
+    "Email delivery is not connected yet. Add a Resend API key in App admin → Integrations.",
+  "missing Resend key is not shown raw",
 );
 
 console.log("email.server.test.ts passed");

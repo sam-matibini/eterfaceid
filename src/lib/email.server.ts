@@ -357,7 +357,7 @@ export async function sendNotification(
         error_detail: "Resend is not connected. Add a Resend API key in App admin → Integrations.",
       })),
     );
-    return { sent: false, reason: "not_configured", detail: "Resend API key is missing" };
+    return { sent: false, reason: "not_configured", detail: "Email delivery is not connected yet. Add a Resend API key in App admin → Integrations." };
   }
 
   const { from, replyTo } = await senderIdentity(admin);
