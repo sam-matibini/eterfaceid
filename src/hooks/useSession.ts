@@ -77,10 +77,12 @@ export function useOrganization() {
       return { memberships, current };
     },
   });
-  const current = query.data?.current ?? null;
+  const persisted = readPersistedWorkspace();
+  const current = query.data?.current ?? persisted ?? null;
+  const memberships = query.data?.memberships?.length ? query.data.memberships : persisted ? [persisted] : [];
   return {
     organization: current,
-    memberships: query.data?.memberships ?? [],
+    memberships,
     loading: !ready || (Boolean(user?.id) && query.isLoading),
     fetching: query.isFetching,
     ready: ready && (!user?.id || query.isFetched),
