@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Menu, X } from "lucide-react";
 import { useOrganization, useSession } from "@/hooks/useSession";
+import { isStaffBypassUnlocked } from "@/lib/staff-bypass";
 import { megaMenu, solutionsGroup } from "./nav-data";
 import { BrandLogo } from "./BrandLogo";
 
@@ -20,7 +21,14 @@ export function Header() {
   const wrapRef = useRef<HTMLDivElement>(null);
   const { session } = useSession();
   const { organization, ready } = useOrganization();
-  const consoleTo = session && ready && !organization ? "/onboarding" : "/console";
+  const consoleTo =
+    session && ready && organization
+      ? "/console"
+      : isStaffBypassUnlocked()
+        ? "/admin/integrations"
+        : session && ready && !organization
+          ? "/onboarding"
+          : "/console";
 
 
   useEffect(() => {

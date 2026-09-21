@@ -71,8 +71,10 @@ export function useOrganization() {
   return {
     organization: current,
     memberships: query.data?.memberships ?? [],
-    loading: !ready || query.isLoading,
-    ready: ready && !query.isLoading,
+    loading: !ready || (Boolean(user?.id) && query.isLoading),
+    ready: ready && (!user?.id || query.isFetched),
+    loaded: query.isSuccess,
+    failed: query.isError,
     setActive: (orgId: string) => {
       setActiveOrganization(orgId);
       void query.refetch();

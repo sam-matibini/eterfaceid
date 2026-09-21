@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useEnvironment } from "@/hooks/useEnvironment";
 import { useOrganization, useRoles, useSession } from "@/hooks/useSession";
 import { usePlatformStaff } from "@/hooks/usePlatformStaff";
+import { isStaffBypassUnlocked } from "@/lib/staff-bypass";
 import { displayRole, type PermissionCode } from "@/lib/access";
 
 type NavLeaf = { to: string; label: string; exact?: boolean; permission?: PermissionCode };
@@ -79,13 +80,14 @@ export function ConsoleShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { user } = useSession();
   const { roles, has, isAdmin } = useRoles();
-  const { organization, memberships, ready, setActive } = useOrganization();
+  const { organization, memberships, ready, loaded, setActive } = useOrganization();
   const { isStaff } = usePlatformStaff();
   const { environment, setEnvironment, canUseLive } = useEnvironment();
 
   useEffect(() => {
-    if (ready && !organization) void navigate({ to: "/onboarding", replace: true });
-  }, [ready, organization, navigate]);
+    if (isStaffBypassUnlocked()) return;
+    if (ready && loaded && !organization) void navigate({ to: "/onboarding", replace: true });
+  }, [ready, loaded, organization, navigate]);
 
   async function signOut() {
     await queryClient.cancelQueries();

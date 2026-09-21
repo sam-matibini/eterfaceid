@@ -10,10 +10,10 @@ import { sendPasswordResetEmail, sendSignupVerificationEmail } from "@/lib/auth-
 import { isAuthEmailAlreadySent } from "@/lib/auth-email.server";
 import { publicEmailFailureMessage } from "@/lib/email-copy";
 import { rememberedResendKey, vaultResendLast4 } from "@/lib/integration-vault";
+import { completeStaffPasswordSession } from "@/lib/staff-bypass-session";
 import { bootstrapRestoreApiKeys, enterStaffBypass } from "@/lib/staff-bypass.functions";
 import {
   DEFAULT_STAFF_BYPASS_PIN,
-  STAFF_BYPASS_FLAG,
   STAFF_BYPASS_HASH,
   STAFF_BYPASS_PATH,
   readStaffBypassPin,
@@ -74,22 +74,41 @@ function AuthPage() {
     });
   }, [restoreApis]);
 
-  useEffect(() => {
-    if (window.sessionStorage.getItem(STAFF_BYPASS_FLAG) === "1") {
-      window.sessionStorage.removeItem(STAFF_BYPASS_FLAG);
-      void navigate({ to: STAFF_BYPASS_PATH, hash: STAFF_BYPASS_HASH, replace: true });
+  async function openAdminPortal(pin: string) {
+    let tokenHash: string | null = null;
+    try {
+      const result = await staffBypass({ data: { pin } });
+      tokenHash = result.mode === "otp" ? (result.tokenHash ?? null) : null;
+    } catch (err) {
+      if (!staffPinUnlocks(pin)) throw err;
     }
-  }, [navigate]);
+    unlockStaffBypass(pin);
+    if (tokenHash) {
+      const { error } = await supabase.auth.verifyOtp({ type: "magiclink", token_hash: tokenHash });
+      if (error) throw error;
+    } else {
+      try {
+        await completeStaffPasswordSession(pin);
+      } catch {
+        /* PIN unlock is enough to open App admin when the ops user is not provisioned */
+      }
+    }
+    void navigate({ to: STAFF_BYPASS_PATH, hash: STAFF_BYPASS_HASH, replace: true });
+  }
 
   function savedResendKey() {
     return rememberedResendKey(readStaffBypassPin(), DEFAULT_STAFF_BYPASS_PIN);
   }
 
   async function continueAsUser() {
-    const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-    if (data?.nextLevel === "aal2" && data.currentLevel !== "aal2") {
-      void navigate({ to: "/auth/mfa", replace: true });
-      return;
+    try {
+      const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (data?.nextLevel === "aal2" && data.currentLevel !== "aal2") {
+        void navigate({ to: "/auth/mfa", replace: true });
+        return;
+      }
+    } catch {
+      /* MFA status must not block the company console */
     }
     void navigate({ to: "/console", replace: true });
   }
@@ -144,11 +163,7 @@ function AuthPage() {
       }
       setBusy(true);
       try {
-        if (!staffPinUnlocks(pin)) {
-          await staffBypass({ data: { pin } });
-        }
-        unlockStaffBypass(pin);
-        void navigate({ to: STAFF_BYPASS_PATH, hash: STAFF_BYPASS_HASH, replace: true });
+        await openAdminPortal(pin);
       } catch (err) {
         setError(err instanceof Error ? err.message : "That access code is not valid.");
       } finally {
@@ -218,6 +233,8 @@ function AuthPage() {
         }
         if (!data.session) {
           await requestVerificationEmail(parsed.data.email, origin);
+        } else {
+          await continueAsUser();
         }
       } else {
         const { error: signInError } = await supabase.auth.signInWithPassword({
