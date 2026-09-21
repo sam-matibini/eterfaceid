@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 
 import { AuthFrame, authButtonClass, authInputClass } from "@/components/auth/AuthFrame";
 import { setActiveOrganization, useOrganization, useSession } from "@/hooks/useSession";
-import { membershipFromCreate, OPENING_COMPANY_KEY } from "@/lib/organization-memberships";
+import { membershipFromCreate, OPENING_COMPANY_KEY, persistCreatedWorkspace } from "@/lib/organization-memberships";
 import { acceptInvite, createOrganization } from "@/lib/teams.functions";
 
 export const Route = createFileRoute("/_authenticated/onboarding")({
@@ -63,19 +63,11 @@ function OnboardingPage() {
       const companyName = payload.name || form.legalName || form.name;
       const snapshot = membershipFromCreate({ orgId, name: companyName, role: payload.role ?? "admin" });
       setActiveOrganization(orgId);
+      persistCreatedWorkspace(snapshot);
       window.sessionStorage.setItem(OPENING_COMPANY_KEY, orgId);
       window.sessionStorage.removeItem("eid_invite_token");
       window.sessionStorage.removeItem("eid_company");
       queryClient.setQueryData(["my-org", user?.id], { memberships: [snapshot], current: snapshot });
-      try {
-        await queryClient.refetchQueries({ queryKey: ["my-org", user?.id] });
-      } catch {
-        queryClient.setQueryData(["my-org", user?.id], { memberships: [snapshot], current: snapshot });
-      }
-      const after = queryClient.getQueryData(["my-org", user?.id]) as { current?: { orgId?: string } } | undefined;
-      if (!after?.current?.orgId) {
-        queryClient.setQueryData(["my-org", user?.id], { memberships: [snapshot], current: snapshot });
-      }
       void navigate({ to: "/console", replace: true });
     } catch (err) {
       const message = err instanceof Error ? err.message : "The company dashboard could not be created. Try again.";

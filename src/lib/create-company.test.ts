@@ -1,5 +1,6 @@
 import {
   companyCreateErrorMessage,
+  dashboardFromCreatedCompany,
   isRlsError,
   isUniqueConflict,
   liveMemberInsert,
@@ -73,5 +74,13 @@ assert(
   ),
   "member rls is retryable",
 );
+
+const opened = dashboardFromCreatedCompany({
+  org: { id: org.id, name: org.name },
+  membership: null,
+});
+assert(opened?.orgId === org.id, "dashboard opens from the saved company");
+assert(opened?.role === "admin", "creator is admin even when membership cannot be read");
+assert(dashboardFromCreatedCompany({ org: null, membership: null }) === null, "no org means no dashboard");
 
 console.log("create-company.test.ts passed");

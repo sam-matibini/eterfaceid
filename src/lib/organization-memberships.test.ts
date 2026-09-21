@@ -1,4 +1,4 @@
-import { isMembershipQueryError, mapMembershipRows, fetchMembershipRows, membershipFromCreate, mergeOwnedOrganizations, shouldRedirectToOnboarding } from "./organization-memberships";
+import { isMembershipQueryError, mapMembershipRows, fetchMembershipRows, membershipFromCreate, mergeOwnedOrganizations, shouldRedirectToOnboarding, workspaceFromStorage } from "./organization-memberships";
 
 function assert(condition: unknown, message: string) {
   if (!condition) throw new Error(message);
@@ -29,6 +29,13 @@ const mergedOwned = mergeOwnedOrganizations(mapped, [
 ]);
 assert(mergedOwned.some((row) => row.orgId === "org-owned" && row.isOwner), "created_by company is attached as owner");
 assert(mergedOwned.filter((row) => row.orgId === "org-1").length === 1, "does not duplicate memberships");
+
+const stored = workspaceFromStorage(
+  JSON.stringify({ orgId: "org-saved", name: "eFinMoney", role: "admin" }),
+);
+assert(stored?.orgId === "org-saved" && stored.isOwner, "persisted workspace opens the dashboard");
+assert(workspaceFromStorage("not-json") === null, "junk storage is ignored");
+assert(workspaceFromStorage(null) === null, "empty storage is ignored");
 
 assert(shouldRedirectToOnboarding({ ready: true, loaded: true, organization: null }) === true, "empty membership goes to onboarding");
 assert(

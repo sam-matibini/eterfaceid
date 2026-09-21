@@ -21,6 +21,7 @@ import {
   newCompanyId,
   resolveInsertedCompany,
   restAcceptedWrite,
+  dashboardFromCreatedCompany,
 } from "@/lib/create-company";
 import { companyApplicationPayload, liveInviteInsert, liveOrganizationProfileUpdate, mergeCompanyProfile } from "@/lib/company-profile";
 import { isMissingRpcError, isMissingSchemaError, isUniqueConflict, writeIgnoringUnknownColumns } from "@/lib/schema-compat";
@@ -222,6 +223,15 @@ export const createOrganization = createServerFn({ method: "POST" })
     }
 
     if (!org) {
+      const found = await userRest<Array<{ id: string; name: string }>>("organizations", {
+        query: `created_by=eq.${context.userId}&select=id,name&order=created_at.desc&limit=1`,
+        token: userToken,
+      });
+      const row = firstRow(found.data);
+      if (row && !found.error) org = { id: String(row.id), name: String(row.name ?? data.name) };
+    }
+
+    if (!org) {
       const created = await writeIgnoringUnknownColumns(async (payload) => {
         const viaUser = await userRest<Array<{ id: string; name: string }>>("organizations", {
           method: "POST",
@@ -330,9 +340,11 @@ export const createOrganization = createServerFn({ method: "POST" })
       }, liveMemberInsert({ orgId: org.id, userId: context.userId }));
       opened = await readCreatorMembership(db, context.userId, org.id, userToken);
     }
-    if (!opened) {
-      throw new Error("The company was saved, but the dashboard could not be opened. Click Create company dashboard again.");
-    }
+    const dashboard = dashboardFromCreatedCompany({
+      org,
+      membership: opened,
+    });
+    if (!dashboard) throw new Error("The company could not be created");
 
     const environments = await writeIgnoringUnknownColumns(async (payload) => {
       const result = await supabaseAdmin.from("org_environments").insert(payload["rows"] as never);
@@ -402,7 +414,7 @@ export const createOrganization = createServerFn({ method: "POST" })
       /* the welcome email must never block sign-up */
     }
 
-    return { orgId: org.id as string, name: org.name, role: opened.role, existing: false };
+    return { orgId: dashboard.orgId, name: dashboard.name, role: dashboard.role, existing: false };
   });
 
 export const updateOrganizationProfile = createServerFn({ method: "POST" })

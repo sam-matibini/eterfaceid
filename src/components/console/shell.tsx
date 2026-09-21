@@ -8,7 +8,7 @@ import { useOrganization, useRoles, useSession } from "@/hooks/useSession";
 import { usePlatformStaff } from "@/hooks/usePlatformStaff";
 import { isStaffBypassUnlocked } from "@/lib/staff-bypass";
 import { displayRole, type PermissionCode } from "@/lib/access";
-import { OPENING_COMPANY_KEY, shouldRedirectToOnboarding } from "@/lib/organization-memberships";
+import { OPENING_COMPANY_KEY, CREATED_WORKSPACE_KEY, clearPersistedWorkspace, shouldRedirectToOnboarding } from "@/lib/organization-memberships";
 
 type NavLeaf = { to: string; label: string; exact?: boolean; permission?: PermissionCode; external?: boolean };
 type NavGroup = { label: string; items: NavLeaf[] };
@@ -93,8 +93,11 @@ export function ConsoleShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (isStaffBypassUnlocked()) return;
     const opening =
-      typeof window !== "undefined" && Boolean(window.sessionStorage.getItem(OPENING_COMPANY_KEY));
-    if (organization && opening) window.sessionStorage.removeItem(OPENING_COMPANY_KEY);
+      typeof window !== "undefined" &&
+      Boolean(
+        window.sessionStorage.getItem(OPENING_COMPANY_KEY) || window.localStorage.getItem(CREATED_WORKSPACE_KEY),
+      );
+    if (organization && typeof window !== "undefined") window.sessionStorage.removeItem(OPENING_COMPANY_KEY);
     if (shouldRedirectToOnboarding({ ready, loaded, fetching, organization, openingCompany: opening })) {
       void navigate({ to: "/onboarding", replace: true });
     }
@@ -103,6 +106,7 @@ export function ConsoleShell({ children }: { children: ReactNode }) {
   async function signOut() {
     await queryClient.cancelQueries();
     queryClient.clear();
+    clearPersistedWorkspace();
     await supabase.auth.signOut();
     void navigate({ to: "/auth", replace: true });
   }

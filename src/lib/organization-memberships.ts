@@ -22,6 +22,7 @@ type MemberQuery = {
 };
 
 export const OPENING_COMPANY_KEY = "eid_opening_company";
+export const CREATED_WORKSPACE_KEY = "eid_workspace";
 
 const FULL_SELECT =
   "org_id, role, access_role, is_owner, sandbox_access, live_access, permissions, mfa_required, job_title, user_type, status, organizations(id, name, slug, legal_name, live_access)";
@@ -61,6 +62,43 @@ export function mergeOwnedOrganizations(
     })
     .filter((row) => row.orgId && !seen.has(row.orgId));
   return extra.length ? [...memberships, ...extra] : memberships;
+}
+
+export function workspaceFromStorage(raw: string | null): OrganizationMembership | null {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as { orgId?: unknown; name?: unknown; legalName?: unknown; role?: unknown };
+    const orgId = typeof parsed.orgId === "string" ? parsed.orgId : "";
+    if (!orgId) return null;
+    const name = String(parsed.legalName || parsed.name || "Your team");
+    const role = parsed.role === "analyst" || parsed.role === "viewer" ? parsed.role : "admin";
+    return membershipFromCreate({ orgId, name, role });
+  } catch {
+    return null;
+  }
+}
+
+export function persistCreatedWorkspace(row: OrganizationMembership) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(
+    CREATED_WORKSPACE_KEY,
+    JSON.stringify({ orgId: row.orgId, name: row.name, legalName: row.legalName, role: row.role }),
+  );
+}
+
+export function readPersistedWorkspace(): OrganizationMembership | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return workspaceFromStorage(window.localStorage.getItem(CREATED_WORKSPACE_KEY));
+  } catch {
+    return null;
+  }
+}
+
+export function clearPersistedWorkspace() {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem(CREATED_WORKSPACE_KEY);
+  window.sessionStorage.removeItem(OPENING_COMPANY_KEY);
 }
 
 export function shouldRedirectToOnboarding(input: {

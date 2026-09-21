@@ -8,6 +8,7 @@ import {
   fetchMembershipRows,
   mapMembershipRows,
   mergeOwnedOrganizations,
+  readPersistedWorkspace,
   type OrganizationMembership,
 } from "@/lib/organization-memberships";
 
@@ -65,6 +66,10 @@ export function useOrganization() {
       const owned = await supabase.from("organizations").select("id, name").eq("created_by", user!.id);
       if (!owned.error && owned.data?.length) {
         memberships = mergeOwnedOrganizations(memberships, owned.data);
+      }
+      const persisted = readPersistedWorkspace();
+      if (persisted) {
+        memberships = mergeOwnedOrganizations(memberships, [{ id: persisted.orgId, name: persisted.name }]);
       }
       if (!memberships.length) return { memberships: [], current: null as OrganizationMembership | null };
       const stored = readStoredOrg();

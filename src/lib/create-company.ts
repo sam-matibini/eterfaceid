@@ -70,3 +70,21 @@ export function companyCreateErrorMessage(message: string) {
   }
   return message;
 }
+
+/** Membership SELECT is often hidden by circular RLS. The creator still owns the company. */
+export function creatorDashboard(org: { id: string; name: string }) {
+  return { orgId: org.id, name: org.name, role: "admin" as const, existing: false as const };
+}
+
+export function dashboardFromCreatedCompany(input: {
+  org: { id: string; name: string } | null;
+  membership: { orgId: string; role: "admin" | "analyst" | "viewer" } | null;
+}) {
+  if (!input.org) return null;
+  return {
+    orgId: input.org.id,
+    name: input.org.name,
+    role: input.membership?.role ?? "admin",
+    existing: false as const,
+  };
+}
