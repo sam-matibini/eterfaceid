@@ -4,7 +4,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 
 import { AuthFrame, authButtonClass, authInputClass } from "@/components/auth/AuthFrame";
-import { setActiveOrganization, useOrganization } from "@/hooks/useSession";
+import { setActiveOrganization, useOrganization, useSession } from "@/hooks/useSession";
+import { membershipFromCreate, OPENING_COMPANY_KEY } from "@/lib/organization-memberships";
 import { acceptInvite, createOrganization } from "@/lib/teams.functions";
 
 export const Route = createFileRoute("/_authenticated/onboarding")({
@@ -21,6 +22,7 @@ function OnboardingPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { organization, memberships, ready } = useOrganization();
+  const { user } = useSession();
   const create = useServerFn(createOrganization);
   const join = useServerFn(acceptInvite);
 
@@ -50,19 +52,30 @@ function OnboardingPage() {
     if (storedCompany) setForm((f) => ({ ...f, name: storedCompany, legalName: storedCompany }));
   }, []);
 
-  async function finish(run: () => Promise<{ orgId?: string } | unknown>) {
+  async function finish(run: () => Promise<{ orgId?: string; name?: string; role?: string } | unknown>) {
     setBusy(true);
     setError(null);
     try {
       const result = await run();
-      const orgId =
-        result && typeof result === "object" && "orgId" in result
-          ? String((result as { orgId?: string }).orgId ?? "")
-          : "";
-      if (orgId) setActiveOrganization(orgId);
+      const payload = result && typeof result === "object" ? (result as { orgId?: string; name?: string; role?: "admin" | "analyst" | "viewer" }) : {};
+      const orgId = String(payload.orgId ?? "");
+      if (!orgId) throw new Error("The company dashboard could not be opened. Try Create company dashboard again.");
+      const companyName = payload.name || form.legalName || form.name;
+      const snapshot = membershipFromCreate({ orgId, name: companyName, role: payload.role ?? "admin" });
+      setActiveOrganization(orgId);
+      window.sessionStorage.setItem(OPENING_COMPANY_KEY, orgId);
       window.sessionStorage.removeItem("eid_invite_token");
       window.sessionStorage.removeItem("eid_company");
-      await queryClient.invalidateQueries();
+      queryClient.setQueryData(["my-org", user?.id], { memberships: [snapshot], current: snapshot });
+      try {
+        await queryClient.refetchQueries({ queryKey: ["my-org", user?.id] });
+      } catch {
+        queryClient.setQueryData(["my-org", user?.id], { memberships: [snapshot], current: snapshot });
+      }
+      const after = queryClient.getQueryData(["my-org", user?.id]) as { current?: { orgId?: string } } | undefined;
+      if (!after?.current?.orgId) {
+        queryClient.setQueryData(["my-org", user?.id], { memberships: [snapshot], current: snapshot });
+      }
       void navigate({ to: "/console", replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : "The company dashboard could not be created. Try again.");

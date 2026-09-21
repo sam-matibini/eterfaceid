@@ -8,6 +8,7 @@ import { useOrganization, useRoles, useSession } from "@/hooks/useSession";
 import { usePlatformStaff } from "@/hooks/usePlatformStaff";
 import { isStaffBypassUnlocked } from "@/lib/staff-bypass";
 import { displayRole, type PermissionCode } from "@/lib/access";
+import { OPENING_COMPANY_KEY, shouldRedirectToOnboarding } from "@/lib/organization-memberships";
 
 type NavLeaf = { to: string; label: string; exact?: boolean; permission?: PermissionCode };
 type NavGroup = { label: string; items: NavLeaf[] };
@@ -80,14 +81,19 @@ export function ConsoleShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { user } = useSession();
   const { roles, has, isAdmin } = useRoles();
-  const { organization, memberships, ready, loaded, setActive } = useOrganization();
+  const { organization, memberships, ready, loaded, fetching, setActive } = useOrganization();
   const { isStaff } = usePlatformStaff();
   const { environment, setEnvironment, canUseLive } = useEnvironment();
 
   useEffect(() => {
     if (isStaffBypassUnlocked()) return;
-    if (ready && loaded && !organization) void navigate({ to: "/onboarding", replace: true });
-  }, [ready, loaded, organization, navigate]);
+    const opening =
+      typeof window !== "undefined" && Boolean(window.sessionStorage.getItem(OPENING_COMPANY_KEY));
+    if (organization && opening) window.sessionStorage.removeItem(OPENING_COMPANY_KEY);
+    if (shouldRedirectToOnboarding({ ready, loaded, fetching, organization, openingCompany: opening })) {
+      void navigate({ to: "/onboarding", replace: true });
+    }
+  }, [ready, loaded, fetching, organization, navigate]);
 
   async function signOut() {
     await queryClient.cancelQueries();

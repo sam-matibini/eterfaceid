@@ -107,6 +107,22 @@ function environmentLabel(sandbox: boolean, live: boolean) {
   return "Sandbox";
 }
 
+async function readCreatorMembership(supabase: any, userId: string, orgId: string, token: string) {
+  try {
+    const local = await membershipForOrg(supabase, userId, orgId);
+    if (local) return { orgId: local.org_id, role: local.role };
+  } catch {
+    /* live membership select may omit extra columns */
+  }
+  const viaUser = await userRest<Array<{ org_id: string; role: MembershipRow["role"] }>>("organization_members", {
+    query: `user_id=eq.${userId}&org_id=eq.${orgId}&select=org_id,role`,
+    token,
+  });
+  const row = firstRow(viaUser.data);
+  if (row && !viaUser.error) return { orgId: String(row.org_id), role: row.role || "admin" };
+  return null;
+}
+
 export const createOrganization = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
@@ -135,7 +151,7 @@ export const createOrganization = createServerFn({ method: "POST" })
     } catch {
       already = null;
     }
-    if (already) return { orgId: already.org_id, existing: true };
+    if (already) return { orgId: already.org_id, name: data.name, role: already.role, existing: true };
 
     const legalName = data.legalName?.trim() || data.name;
     const profile = {
@@ -246,7 +262,40 @@ export const createOrganization = createServerFn({ method: "POST" })
           error: viaAdminClient.error ?? viaClient.error ?? { message: viaUser.error ?? "Could not open the company dashboard" },
         };
       }, liveMemberInsert({ orgId: org.id, userId: context.userId }));
-      if (member.error) throw new Error(companyCreateErrorMessage(member.error.message));
+    }
+
+    let opened = await readCreatorMembership(db, context.userId, org.id, userToken);
+    if (!opened) {
+      await writeIgnoringUnknownColumns(async (payload) => {
+        const viaUser = await userRest("organization_members", {
+          method: "POST",
+          prefer: "return=minimal",
+          body: payload,
+          token: userToken,
+        });
+        if (restAcceptedWrite(viaUser) || isUniqueConflict(viaUser.error ?? "")) {
+          return { data: { ok: true }, error: null };
+        }
+        if (supabaseServiceRoleKey()) {
+          const viaAdmin = await projectRest("organization_members", {
+            method: "POST",
+            prefer: "return=minimal",
+            body: payload,
+          });
+          if (restAcceptedWrite(viaAdmin) || isUniqueConflict(viaAdmin.error ?? "")) {
+            return { data: { ok: true }, error: null };
+          }
+        }
+        const viaAdminClient = await supabaseAdmin.from("organization_members").insert(payload as never);
+        if (!viaAdminClient.error || isUniqueConflict(viaAdminClient.error.message ?? "")) {
+          return { data: { ok: true }, error: null };
+        }
+        return { data: null, error: viaAdminClient.error ?? { message: viaUser.error ?? "Could not join the company" } };
+      }, liveMemberInsert({ orgId: org.id, userId: context.userId }));
+      opened = await readCreatorMembership(db, context.userId, org.id, userToken);
+    }
+    if (!opened) {
+      throw new Error("The company was saved, but the dashboard could not be opened. Click Create company dashboard again.");
     }
 
     const environments = await writeIgnoringUnknownColumns(async (payload) => {
@@ -317,7 +366,7 @@ export const createOrganization = createServerFn({ method: "POST" })
       /* the welcome email must never block sign-up */
     }
 
-    return { orgId: org.id as string, existing: false };
+    return { orgId: org.id as string, name: org.name, role: opened.role, existing: false };
   });
 
 export const updateOrganizationProfile = createServerFn({ method: "POST" })

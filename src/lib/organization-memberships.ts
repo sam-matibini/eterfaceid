@@ -21,9 +21,42 @@ type MemberQuery = {
   error: { message: string } | null;
 };
 
+export const OPENING_COMPANY_KEY = "eid_opening_company";
+
 const FULL_SELECT =
   "org_id, role, access_role, is_owner, sandbox_access, live_access, permissions, mfa_required, job_title, user_type, status, organizations(id, name, slug, legal_name, live_access)";
 const LIVE_SELECT = "org_id, role, organizations(id, name, slug, live_access)";
+const MIN_SELECT = "org_id, role";
+
+export function membershipFromCreate(input: { orgId: string; name: string; role?: AppRole }): OrganizationMembership {
+  const role = input.role ?? "admin";
+  return {
+    orgId: input.orgId,
+    role,
+    accessRole: inferAccessRole(role),
+    isOwner: role === "admin",
+    name: input.name,
+    legalName: input.name,
+    orgLiveAccess: "locked",
+    sandboxAccess: true,
+    liveAccess: role === "admin",
+    permissions: [],
+    mfaRequired: role === "admin",
+    jobTitle: null,
+    userType: "employee",
+  };
+}
+
+export function shouldRedirectToOnboarding(input: {
+  ready: boolean;
+  loaded: boolean;
+  fetching?: boolean;
+  organization: unknown;
+  openingCompany?: boolean;
+}) {
+  if (input.openingCompany || input.fetching) return false;
+  return Boolean(input.ready && input.loaded && !input.organization);
+}
 
 export function isMembershipQueryError(message: string) {
   return /does not exist|schema cache|column|Could not find/i.test(message);
@@ -62,6 +95,7 @@ export async function fetchMembershipRows(
     { select: FULL_SELECT, order: false },
     { select: LIVE_SELECT, order: true },
     { select: LIVE_SELECT, order: false },
+    { select: MIN_SELECT, order: false },
   ];
   let lastError: { message: string } | null = null;
   for (const attempt of attempts) {

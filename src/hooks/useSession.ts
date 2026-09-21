@@ -72,6 +72,7 @@ export function useOrganization() {
     organization: current,
     memberships: query.data?.memberships ?? [],
     loading: !ready || (Boolean(user?.id) && query.isLoading),
+    fetching: query.isFetching,
     ready: ready && (!user?.id || query.isFetched),
     loaded: query.isSuccess,
     failed: query.isError,
