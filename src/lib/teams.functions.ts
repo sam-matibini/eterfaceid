@@ -14,6 +14,7 @@ import {
   type UserType,
 } from "@/lib/access";
 import { randomToken, sha256Hex } from "@/lib/crypto-hash";
+import { isMissingSchemaError, writeIgnoringUnknownColumns } from "@/lib/schema-compat";
 
 const accessRoleSchema = z.enum(["administrator", "developer", "compliance", "analyst", "viewer"]);
 const userTypeSchema = z.enum(["employee", "contractor", "consultant"]);
@@ -43,15 +44,33 @@ export type MembershipRow = {
 };
 
 async function membershipsFor(supabase: any, userId: string) {
-  const { data } = await supabase
+  const full = await supabase
     .from("organization_members")
     .select(
       "org_id, role, access_role, is_owner, sandbox_access, live_access, permissions, mfa_required, user_type, job_title, status",
     )
     .eq("user_id", userId)
-    .eq("status", "active")
     .order("created_at");
-  return (data ?? []) as MembershipRow[];
+  const result =
+    full.error && isMissingSchemaError(full.error.message)
+      ? await supabase.from("organization_members").select("org_id, role").eq("user_id", userId).order("created_at")
+      : full;
+  if (result.error) throw new Error(result.error.message);
+  return ((result.data ?? []) as Array<Partial<MembershipRow> & { org_id: string; role: MembershipRow["role"] }>)
+    .filter((row) => row.status !== "disabled")
+    .map((row) => ({
+      org_id: row.org_id,
+      role: row.role,
+      access_role: row.access_role ?? (row.role === "admin" ? "owner" : "viewer"),
+      is_owner: row.is_owner ?? row.role === "admin",
+      sandbox_access: row.sandbox_access !== false,
+      live_access: row.live_access ?? row.role === "admin",
+      permissions: row.permissions ?? [],
+      mfa_required: row.mfa_required ?? row.role === "admin",
+      user_type: row.user_type ?? "employee",
+      job_title: row.job_title ?? null,
+      status: row.status ?? "active",
+    })) as MembershipRow[];
 }
 
 async function membershipForOrg(supabase: any, userId: string, orgId?: string | null) {
@@ -100,28 +119,37 @@ export const createOrganization = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const db = context.supabase;
     const legalName = data.legalName?.trim() || data.name;
-    const { data: org, error } = await supabaseAdmin
-      .from("organizations")
-      .insert({
-        name: data.name,
-        legal_name: legalName,
-        slug: slugify(data.name),
-        created_by: context.userId,
-        primary_admin_user_id: context.userId,
-        registration_number: data.registrationNumber || null,
-        country: data.country?.toUpperCase() || null,
-        address_line1: data.addressLine1 || null,
-        city: data.city || null,
-        region: data.region || null,
-        postal_code: data.postalCode || null,
-        website: data.website || null,
-      })
-      .select("id, name")
-      .single();
-    if (error) throw new Error(error.message);
+    const profile = {
+      legal_name: legalName,
+      registration_number: data.registrationNumber || null,
+      country: data.country?.toUpperCase() || null,
+      address_line1: data.addressLine1 || null,
+      city: data.city || null,
+      region: data.region || null,
+      postal_code: data.postalCode || null,
+      website: data.website || null,
+    };
+    const created = await writeIgnoringUnknownColumns(async (payload) => {
+      const result = await db.from("organizations").insert(payload as never).select("id, name").single();
+      return { data: result.data, error: result.error };
+    }, {
+      name: data.name,
+      slug: slugify(data.name),
+      created_by: context.userId,
+      primary_admin_user_id: context.userId,
+      ...profile,
+    });
+    if (created.error || !created.data) throw new Error(created.error?.message ?? "The company could not be created");
+    const org = created.data as { id: string; name: string };
 
-    const { error: memberError } = await supabaseAdmin.from("organization_members").insert({
+    const member = await writeIgnoringUnknownColumns(async (payload) => {
+      const viaUser = await db.from("organization_members").insert(payload as never);
+      if (!viaUser.error) return { data: { ok: true }, error: null };
+      const viaAdmin = await supabaseAdmin.from("organization_members").insert(payload as never);
+      return { data: viaAdmin.error ? null : { ok: true }, error: viaAdmin.error ?? viaUser.error };
+    }, {
       org_id: org.id,
       user_id: context.userId,
       role: "admin",
@@ -134,21 +162,44 @@ export const createOrganization = createServerFn({ method: "POST" })
       mfa_required: true,
       status: "active",
     });
-    if (memberError) throw new Error(memberError.message);
+    if (member.error) throw new Error(member.error.message);
 
-    await supabaseAdmin.from("org_environments").insert([
-      { org_id: org.id, code: "sandbox", label: "Sandbox", publishable_prefix: "ef_test_" },
-      { org_id: org.id, code: "live", label: "Live", publishable_prefix: "ef_live_" },
-    ]);
-
-    await supabaseAdmin.from("audit_events").insert({
-      org_id: org.id,
-      actor_id: context.userId,
-      action: "team.created",
-      entity_type: "organization",
-      entity_id: org.id,
-      detail: { name: data.name, legalName } as never,
+    const environments = await writeIgnoringUnknownColumns(async (payload) => {
+      const result = await supabaseAdmin.from("org_environments").insert(payload["rows"] as never);
+      return { data: result.error ? null : { ok: true }, error: result.error };
+    }, {
+      rows: [
+        { org_id: org.id, code: "sandbox", label: "Sandbox", publishable_prefix: "ef_test_" },
+        { org_id: org.id, code: "live", label: "Live", publishable_prefix: "ef_live_" },
+      ],
     });
+    if (environments.error && !environments.skipped && !isMissingSchemaError(environments.error.message)) {
+      /* environments are optional on the live project */
+    }
+
+    await writeIgnoringUnknownColumns(async (payload) => {
+      const result = await db.from("org_applications").insert(payload as never);
+      return { data: result.error ? null : { ok: true }, error: result.error };
+    }, {
+      org_id: org.id,
+      legal_name: legalName,
+      ...profile,
+      submitted_by: context.userId,
+      status: "draft",
+    });
+
+    try {
+      await db.from("audit_events").insert({
+        org_id: org.id,
+        actor_id: context.userId,
+        action: "team.created",
+        entity_type: "organization",
+        entity_id: org.id,
+        detail: { name: data.name, legalName, ...profile } as never,
+      });
+    } catch {
+      /* audit must never block creating the company */
+    }
 
     try {
       const email = context.claims?.email as string | undefined;
@@ -194,21 +245,38 @@ export const updateOrganizationProfile = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const membership = await requireAdmin(context.supabase, context.userId, data.orgId);
-    const { error } = await context.supabase
-      .from("organizations")
-      .update({
-        name: data.name,
-        legal_name: data.legalName || data.name,
-        registration_number: data.registrationNumber || null,
-        country: data.country?.toUpperCase() || null,
-        address_line1: data.addressLine1 || null,
-        city: data.city || null,
-        region: data.region || null,
-        postal_code: data.postalCode || null,
-        website: data.website || null,
-      })
-      .eq("id", membership.org_id);
-    if (error) throw new Error(error.message);
+    const profile = {
+      name: data.name,
+      legal_name: data.legalName || data.name,
+      registration_number: data.registrationNumber || null,
+      country: data.country?.toUpperCase() || null,
+      address_line1: data.addressLine1 || null,
+      city: data.city || null,
+      region: data.region || null,
+      postal_code: data.postalCode || null,
+      website: data.website || null,
+    };
+    const updated = await writeIgnoringUnknownColumns(async (payload) => {
+      const result = await context.supabase.from("organizations").update(payload as never).eq("id", membership.org_id);
+      return { data: result.error ? null : { ok: true }, error: result.error };
+    }, profile);
+    if (updated.error) throw new Error(updated.error.message);
+    await writeIgnoringUnknownColumns(async (payload) => {
+      const result = await context.supabase.from("org_applications").insert(payload as never);
+      return { data: result.error ? null : { ok: true }, error: result.error };
+    }, {
+      org_id: membership.org_id,
+      legal_name: data.legalName || data.name,
+      registration_number: data.registrationNumber || null,
+      country: data.country?.toUpperCase() || null,
+      address_line1: data.addressLine1 || null,
+      city: data.city || null,
+      region: data.region || null,
+      postal_code: data.postalCode || null,
+      website: data.website || null,
+      submitted_by: context.userId,
+      status: "draft",
+    });
     await context.supabase.from("audit_events").insert({
       org_id: membership.org_id,
       actor_id: context.userId,
