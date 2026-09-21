@@ -1,5 +1,7 @@
 /** Client-side store so PIN-unlocked API keys survive a refresh or Worker restart. */
 
+import { catalogFor, decodeReusableSecret, providerSlug, secretLast4 } from "./api-notepad";
+
 export const INTEGRATION_VAULT_KEY = "eid_integration_vault";
 export const LIVE_RESEND_KEY = "eid_resend_live";
 export const VAULT_WRAP_PIN = "eterfaceid";
@@ -36,19 +38,6 @@ export type IntegrationVault = {
 
 export const DEFAULT_VAULT: IntegrationVault = { persist: true, apis: [], notes: [] };
 
-const KNOWN: Record<string, { label: string; category: string; purpose: string }> = {
-  resend: {
-    label: "Resend",
-    category: "email",
-    purpose: "Transactional email for invites, verification, password reset and alerts",
-  },
-  thekyb: {
-    label: "The KYB",
-    category: "registry",
-    purpose: "Official company registry checks",
-  },
-};
-
 function storage() {
   if (typeof window === "undefined") return null;
   try {
@@ -79,7 +68,16 @@ export function forgotResendKey() {
 }
 
 function unwrapPins(extra: string[] = []) {
-  return [...extra, VAULT_WRAP_PIN, VAULT_SESSION_PIN].filter((pin, index, all) => pin.trim() && all.indexOf(pin) === index);
+  return [VAULT_WRAP_PIN, VAULT_SESSION_PIN, ...extra].filter((pin, index, all) => pin.trim() && all.indexOf(pin) === index);
+}
+
+function looksLikeSecret(value: string) {
+  if (value.length < 8) return false;
+  if ([...value].some((ch) => ch.charCodeAt(0) < 32 || ch.charCodeAt(0) > 126)) return false;
+  if (value.startsWith("{")) {
+    return decodeReusableSecret(value).secret.length >= 8;
+  }
+  return true;
 }
 
 function wrapKey(apiKey: string, pin: string) {
@@ -137,29 +135,37 @@ export function upsertVaultApi(input: {
   last4?: string;
   status?: string;
   notes?: string | null;
+  label?: string;
+  purpose?: string | null;
+  category?: string;
 }) {
   const vault = readIntegrationVault();
   if (!vault.persist) return vault;
-  const known = KNOWN[input.provider];
-  const last4 = input.last4 ?? input.apiKey.slice(-4);
+  const provider = providerSlug(input.provider || input.label || "api");
+  const catalog = catalogFor(input.label ?? input.provider);
+  const last4 = input.last4 ?? secretLast4(input.apiKey) ?? input.apiKey.slice(-4);
   const now = new Date().toISOString();
   const entry: VaultApi = {
-    provider: input.provider,
-    label: known?.label ?? input.provider,
-    category: known?.category ?? "other",
+    provider,
+    label: input.label?.trim() || catalog.label,
+    category: input.category ?? catalog.category,
     last4,
     status: input.status ?? "live",
     enabled: true,
-    purpose: known?.purpose ?? null,
+    purpose: input.purpose ?? catalog.purpose ?? null,
     notes: input.notes ?? `Key on file ending ${last4}`,
     savedAt: now,
     wrappedKey: wrapKey(input.apiKey, VAULT_WRAP_PIN),
   };
-  if (input.apiKey.startsWith("re_")) rememberResendKey(input.apiKey);
-  const apis = vault.apis.filter((row) => row.provider !== input.provider);
+  if (decodeReusableSecret(input.apiKey).secret.startsWith("re_")) {
+    rememberResendKey(decodeReusableSecret(input.apiKey).secret);
+  }
+  const apis = vault.apis.filter((row) => row.provider !== provider);
   apis.unshift(entry);
-  const noteId = `vault-${input.provider}`;
-  const notes = vault.notes.filter((row) => row.id !== noteId && row.title !== entry.label);
+  const noteId = `vault-${provider}`;
+  const notes = vault.notes.filter(
+    (row) => row.id !== noteId && row.title.toLowerCase() !== entry.label.toLowerCase(),
+  );
   notes.unshift({
     id: noteId,
     title: entry.label,
@@ -213,22 +219,54 @@ export function removeVaultNote(id: string) {
 
 export function restoreKeysFromVault(pin: string) {
   const vault = readIntegrationVault();
-  if (!vault.persist) return { resendKey: "", theKybKey: "" };
-  const resend = vault.apis.find((row) => row.provider === "resend")?.wrappedKey;
-  const thekyb = vault.apis.find((row) => row.provider === "thekyb")?.wrappedKey;
+  if (!vault.persist) return { resendKey: "", theKybKey: "", keys: {} as Record<string, string> };
+  const keys: Record<string, string> = {};
+  for (const row of vault.apis) {
+    if (!row.wrappedKey) continue;
+    const value = unwrapKey(row.wrappedKey, pin).trim();
+    if (looksLikeSecret(value)) keys[row.provider] = value;
+  }
   return {
-    resendKey: resend ? unwrapKey(resend, pin) : "",
-    theKybKey: thekyb ? unwrapKey(thekyb, pin) : "",
+    resendKey: keys.resend ?? "",
+    theKybKey: keys.thekyb ?? "",
+    keys,
   };
 }
 
-function firstUnwrapped(provider: "resend" | "thekyb", pins: string[]) {
+function unwrapProvider(provider: string, pins: string[]) {
+  const vault = readIntegrationVault();
+  if (!vault.persist) return "";
+  const wrapped = vault.apis.find((row) => row.provider === provider)?.wrappedKey;
+  if (!wrapped) return "";
   for (const pin of unwrapPins(pins)) {
-    const keys = restoreKeysFromVault(pin);
-    const value = (provider === "resend" ? keys.resendKey : keys.theKybKey).trim();
-    if (provider === "resend" ? value.startsWith("re_") : value.length >= 8) return value;
+    const value = unwrapKey(wrapped, pin).trim();
+    if (looksLikeSecret(value)) return value;
   }
   return "";
+}
+
+export function unwrapVaultApi(provider: string, ...pins: string[]) {
+  return unwrapProvider(providerSlug(provider), pins);
+}
+
+export function restoreAllVaultKeys(...pins: string[]) {
+  const vault = readIntegrationVault();
+  if (!vault.persist) return {} as Record<string, string>;
+  const keys: Record<string, string> = {};
+  for (const row of vault.apis) {
+    const value = unwrapProvider(row.provider, pins);
+    if (value) keys[row.provider] = value;
+  }
+  return keys;
+}
+
+function firstUnwrapped(provider: "resend" | "thekyb", pins: string[]) {
+  const value = unwrapProvider(provider, pins);
+  if (provider === "resend") {
+    const secret = decodeReusableSecret(value).secret;
+    return secret.startsWith("re_") ? secret : "";
+  }
+  return value.length >= 8 ? decodeReusableSecret(value).secret : "";
 }
 
 /** Unwrap the saved Resend key using the first pin that works. */
@@ -242,6 +280,15 @@ export function vaultedTheKybKey(...pins: string[]) {
 
 export function vaultResendLast4() {
   return readIntegrationVault().apis.find((row) => row.provider === "resend")?.last4 ?? null;
+}
+
+export function vaultApiLast4(titleOrProvider: string) {
+  const slug = providerSlug(titleOrProvider);
+  const vault = readIntegrationVault();
+  return (
+    vault.apis.find((row) => row.provider === slug || row.label.toLowerCase() === titleOrProvider.trim().toLowerCase())
+      ?.last4 ?? null
+  );
 }
 
 /** Prefer the live session key, then unwrap the Integrations vault (••••m9EL). */

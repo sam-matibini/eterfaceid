@@ -41,7 +41,7 @@ export const plaidStatus = createServerFn({ method: "GET" })
       .maybeSingle();
     return {
       enabled: Boolean(data?.enabled),
-      configured: plaidConfigured(),
+      configured: await plaidConfigured(),
       environment: plaidEnvironment(),
     };
   });

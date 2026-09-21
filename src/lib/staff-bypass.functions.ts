@@ -260,25 +260,64 @@ export const bootstrapRestoreApiKeys = createServerFn({ method: "POST" })
     z
       .object({
         pin: z.string().min(1).max(72),
-        resendKey: z.string().trim().max(400).optional(),
-        theKybKey: z.string().trim().max(400).optional(),
+        resendKey: z.string().trim().max(2000).optional(),
+        theKybKey: z.string().trim().max(2000).optional(),
+        keys: z
+          .array(
+            z.object({
+              provider: z.string().trim().min(2).max(40),
+              apiKey: z.string().trim().min(8).max(2000),
+            }),
+          )
+          .max(20)
+          .optional(),
       })
       .parse(input),
   )
   .handler(async ({ data }) => {
     await assertBootstrapPin(data.pin);
+    const { applyReusableApiKey } = await import("@/lib/reusable-api.server");
     const restored: string[] = [];
     if (data.resendKey?.startsWith("re_")) {
-      const { setBootstrapResendKey } = await import("@/lib/email.server");
-      setBootstrapResendKey(data.resendKey);
+      await applyReusableApiKey("resend", data.resendKey);
       restored.push("resend");
     }
     if (data.theKybKey && data.theKybKey.length >= 8) {
-      const { setBootstrapTheKybKey } = await import("@/lib/thekyb.server");
-      setBootstrapTheKybKey(data.theKybKey);
+      await applyReusableApiKey("thekyb", data.theKybKey);
       restored.push("thekyb");
     }
+    for (const row of data.keys ?? []) {
+      await applyReusableApiKey(row.provider, row.apiKey);
+      restored.push(row.provider);
+    }
     return { restored };
+  });
+
+export const bootstrapSaveReusableApiKey = createServerFn({ method: "POST" })
+  .inputValidator((input) =>
+    z
+      .object({
+        pin: z.string().min(1).max(72),
+        provider: z.string().trim().min(2).max(40),
+        apiKey: z.string().trim().min(8).max(2000),
+        label: z.string().trim().min(2).max(120).optional(),
+        category: z.string().trim().max(40).optional(),
+        purpose: z.string().trim().max(500).nullish(),
+        notes: z.string().trim().max(2000).nullish(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }) => {
+    await assertBootstrapPin(data.pin);
+    const { persistReusableApiKey } = await import("@/lib/reusable-api.server");
+    return persistReusableApiKey({
+      provider: data.provider,
+      encodedKey: data.apiKey,
+      label: data.label,
+      category: data.category,
+      purpose: data.purpose,
+      notes: data.notes,
+    });
   });
 
 export const bootstrapTheKybStatus = createServerFn({ method: "GET" })

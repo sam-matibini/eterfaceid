@@ -25,7 +25,7 @@ export const Route = createFileRoute("/api/public/hooks/plaid-sync")({
           .select("enabled")
           .eq("provider", "plaid")
           .maybeSingle();
-        if (!setting?.enabled || !plaidConfigured()) {
+        if (!setting?.enabled || !(await plaidConfigured())) {
           return Response.json({ skipped: "plaid is off or not configured" });
         }
 

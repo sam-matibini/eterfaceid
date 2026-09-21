@@ -389,6 +389,77 @@ export const saveResendApiKey = createServerFn({ method: "POST" })
     return { last4 };
   });
 
+export const saveReusableApiKey = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        provider: z.string().trim().min(2).max(40),
+        apiKey: z.string().trim().min(8).max(2000),
+        label: z.string().trim().min(2).max(120).optional(),
+        category: z.string().trim().max(40).optional(),
+        purpose: z.string().trim().max(500).nullish(),
+        notes: z.string().trim().max(2000).nullish(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await requireStaff(context.supabase, context.userId);
+    const { applyReusableApiKey, persistReusableApiKey } = await import("@/lib/reusable-api.server");
+    const { catalogFor, providerSlug, secretLast4 } = await import("@/lib/api-notepad");
+    const provider = providerSlug(data.provider);
+    const catalog = catalogFor(data.label ?? data.provider);
+    const last4 = secretLast4(data.apiKey);
+    if (!last4) throw new Error("Paste a reusable API key first.");
+    await applyReusableApiKey(provider, data.apiKey);
+    try {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      await supabaseAdmin.from("integration_secrets").upsert(
+        {
+          provider,
+          api_key: data.apiKey,
+          last4,
+          updated_at: new Date().toISOString(),
+          updated_by: context.userId,
+        } as never,
+        { onConflict: "provider" },
+      );
+      const { data: existing } = await supabaseAdmin
+        .from("integration_settings")
+        .select("id")
+        .eq("provider", provider)
+        .maybeSingle();
+      const payload = {
+        enabled: true,
+        status: "live",
+        last_checked_at: new Date().toISOString(),
+        last_error: null,
+        config: { last4, purpose: data.purpose ?? catalog.purpose ?? null } as never,
+        label: data.label?.trim() || catalog.label,
+        category: data.category ?? catalog.category,
+      };
+      if (existing) {
+        await supabaseAdmin.from("integration_settings").update(payload as never).eq("provider", provider);
+      } else {
+        await supabaseAdmin.from("integration_settings").insert({
+          provider,
+          ...payload,
+        } as never);
+      }
+      return { last4, provider, persisted: true };
+    } catch {
+      return persistReusableApiKey({
+        provider,
+        encodedKey: data.apiKey,
+        label: data.label,
+        category: data.category,
+        purpose: data.purpose,
+        notes: data.notes,
+        updatedBy: context.userId,
+      });
+    }
+  });
+
 export const setNotificationPreference = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>

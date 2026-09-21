@@ -1,28 +1,114 @@
 /** Minimal Plaid REST client. Server-only: never import from client code. */
 
+import { decodeReusableSecret, type ReusableSecret } from "./api-notepad";
+
 type PlaidEnv = "sandbox" | "production";
 
-function credentials() {
-  const clientId = process.env["PLAID_CLIENT_ID"];
-  const secret = process.env["PLAID_SECRET"];
-  const env = (process.env["PLAID_ENV"] ?? "sandbox").toLowerCase() as PlaidEnv;
-  if (!clientId || !secret) {
-    throw new Error("Plaid is not configured yet. Add the Plaid credentials in App admin.");
-  }
+let bootstrapPlaid: ReusableSecret | null = null;
+
+function normalizeEnv(value: string | undefined | null): PlaidEnv {
+  return (value ?? "").toLowerCase() === "production" ? "production" : "sandbox";
+}
+
+function pack(input: ReusableSecret) {
+  const clientId = input.clientId?.trim() ?? "";
+  const secret = input.secret.trim();
+  const env = normalizeEnv(input.env);
+  if (!clientId || !secret) return null;
   const host = env === "production" ? "https://production.plaid.com" : "https://sandbox.plaid.com";
   return { clientId, secret, env, host };
 }
 
-export function plaidEnvironment(): PlaidEnv {
-  return (process.env["PLAID_ENV"] ?? "sandbox").toLowerCase() === "production" ? "production" : "sandbox";
+function writeEnv(creds: ReusableSecret) {
+  try {
+    process.env["PLAID_SECRET"] = creds.secret.trim();
+    if (creds.clientId) process.env["PLAID_CLIENT_ID"] = creds.clientId.trim();
+    if (creds.env) process.env["PLAID_ENV"] = normalizeEnv(creds.env);
+  } catch {
+    /* process.env can be immutable on Workers */
+  }
 }
 
-export function plaidConfigured(): boolean {
-  return Boolean(process.env["PLAID_CLIENT_ID"] && process.env["PLAID_SECRET"]);
+export function setBootstrapPlaidCredentials(input: ReusableSecret) {
+  const secret = input.secret.trim();
+  const clientId = input.clientId?.trim() || "";
+  const env = input.env?.trim() || "";
+  if (!secret) return;
+  bootstrapPlaid = { secret, clientId: clientId || undefined, env: env || undefined };
+  writeEnv(bootstrapPlaid);
+}
+
+export function peekBootstrapPlaidCredentials(): ReusableSecret | null {
+  if (bootstrapPlaid?.secret) return bootstrapPlaid;
+  const secret = process.env["PLAID_SECRET"]?.trim() ?? "";
+  const clientId = process.env["PLAID_CLIENT_ID"]?.trim() ?? "";
+  const env = process.env["PLAID_ENV"]?.trim() ?? "";
+  if (!secret) return null;
+  return { secret, clientId: clientId || undefined, env: env || undefined };
+}
+
+function peekCredentials() {
+  return pack(peekBootstrapPlaidCredentials() ?? { secret: "" });
+}
+
+async function storedPlaidCredentials(): Promise<ReusableSecret | null> {
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data } = await supabaseAdmin
+      .from("integration_secrets")
+      .select("api_key")
+      .eq("provider", "plaid")
+      .maybeSingle();
+    const raw = (data as { api_key?: string } | null)?.api_key?.trim();
+    if (raw) {
+      const decoded = decodeReusableSecret(raw);
+      if (decoded.secret) return decoded;
+    }
+  } catch {
+    /* service role may be missing */
+  }
+  try {
+    const { projectRest } = await import("@/lib/supabase-project");
+    const result = await projectRest<{ api_key?: string }[]>("integration_secrets", {
+      query: "provider=eq.plaid&select=api_key",
+    });
+    const raw = result.data?.[0]?.api_key?.trim();
+    if (raw) {
+      const decoded = decodeReusableSecret(raw);
+      if (decoded.secret) return decoded;
+    }
+  } catch {
+    /* anon JWT cannot read secrets */
+  }
+  return null;
+}
+
+async function credentials() {
+  const ready = peekCredentials();
+  if (ready) return ready;
+  const stored = await storedPlaidCredentials();
+  if (stored) {
+    setBootstrapPlaidCredentials(stored);
+    const packed = pack(stored);
+    if (packed) return packed;
+  }
+  throw new Error("Plaid is not configured yet. Add the Plaid credentials in App admin.");
+}
+
+export function plaidEnvironment(): PlaidEnv {
+  return peekCredentials()?.env ?? normalizeEnv(process.env["PLAID_ENV"]);
+}
+
+export async function plaidConfigured(): Promise<boolean> {
+  if (peekCredentials()) return true;
+  const stored = await storedPlaidCredentials();
+  if (!stored) return false;
+  setBootstrapPlaidCredentials(stored);
+  return Boolean(pack(stored));
 }
 
 async function call<T>(path: string, body: Record<string, unknown>): Promise<T> {
-  const { clientId, secret, host } = credentials();
+  const { clientId, secret, host } = await credentials();
   const response = await fetch(`${host}${path}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },

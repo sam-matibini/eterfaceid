@@ -5,14 +5,18 @@ import {
   readIntegrationVault,
   rememberResendKey,
   rememberedResendKey,
+  restoreAllVaultKeys,
   restoreKeysFromVault,
   setApiPersistEnabled,
+  vaultApiLast4,
   vaultResendLast4,
   vaultedResendKey,
+  unwrapVaultApi,
   upsertVaultApi,
   upsertVaultNote,
   vaultAsIntegrationRows,
 } from "./integration-vault";
+import { encodeReusableSecret } from "./api-notepad";
 
 function assert(condition: unknown, message: string) {
   if (!condition) throw new Error(message);
@@ -79,6 +83,30 @@ assert(rememberedResendKey() === "re_wrapped_with_session_pin", "new saves also 
 const rows = vaultAsIntegrationRows();
 assert(rows.some((row) => row.provider === "resend" && row.enabled), "connected services lists resend");
 assert(rows.some((row) => row.provider === "thekyb"), "connected services lists the kyb");
+
+const plaidBlob = encodeReusableSecret({
+  secret: "plaid-secret-kyc1",
+  clientId: "client_plaid_aml",
+  env: "production",
+});
+upsertVaultApi({
+  provider: "plaid",
+  apiKey: plaidBlob,
+  pin: "eterfaceid",
+  label: "Plaid",
+  purpose: "Bank identity and transactions for KYC and AML",
+});
+assert(vaultApiLast4("Plaid") === "kyc1", "plaid last4 is the secret");
+assert(unwrapVaultApi("plaid", "eterfaceid").includes("plaid-secret-kyc1"), "plaid key unwraps");
+assert(restoreAllVaultKeys("eterfaceid").plaid?.includes("client_plaid_aml"), "all keys include plaid");
+assert(
+  readIntegrationVault().apis.some((row) => row.provider === "plaid" && row.category === "kyc"),
+  "plaid is stored as a kyc api",
+);
+assert(
+  vaultAsIntegrationRows().some((row) => row.provider === "plaid" && row.label === "Plaid"),
+  "connected services lists plaid",
+);
 
 upsertVaultNote({
   id: "manual-1",
