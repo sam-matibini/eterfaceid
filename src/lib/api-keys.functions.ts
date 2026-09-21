@@ -4,6 +4,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { hasPermission, secretKeyPrefix, type PermissionCode } from "@/lib/access";
 import { sha256Hex } from "@/lib/crypto-hash";
+import { writeWithFallback } from "@/lib/schema-fallback";
 
 const KEY_SCOPES = [
   "sandbox.api",
@@ -15,25 +16,65 @@ const KEY_SCOPES = [
 ] as const;
 
 async function callerMembership(supabase: any, userId: string) {
-  const { data } = await supabase
+  const full = await supabase
     .from("organization_members")
     .select("org_id, role, access_role, is_owner, live_access, sandbox_access, permissions, status")
     .eq("user_id", userId)
-    .eq("status", "active")
     .order("created_at")
     .limit(1)
     .maybeSingle();
-  if (!data) throw new Error("You are not part of a team yet");
-  return data as {
+  const row =
+    full.error && /does not exist|schema cache|could not find/i.test(full.error.message)
+      ? await supabase.from("organization_members").select("org_id, role").eq("user_id", userId).limit(1).maybeSingle()
+      : full;
+  let data = row.data as {
     org_id: string;
     role: string;
-    access_role: string;
-    is_owner: boolean;
-    live_access: boolean;
-    sandbox_access: boolean;
-    permissions: string[];
-    status: string;
-  };
+    access_role?: string;
+    is_owner?: boolean;
+    live_access?: boolean;
+    sandbox_access?: boolean;
+    permissions?: string[];
+    status?: string;
+  } | null;
+  if (data?.status === "disabled") data = null;
+  if (!data) {
+    const owned = await supabase
+      .from("organizations")
+      .select("id")
+      .eq("created_by", userId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (owned.data?.id) {
+      data = {
+        org_id: owned.data.id as string,
+        role: "admin",
+        access_role: "owner",
+        is_owner: true,
+        live_access: true,
+        sandbox_access: true,
+        permissions: [],
+        status: "active",
+      };
+      return { ...normalize(data), needsJoin: true };
+    }
+  }
+  if (!data) throw new Error("You are not part of a team yet");
+  return { ...normalize(data), needsJoin: false };
+
+  function normalize(row: NonNullable<typeof data>) {
+    return {
+      org_id: row.org_id,
+      role: row.role,
+      access_role: row.access_role ?? (row.role === "admin" ? "owner" : "viewer"),
+      is_owner: Boolean(row.is_owner) || row.role === "admin",
+      live_access: Boolean(row.live_access) || row.role === "admin",
+      sandbox_access: row.sandbox_access !== false,
+      permissions: row.permissions ?? [],
+      status: row.status ?? "active",
+    };
+  }
 }
 
 export const createApiKey = createServerFn({ method: "POST" })
@@ -53,6 +94,14 @@ export const createApiKey = createServerFn({ method: "POST" })
     const membership = await callerMembership(context.supabase, context.userId);
     if (!hasPermission(membership, "api_keys.create")) {
       throw new Error("You do not have permission to create API keys");
+    }
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    if (membership.needsJoin) {
+      await supabaseAdmin.from("organization_members").insert({
+        org_id: membership.org_id,
+        user_id: context.userId,
+        role: "admin",
+      } as never);
     }
     if (data.environment === "sandbox" && membership.sandbox_access === false) {
       throw new Error("Your account does not have Sandbox access");
@@ -104,9 +153,17 @@ export const createApiKey = createServerFn({ method: "POST" })
         ? ["live.api"]
         : ["sandbox.api"]) as PermissionCode[];
 
-    const { data: inserted, error } = await context.supabase
-      .from("api_keys")
-      .insert({
+    const insertedRow = await writeWithFallback(
+      async (payload) => {
+        const result = await supabaseAdmin
+          .from("api_keys")
+          .insert(payload as never)
+          .select("id, name, environment, key_prefix, created_at")
+          .single();
+        return { data: result.data, error: result.error };
+      },
+      {
+        org_id: membership.org_id,
         name: data.name,
         environment: data.environment,
         key_kind: data.kind,
@@ -114,12 +171,23 @@ export const createApiKey = createServerFn({ method: "POST" })
         key_hash: keyHash,
         created_by: context.userId,
         scopes,
-      })
-      .select("id, name, environment, key_prefix, key_kind, created_at")
-      .single();
-    if (error) throw new Error(error.message);
+      },
+      {
+        org_id: membership.org_id,
+        name: data.name,
+        environment: data.environment,
+        key_prefix: secret.slice(0, 18),
+        key_hash: keyHash,
+        created_by: context.userId,
+      },
+    );
+    if (insertedRow.error || !insertedRow.data) {
+      throw new Error(insertedRow.error?.message ?? "The API key could not be created");
+    }
+    const inserted = insertedRow.data;
 
-    await context.supabase.from("audit_events").insert({
+    await supabaseAdmin.from("audit_events").insert({
+      org_id: membership.org_id,
       actor_id: context.userId,
       action: data.environment === "live" ? "api_key.live_created" : "api_key.created",
       entity_type: "api_key",

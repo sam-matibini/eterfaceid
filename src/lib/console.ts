@@ -75,12 +75,12 @@ export async function fetchAuditEvents() {
   return data;
 }
 
-export async function fetchTeam() {
+export async function fetchTeam(orgId?: string) {
   const [members, profiles, invites] = await Promise.all([
     supabase
       .from("organization_members")
       .select(
-        "user_id, role, access_role, is_owner, user_type, job_title, sandbox_access, live_access, permissions, mfa_required, status, created_at",
+        "org_id, user_id, role, access_role, is_owner, user_type, job_title, sandbox_access, live_access, permissions, mfa_required, status, created_at",
       ),
     supabase.from("profiles").select("*"),
     supabase
@@ -91,27 +91,35 @@ export async function fetchTeam() {
       .order("created_at", { ascending: false }),
   ]);
   if (members.error) {
-    if (/does not exist|schema cache/i.test(members.error.message)) {
-      const legacy = await supabase.from("organization_members").select("user_id, role, created_at");
+    if (/does not exist|schema cache|could not find/i.test(members.error.message)) {
+      let legacyQuery = supabase.from("organization_members").select("org_id, user_id, role, created_at");
+      if (orgId) legacyQuery = legacyQuery.eq("org_id", orgId);
+      const legacy = await legacyQuery;
       const legacyProfiles = await supabase.from("profiles").select("*");
+      const mapped = (legacy.data ?? []).map((m) => {
+        const profile = (legacyProfiles.data ?? []).find((p) => p.id === m.user_id);
+        return {
+          userId: m.user_id,
+          role: m.role as AppRole,
+          accessRole: inferAccessRole(m.role),
+          isOwner: m.role === "admin",
+          userType: "employee",
+          jobTitle: null,
+          sandboxAccess: true,
+          liveAccess: m.role === "admin",
+          permissions: [],
+          mfaRequired: m.role === "admin",
+          status: "active",
+          email: profile?.email ?? null,
+          fullName: profile?.full_name ?? null,
+        };
+      });
+      const seen = new Set<string>();
       return {
-        members: (legacy.data ?? []).map((m) => {
-          const profile = (legacyProfiles.data ?? []).find((p) => p.id === m.user_id);
-          return {
-            userId: m.user_id,
-            role: m.role as AppRole,
-            accessRole: inferAccessRole(m.role),
-            isOwner: m.role === "admin",
-            userType: "employee",
-            jobTitle: null,
-            sandboxAccess: true,
-            liveAccess: m.role === "admin",
-            permissions: [],
-            mfaRequired: m.role === "admin",
-            status: "active",
-            email: profile?.email ?? null,
-            fullName: profile?.full_name ?? null,
-          };
+        members: mapped.filter((row) => {
+          if (!row.userId || seen.has(row.userId)) return false;
+          seen.add(row.userId);
+          return true;
         }),
         invites: [],
       };
@@ -119,27 +127,39 @@ export async function fetchTeam() {
     throw members.error;
   }
   if (profiles.error) throw profiles.error;
-  if (invites.error) throw invites.error;
-  return {
-    members: (members.data ?? []).map((m) => {
+  if (invites.error && !/does not exist|schema cache|could not find/i.test(invites.error.message)) {
+    throw invites.error;
+  }
+  const inviteRows = invites.error ? [] : (invites.data ?? []);
+  const mapped = (members.data ?? [])
+    .filter((m) => !orgId || m.org_id === orgId)
+    .filter((m) => (m.status ?? "active") !== "disabled")
+    .map((m) => {
       const profile = (profiles.data ?? []).find((p) => p.id === m.user_id);
       return {
         userId: m.user_id,
         role: m.role as AppRole,
-        accessRole: (m.access_role as AccessRole | null) ?? "viewer",
-        isOwner: Boolean(m.is_owner),
+        accessRole: (m.access_role as AccessRole | null) ?? inferAccessRole(m.role),
+        isOwner: Boolean(m.is_owner) || m.role === "admin",
         userType: m.user_type ?? "employee",
         jobTitle: m.job_title ?? null,
         sandboxAccess: m.sandbox_access !== false,
-        liveAccess: Boolean(m.live_access),
+        liveAccess: Boolean(m.live_access) || m.role === "admin",
         permissions: (m.permissions as string[] | null) ?? [],
         mfaRequired: Boolean(m.mfa_required),
         status: m.status ?? "active",
         email: profile?.email ?? null,
         fullName: profile?.full_name ?? null,
       };
+    });
+  const seen = new Set<string>();
+  return {
+    members: mapped.filter((row) => {
+      if (!row.userId || seen.has(row.userId)) return false;
+      seen.add(row.userId);
+      return true;
     }),
-    invites: invites.data ?? [],
+    invites: orgId ? inviteRows.filter((row) => row.org_id === orgId) : inviteRows,
   };
 }
 
@@ -171,7 +191,27 @@ export async function fetchApiRequestLogs() {
 export async function fetchOrganizationProfile(orgId: string) {
   const { data, error } = await supabase.from("organizations").select("*").eq("id", orgId).maybeSingle();
   if (error) throw error;
-  return data;
+  const application = await supabase
+    .from("org_applications")
+    .select("*")
+    .eq("org_id", orgId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const org = (data ?? {}) as Record<string, unknown>;
+  const app = (application.data ?? {}) as Record<string, unknown>;
+  return {
+    id: (org["id"] as string | undefined) ?? orgId,
+    name: String(org["name"] ?? app["legal_name"] ?? ""),
+    legal_name: String(org["legal_name"] ?? app["legal_name"] ?? org["name"] ?? ""),
+    registration_number: String(org["registration_number"] ?? app["registration_number"] ?? ""),
+    country: String(org["country"] ?? app["country"] ?? ""),
+    address_line1: String(org["address_line1"] ?? app["address_line1"] ?? ""),
+    city: String(org["city"] ?? app["city"] ?? ""),
+    region: String(org["region"] ?? app["region"] ?? ""),
+    postal_code: String(org["postal_code"] ?? app["postal_code"] ?? ""),
+    website: String(org["website"] ?? app["website"] ?? ""),
+  };
 }
 
 export async function fetchDashboardStats() {
