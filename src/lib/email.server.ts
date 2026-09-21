@@ -106,6 +106,21 @@ export function renderTemplate(
     data["footer"] ??
     "Sent by the eterfaceID Security &amp; Compliance Team. Never share passwords, MFA codes, API secret keys or webhook secrets.";
   switch (event) {
+    case "staff.invite":
+      return {
+        subject: `You've been invited to the eterfaceID App admin team`,
+        html: layout(
+          `Join the eterfaceID App admin team`,
+          p(`Hello ${data["name"] ?? "there"},`) +
+            p(
+              `${data["inviter"] ?? "eterfaceID"} has invited you to App admin as <strong>${data["role"] ?? "Operations"}</strong>.`,
+            ) +
+            p("Use this to open Integrations, companies and the rest of App admin.") +
+            button(data["link"] ?? "#", "Open App admin") +
+            p("If you did not expect this invitation, ignore this message."),
+          footer,
+        ),
+      };
     case "team.invite":
       return {
         subject: `You've been invited to join ${org} on eterfaceID`,

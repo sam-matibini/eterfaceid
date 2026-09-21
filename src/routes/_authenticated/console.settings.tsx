@@ -35,7 +35,10 @@ function SettingsPage() {
           Billing
         </Link>
         <Link to="/console/users" className="underline underline-offset-4">
-          Users & Teams
+          Users
+        </Link>
+        <Link to="/console/team" className="underline underline-offset-4">
+          Team
         </Link>
       </div>
       <div className="mt-8 max-w-2xl">

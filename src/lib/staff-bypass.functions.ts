@@ -385,3 +385,127 @@ export const bootstrapSaveTheKybApiKey = createServerFn({ method: "POST" })
     if (lastError) throw new Error(lastError);
     return { ok: true, last4: maskApiKey(data.apiKey), countries, persisted: !persisted.error };
   });
+
+export const bootstrapListPlatformStaff = createServerFn({ method: "GET" })
+  .inputValidator((input) => z.object({ pin: z.string().min(1).max(72) }).parse(input))
+  .handler(async ({ data }) => {
+    await assertBootstrapPin(data.pin);
+    const admin = await adminFromRuntime();
+    if (admin) {
+      const { data: rows, error } = await admin
+        .from("platform_staff")
+        .select("id, user_id, email, level, created_at")
+        .order("created_at");
+      if (!error && rows) {
+        const { parseStaffLevel } = await import("@/lib/admin-staff");
+        return rows.map((row) => ({
+          id: row.id as string,
+          userId: (row.user_id as string | null) ?? null,
+          email: String(row.email ?? "").toLowerCase(),
+          name: String(row.email ?? "Staff"),
+          level: parseStaffLevel(row.level as string),
+          status: "active" as const,
+          savedAt: String(row.created_at ?? new Date().toISOString()),
+        }));
+      }
+    }
+    const { projectRest } = await import("@/lib/supabase-project");
+    const { parseStaffLevel } = await import("@/lib/admin-staff");
+    const listed = await projectRest<Array<{ id: string; user_id?: string; email?: string; level?: string; created_at?: string }>>(
+      "platform_staff",
+      { query: "select=id,user_id,email,level,created_at&order=created_at" },
+    );
+    return (listed.data ?? []).map((row) => ({
+      id: row.id,
+      userId: row.user_id ?? null,
+      email: String(row.email ?? "").toLowerCase(),
+      name: String(row.email ?? "Staff"),
+      level: parseStaffLevel(row.level),
+      status: "active" as const,
+      savedAt: String(row.created_at ?? new Date().toISOString()),
+    }));
+  });
+
+export const bootstrapAddPlatformStaff = createServerFn({ method: "POST" })
+  .inputValidator((input) =>
+    z
+      .object({
+        pin: z.string().min(1).max(72),
+        email: z.string().trim().email().max(200),
+        name: z.string().trim().max(120).optional(),
+        level: z.enum(["owner", "developer", "operations"]).default("operations"),
+        origin: z.string().trim().url().max(300).optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }) => {
+    await assertBootstrapPin(data.pin);
+    const { parseStaffLevel, staffInviteRole } = await import("@/lib/admin-staff");
+    const email = data.email.toLowerCase();
+    const name = data.name?.trim() || email.split("@")[0] || "Staff";
+    const level = parseStaffLevel(data.level);
+    const origin = data.origin ?? "https://eterfaceid.com";
+    const admin = await adminFromRuntime();
+    let userId: string | null = null;
+    let inviteLink: string | null = `${origin}/auth`;
+    let emailed: { sent: boolean; reason?: string; detail?: string } | null = null;
+    let persisted = false;
+
+    if (admin) {
+      let user = await findUserByEmail(admin, email);
+      if (!user) {
+        const created = await admin.auth.admin.createUser({
+          email,
+          email_confirm: true,
+          user_metadata: { full_name: name },
+        });
+        if (created.error && !/already|registered|exists/i.test(created.error.message)) {
+          throw new Error(created.error.message);
+        }
+        user = created.data.user ?? (await findUserByEmail(admin, email));
+      }
+      if (user) {
+        userId = user.id;
+        const { error } = await admin.from("platform_staff").upsert(
+          { user_id: user.id, email, level },
+          { onConflict: "user_id" },
+        );
+        persisted = !error;
+        const { data: link } = await admin.auth.admin.generateLink({ type: "magiclink", email });
+        const action = (link?.properties as { action_link?: string } | undefined)?.action_link;
+        if (action) inviteLink = action;
+      }
+    }
+
+    try {
+      const { peekBootstrapResendKey, sendNotification } = await import("@/lib/email.server");
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      if (peekBootstrapResendKey()) {
+        emailed = await sendNotification(supabaseAdmin, {
+          event: "staff.invite",
+          to: email,
+          data: {
+            name,
+            role: staffInviteRole(level),
+            org: "eterfaceID App admin",
+            inviter: "eterfaceID",
+            link: inviteLink ?? `${origin}/auth`,
+          },
+        });
+      }
+    } catch (err) {
+      emailed = { sent: false, detail: err instanceof Error ? err.message : "Invite email could not be sent" };
+    }
+
+    return {
+      id: userId ?? `vault-${email}`,
+      email,
+      name,
+      level,
+      userId,
+      status: "invited" as const,
+      persisted,
+      inviteLink,
+      emailed,
+    };
+  });

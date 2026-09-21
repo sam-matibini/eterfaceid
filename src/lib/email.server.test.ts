@@ -38,6 +38,16 @@ assert(gateway.mode === "gateway", "opaque connection keys still use the Lovable
 const missing = resendSendPlan({ resendKey: null, lovableKey: "lvbl_key" });
 assert(missing.mode === "unconfigured", "Lovable key alone is not enough");
 
+const staffInvite = renderTemplate("staff.invite", {
+  name: "Dev",
+  role: "Developer",
+  link: "https://example.com/auth",
+  inviter: "eterfaceID",
+});
+assert(staffInvite.subject.toLowerCase().includes("admin"), "staff invite subject");
+assert(staffInvite.html.includes("Developer"), "staff invite role");
+assert(staffInvite.html.includes("https://example.com/auth"), "staff invite link");
+
 const verify = renderTemplate("account.verify", { link: "https://example.com/confirm", name: "Sam" });
 assert(verify.subject.includes("Confirm"), "verification subject");
 assert(verify.html.includes("https://example.com/confirm"), "verification link");

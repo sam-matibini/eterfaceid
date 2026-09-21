@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 
 import { ConsoleShell, fieldClass, inkButtonClass, Panel } from "@/components/console/shell";
+import { TeamPanel } from "@/components/console/team";
 import { useOrganization, useRoles } from "@/hooks/useSession";
 import { fetchOrganizationProfile } from "@/lib/console";
 import { updateOrganizationProfile } from "@/lib/teams.functions";
@@ -84,7 +85,7 @@ function OrganizationPage() {
       <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
         Legal identity for this eterfaceID organization. Used for KYB, Live access and invoices.
       </p>
-      <div className="mt-8 max-w-3xl">
+      <div className="mt-8 max-w-4xl">
         <Panel title="Company Information">
           <form
             className="grid gap-3 sm:grid-cols-2"
@@ -127,6 +128,9 @@ function OrganizationPage() {
             )}
           </form>
         </Panel>
+        <div className="mt-6">
+          <TeamPanel isAdmin={isAdmin} title="Team" compact />
+        </div>
       </div>
     </ConsoleShell>
   );

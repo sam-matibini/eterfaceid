@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 
 import { AdminShell, Field, buttonClass, ghostButtonClass, inputClass } from "@/components/admin/shell";
 import { Panel, StatusPill } from "@/components/console/shell";
+import { listCompanyTeam } from "@/lib/admin-staff.functions";
+import { inferAccessRole, displayRole } from "@/lib/access";
 import { fetchCompany, fetchPlans, money } from "@/lib/platform";
 import { generateInvoice, setInvoiceStatus, setSubscription } from "@/lib/platform.functions";
 
@@ -23,6 +25,12 @@ function CompanyPage() {
   const queryClient = useQueryClient();
   const company = useQuery({ queryKey: ["admin-company", orgId], queryFn: () => fetchCompany(orgId) });
   const plans = useQuery({ queryKey: ["plans"], queryFn: fetchPlans });
+  const loadTeam = useServerFn(listCompanyTeam);
+  const team = useQuery({
+    queryKey: ["admin-company-team", orgId],
+    queryFn: () => loadTeam({ data: { orgId } }),
+    retry: false,
+  });
 
   const saveSub = useServerFn(setSubscription);
   const makeInvoice = useServerFn(generateInvoice);
@@ -137,6 +145,27 @@ function CompanyPage() {
               ) : null}
             </div>
           </form>
+        </Panel>
+
+        <Panel title="Team">
+          <div className="space-y-3 text-sm">
+            {(team.data ?? []).map((member) => (
+              <div key={member.userId} className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <div className="font-medium">{member.fullName ?? member.email ?? "Team member"}</div>
+                  <div className="text-xs text-muted-foreground">{member.email ?? member.userId}</div>
+                </div>
+                <StatusPill tone="pending">{displayRole(member.role, inferAccessRole(member.role))}</StatusPill>
+              </div>
+            ))}
+            {(team.data ?? []).length === 0 ? (
+              <p className="text-muted-foreground">
+                {team.isError
+                  ? "Team members are shown when App admin can read this company."
+                  : "No people on this company team yet."}
+              </p>
+            ) : null}
+          </div>
         </Panel>
 
         <Panel title="Usage by month">

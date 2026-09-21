@@ -17,6 +17,7 @@ const navItems = [
 
   { to: "/admin/billing", label: "Billing", exact: false },
   { to: "/admin/owner", label: "Company details", exact: false },
+  { to: "/admin/team", label: "Admin team", exact: false },
   { to: "/admin/integrations", label: "Integrations", exact: false },
   { to: "/admin/emails", label: "Email log", exact: false },
 ] as const;

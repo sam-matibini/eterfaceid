@@ -19,7 +19,8 @@ const navGroups: NavGroup[] = [
     label: "Organization",
     items: [
       { to: "/console/organization", label: "Company Profile", permission: "users.manage" },
-      { to: "/console/users", label: "Users & Teams", permission: "users.manage" },
+      { to: "/console/team", label: "Team", permission: "users.manage" },
+      { to: "/console/users", label: "Users", permission: "users.manage" },
       { to: "/console/roles", label: "Roles & Permissions", permission: "roles.manage" },
       { to: "/console/security", label: "Security" },
     ],

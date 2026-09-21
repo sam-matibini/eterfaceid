@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
@@ -18,7 +19,15 @@ import {
 import { fetchTeam } from "@/lib/console";
 import { inviteMember, removeMember, resendInvite, revokeInvite, setMemberRole } from "@/lib/teams.functions";
 
-export function TeamPanel({ isAdmin }: { isAdmin: boolean }) {
+export function TeamPanel({
+  isAdmin,
+  title,
+  compact,
+}: {
+  isAdmin: boolean;
+  title?: string;
+  compact?: boolean;
+}) {
   const queryClient = useQueryClient();
   const { organization } = useOrganization();
   const invite = useServerFn(inviteMember);
@@ -128,11 +137,11 @@ export function TeamPanel({ isAdmin }: { isAdmin: boolean }) {
 
   return (
     <Panel
-      title={organization ? `${organization.name} — Users & Teams` : "Users & Teams"}
+      title={title ?? (organization ? `${organization.name} — Team` : "Team")}
       action={
         isAdmin ? (
           <button type="button" className={inkButtonClass} onClick={() => setOpen((v) => !v)}>
-            {open ? "Close" : "Add User"}
+            {open ? "Close" : "Add teammate"}
           </button>
         ) : undefined
       }
@@ -141,7 +150,15 @@ export function TeamPanel({ isAdmin }: { isAdmin: boolean }) {
         {(team.data?.members ?? []).map((member) => (
           <div key={member.userId} className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <div className="font-medium">{member.fullName ?? member.email ?? "Team member"}</div>
+              <div className="font-medium">
+                <Link
+                  to="/console/users/$userId"
+                  params={{ userId: member.userId }}
+                  className="underline-offset-4 hover:underline"
+                >
+                  {member.fullName ?? member.email ?? "Team member"}
+                </Link>
+              </div>
               <div className="text-xs text-muted-foreground">
                 {member.email}
                 {member.jobTitle ? ` · ${member.jobTitle}` : ""}
@@ -364,6 +381,13 @@ export function TeamPanel({ isAdmin }: { isAdmin: boolean }) {
         Roles are templates. Permissions on each person can be changed independently. Live access is never granted
         just because someone is a developer. Invitations expire after 72 hours and can be resent or revoked.
       </p>
+      {compact ? (
+        <p className="mt-3 text-xs">
+          <Link to="/console/team" className="underline underline-offset-4">
+            Open the full Team page
+          </Link>
+        </p>
+      ) : null}
     </Panel>
   );
 }
