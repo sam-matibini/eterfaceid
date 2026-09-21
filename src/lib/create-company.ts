@@ -1,6 +1,6 @@
 /** Helpers for creating a company on the live organizations schema. */
 
-import { isRlsError, isUniqueConflict } from "./schema-compat";
+import { isRlsError, isUniqueConflict, isMissingRpcError } from "./schema-compat";
 
 export { isRlsError, isUniqueConflict };
 
@@ -87,4 +87,58 @@ export function dashboardFromCreatedCompany(input: {
     role: input.membership?.role ?? "admin",
     existing: false as const,
   };
+}
+
+export function joinCreatedCompanyArgs(orgId: string) {
+  return { _org_id: orgId };
+}
+
+export function updateCreatedCompanyArgs(orgId: string, name: string) {
+  return { _org_id: orgId, _name: name };
+}
+
+export function addCreatedCompanyMemberArgs(orgId: string, userId: string, role: string) {
+  return { _org_id: orgId, _user_id: userId, _role: role };
+}
+
+export function inviteToCreatedCompanyArgs(input: {
+  orgId: string;
+  email: string;
+  role: string;
+  tokenHash: string;
+  expiresAt: string;
+}) {
+  return {
+    _org_id: input.orgId,
+    _email: input.email,
+    _role: input.role,
+    _token_hash: input.tokenHash,
+    _expires_at: input.expiresAt,
+  };
+}
+
+export function creatorRpcAccepted(error: string | null | undefined) {
+  if (!error) return true;
+  return isUniqueConflict(error);
+}
+
+export function creatorRpcMissing(error: string | null | undefined) {
+  if (!error) return false;
+  return isMissingRpcError(error) || /HTTP 404/i.test(error) || /schema cache/i.test(error);
+}
+
+export function isCreatorDeniedError(message: string) {
+  return /not the company creator/i.test(message);
+}
+
+/** Prefer a readable membership; otherwise the creator of this org is admin. */
+export function resolveCreatorAdminOrgId(input: {
+  membershipOrgId?: string | null;
+  membershipIsAdmin?: boolean;
+  createdOrgId?: string | null;
+  joinedOrgId?: string | null;
+  claimedOrgId?: string | null;
+}) {
+  if (input.membershipOrgId && input.membershipIsAdmin) return input.membershipOrgId;
+  return input.joinedOrgId || input.createdOrgId || input.claimedOrgId || null;
 }

@@ -1,12 +1,20 @@
 import {
+  addCreatedCompanyMemberArgs,
   companyCreateErrorMessage,
+  creatorRpcAccepted,
+  creatorRpcMissing,
   dashboardFromCreatedCompany,
+  inviteToCreatedCompanyArgs,
+  isCreatorDeniedError,
   isRlsError,
   isUniqueConflict,
+  joinCreatedCompanyArgs,
   liveMemberInsert,
   liveOrganizationInsert,
+  resolveCreatorAdminOrgId,
   resolveInsertedCompany,
   restAcceptedWrite,
+  updateCreatedCompanyArgs,
 } from "./create-company";
 
 function assert(condition: unknown, message: string) {
@@ -82,5 +90,46 @@ const opened = dashboardFromCreatedCompany({
 assert(opened?.orgId === org.id, "dashboard opens from the saved company");
 assert(opened?.role === "admin", "creator is admin even when membership cannot be read");
 assert(dashboardFromCreatedCompany({ org: null, membership: null }) === null, "no org means no dashboard");
+
+assert(
+  joinCreatedCompanyArgs("org-1")._org_id === "org-1",
+  "join rpc takes the saved company id",
+);
+assert(
+  resolveCreatorAdminOrgId({ membershipOrgId: null, createdOrgId: "org-saved", joinedOrgId: "org-saved" }) ===
+    "org-saved",
+  "creator can admin without a readable membership row",
+);
+assert(
+  resolveCreatorAdminOrgId({ membershipOrgId: "org-m", membershipIsAdmin: true }) === "org-m",
+  "readable admin membership wins",
+);
+assert(
+  resolveCreatorAdminOrgId({
+    membershipOrgId: null,
+    createdOrgId: null,
+    joinedOrgId: null,
+    claimedOrgId: "org-open",
+  }) === "org-open",
+  "open workspace can save and invite before membership select works",
+);
+assert(updateCreatedCompanyArgs("org-1", "eFinMoney")._name === "eFinMoney", "update rpc takes the display name");
+assert(addCreatedCompanyMemberArgs("org-1", "user-2", "admin")._role === "admin", "add member rpc takes role");
+assert(
+  inviteToCreatedCompanyArgs({
+    orgId: "org-1",
+    email: "sam@efin.money",
+    role: "admin",
+    tokenHash: "hash",
+    expiresAt: "2026-09-24T00:00:00.000Z",
+  })._email === "sam@efin.money",
+  "invite rpc takes live invite columns",
+);
+assert(creatorRpcAccepted(null), "rpc with no error is success");
+assert(creatorRpcAccepted("duplicate key value violates unique constraint"), "already a member is success");
+assert(!creatorRpcAccepted('new row violates row-level security policy'), "rls is not rpc success");
+assert(isCreatorDeniedError("Not the company creator"), "creator check is recognized");
+assert(creatorRpcMissing("Could not find the function public.update_created_company(_org_id, _name) in the schema cache"), "missing update rpc");
+assert(creatorRpcMissing("HTTP 404"), "empty 404 is a missing rpc");
 
 console.log("create-company.test.ts passed");

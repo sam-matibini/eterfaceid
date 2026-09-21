@@ -8,6 +8,7 @@ import { TeamPanel } from "@/components/console/team";
 import { useOrganization, useRoles } from "@/hooks/useSession";
 import { canEditCompany } from "@/lib/company-profile";
 import { fetchOrganizationProfile } from "@/lib/console";
+import { membershipFromCreate, persistCreatedWorkspace } from "@/lib/organization-memberships";
 import { isStaffBypassUnlocked } from "@/lib/staff-bypass";
 import { updateOrganizationProfile } from "@/lib/teams.functions";
 
@@ -81,6 +82,7 @@ function OrganizationPage() {
       }),
     onSuccess: (result) => {
       setSaved(true);
+      persistCreatedWorkspace(membershipFromCreate({ orgId: result.id || orgId, name: result.name }));
       setForm({
         name: result.name,
         legalName: result.legal_name,

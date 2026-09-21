@@ -92,6 +92,7 @@ export function TeamPanel({
           liveAccess: form.liveAccess,
           permissions: form.permissions,
           origin: window.location.origin,
+          orgId: organization?.orgId,
         },
       }),
     onSuccess: (result) => {

@@ -118,6 +118,9 @@ export async function fetchTeam() {
         invites: [],
       };
     }
+    if (/row-level security|permission denied|42501/i.test(members.error.message)) {
+      return { members: [], invites: [] };
+    }
     throw members.error;
   }
   if (profiles.error) throw profiles.error;
@@ -178,7 +181,7 @@ export async function fetchApiRequestLogs() {
 
 export async function fetchOrganizationProfile(orgId: string) {
   const { data, error } = await supabase.from("organizations").select("*").eq("id", orgId).maybeSingle();
-  if (error) throw error;
+  if (error && !/row-level security|permission denied|42501/i.test(error.message)) throw error;
   let application: Record<string, unknown> | null = null;
   const apps = await supabase
     .from("org_applications")
@@ -188,7 +191,10 @@ export async function fetchOrganizationProfile(orgId: string) {
     .limit(1)
     .maybeSingle();
   if (!apps.error && apps.data) application = apps.data as Record<string, unknown>;
-  return mergeCompanyProfile((data ?? null) as Record<string, unknown> | null, application);
+  return mergeCompanyProfile(
+    ((data ?? { id: orgId }) as Record<string, unknown> | null),
+    application,
+  );
 }
 
 export async function fetchDashboardStats() {
