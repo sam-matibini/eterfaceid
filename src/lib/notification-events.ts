@@ -1,5 +1,6 @@
 export const NOTIFICATION_EVENT_LIST = [
   { event: "team.invite", label: "User invitation", description: "Invitation to join your organization.", group: "account" },
+  { event: "staff.invite", label: "App admin invitation", description: "Invitation to join the eterfaceID App admin team.", group: "account" },
   { event: "team.welcome", label: "Welcome email", description: "Sent when an account is activated.", group: "account" },
   { event: "account.password_reset", label: "Password reset", description: "Password reset instructions.", group: "account" },
   { event: "account.password_changed", label: "Password changed", description: "Confirmation that a password was changed.", group: "account" },

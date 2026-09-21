@@ -1,5 +1,5 @@
 /**
- * Sandbox behaviour for API keys issued as `eid_test_*`.
+ * Sandbox behaviour for API keys issued as `ef_test_secret_*` (legacy `eid_test_*` still works).
  *
  * Sandbox calls must never touch the real sanctions and PEP lists or a real
  * bank connection. Instead they return predictable, realistic results driven by

@@ -1,8 +1,13 @@
 /** Public project values already shipped in the browser client. Safe to use as server fallbacks. */
 
-export const FALLBACK_SUPABASE_URL = "https://euuexozkxjuvyuikevrx.supabase.co";
-export const FALLBACK_SUPABASE_PUBLISHABLE_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV1dWV4b3preGp1dnl1aWtldnJ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk3NjAxNDUsImV4cCI6MjEwNTMzNjE0NX0.TPM3o-454ydySCc5AUpBvjjNaH4xkQA8INowoQ5H6jg";
+import {
+  FALLBACK_SUPABASE_PUBLISHABLE_KEY,
+  FALLBACK_SUPABASE_URL,
+  SUPABASE_PROJECT,
+} from "./supabase-project";
+
+export { FALLBACK_SUPABASE_PUBLISHABLE_KEY, FALLBACK_SUPABASE_URL, SUPABASE_PROJECT };
+export { supabaseAccessKey, supabaseServiceRoleKey } from "@/lib/supabase-project";
 
 function readEnv(name: string) {
   try {
@@ -22,7 +27,7 @@ function writeEnv(name: string, value: string) {
 }
 
 export function publicSupabaseUrl() {
-  return readEnv("SUPABASE_URL") || readEnv("VITE_SUPABASE_URL") || FALLBACK_SUPABASE_URL;
+  return readEnv("SUPABASE_URL") || readEnv("VITE_SUPABASE_URL") || SUPABASE_PROJECT.url;
 }
 
 export function publicSupabasePublishableKey() {
@@ -30,7 +35,7 @@ export function publicSupabasePublishableKey() {
     readEnv("SUPABASE_PUBLISHABLE_KEY") ||
     readEnv("VITE_SUPABASE_PUBLISHABLE_KEY") ||
     readEnv("SUPABASE_ANON_KEY") ||
-    FALLBACK_SUPABASE_PUBLISHABLE_KEY
+    SUPABASE_PROJECT.publishableKey
   );
 }
 
@@ -39,4 +44,6 @@ export function ensurePublicSupabaseEnv() {
   writeEnv("SUPABASE_PUBLISHABLE_KEY", publicSupabasePublishableKey());
   writeEnv("VITE_SUPABASE_URL", publicSupabaseUrl());
   writeEnv("VITE_SUPABASE_PUBLISHABLE_KEY", publicSupabasePublishableKey());
+  writeEnv("SUPABASE_PROJECT_ID", SUPABASE_PROJECT.id);
+  writeEnv("VITE_SUPABASE_PROJECT_ID", SUPABASE_PROJECT.id);
 }

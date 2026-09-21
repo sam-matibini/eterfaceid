@@ -1,156 +1,229 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
 
 import { ConsoleShell, inkButtonClass, Panel, StatusPill } from "@/components/console/shell";
-import { useEnvironment } from "@/hooks/useEnvironment";
 import { useOrganization, useRoles } from "@/hooks/useSession";
-import { displayRole } from "@/lib/access";
-import { fetchDashboardStats } from "@/lib/console";
+import { classifyCase, PURPOSE_LABEL } from "@/lib/case-purpose";
+import { fetchDashboardStats, fetchCases, statusLabel, type CaseStatus } from "@/lib/console";
+import { isStaffBypassUnlocked } from "@/lib/staff-bypass";
 
 export const Route = createFileRoute("/_authenticated/console/")({
   head: () => ({
     meta: [
-      { title: "Dashboard — eterfaceID" },
+      { title: "Home — eterfaceID" },
       { name: "robots", content: "noindex" },
     ],
   }),
-  component: DashboardPage,
+  component: HomePage,
 });
 
-function DashboardPage() {
+const solutions = [
+  {
+    to: "/console/kyc" as const,
+    title: "KYC",
+    body: "Document, biometric and data checks for customers.",
+  },
+  {
+    to: "/console/kyb" as const,
+    title: "KYB",
+    body: "Registry, status and beneficial ownership for entities.",
+  },
+  {
+    to: "/console/aml" as const,
+    title: "AML",
+    body: "Sanctions, PEP, watchlists and ongoing rescreening.",
+  },
+  {
+    to: "/console/employees" as const,
+    title: "Employees",
+    body: "Onboard staff with the same identity and screening controls.",
+  },
+];
+
+function HomePage() {
   const { organization } = useOrganization();
   const { has, isAdmin } = useRoles();
-  const { environment, setEnvironment, canUseLive } = useEnvironment();
+  const [tab, setTab] = useState<"cases" | "inquiries">("cases");
   const stats = useQuery({
     queryKey: ["dashboard-stats"],
     queryFn: fetchDashboardStats,
     retry: false,
   });
-  const developer = organization?.accessRole === "developer" || has("api_keys.create");
+  const cases = useQuery({ queryKey: ["cases"], queryFn: fetchCases, retry: false });
   const data = stats.data;
+  const rows = cases.data ?? [];
+  const today = useMemo(() => {
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    const iso = start.toISOString();
+    const mine = rows.filter((c) => c.created_at >= iso);
+    return {
+      resolved: rows.filter((c) => c.status === "approved" && (c.updated_at ?? c.created_at) >= iso).length,
+      created: mine.length,
+      inProgress: mine.filter((c) => c.status === "in_review").length,
+    };
+  }, [rows]);
+  const recent = rows.slice(0, 8);
+  const canInvite = isAdmin || has("users.manage") || isStaffBypassUnlocked();
 
   return (
     <ConsoleShell>
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="font-display text-3xl font-bold tracking-tight">
-            {developer ? "Developer Dashboard" : "Dashboard"}
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            {organization?.legalName ?? organization?.name} ·{" "}
-            {displayRole(organization?.role, organization?.accessRole, organization?.isOwner)}
-          </p>
+      <h1 className="font-display text-3xl font-bold tracking-tight">Home</h1>
+      <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+        {organization?.legalName ?? organization?.name ?? "Your workspace"} · KYC, KYB, AML and employee onboarding
+      </p>
+
+      <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(18rem,0.9fr)]">
+        <div className="space-y-6">
+          <Panel
+            title="Recent activity"
+            action={
+              <div className="flex gap-3 text-sm">
+                <button
+                  type="button"
+                  onClick={() => setTab("cases")}
+                  className={tab === "cases" ? "font-medium text-[var(--verify)]" : "text-muted-foreground"}
+                >
+                  Cases
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTab("inquiries")}
+                  className={tab === "inquiries" ? "font-medium text-[var(--verify)]" : "text-muted-foreground"}
+                >
+                  Inquiries
+                </button>
+              </div>
+            }
+          >
+            <div className="grid gap-px bg-[var(--rule)] sm:grid-cols-2">
+              <div className="bg-background px-4 py-3">
+                <div className="font-display text-3xl font-bold">{today.resolved}</div>
+                <p className="mt-1 text-sm text-muted-foreground">Cases you resolved today</p>
+              </div>
+              <div className="bg-background px-4 py-3">
+                <div className="flex gap-8">
+                  <div>
+                    <div className="font-display text-3xl font-bold">{today.created}</div>
+                    <p className="mt-1 text-xs uppercase tracking-widest text-muted-foreground">Open</p>
+                  </div>
+                  <div>
+                    <div className="font-display text-3xl font-bold">{today.inProgress}</div>
+                    <p className="mt-1 text-xs uppercase tracking-widest text-muted-foreground">In progress</p>
+                  </div>
+                </div>
+                <p className="mt-2 text-sm text-muted-foreground">Cases created in the past day</p>
+              </div>
+            </div>
+
+            <table className="mt-4 w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs uppercase tracking-widest text-muted-foreground">
+                  <th className="pb-2 font-medium">{tab === "cases" ? "Case ID" : "Inquiry"}</th>
+                  <th className="pb-2 font-medium">Subject</th>
+                  <th className="pb-2 font-medium">Solution</th>
+                  <th className="pb-2 font-medium">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recent.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="py-8 text-center text-sm text-muted-foreground">
+                      No {tab} in the past month are assigned to you.
+                    </td>
+                  </tr>
+                ) : (
+                  recent.map((row) => (
+                    <tr key={row.id} className="border-t border-[var(--rule)]">
+                      <td className="py-2 font-mono text-xs">
+                        <Link
+                          to="/console/cases/$caseId"
+                          params={{ caseId: row.id }}
+                          className="underline underline-offset-4 hover:text-[var(--signal)]"
+                        >
+                          {row.reference}
+                        </Link>
+                      </td>
+                      <td className="py-2">{row.subject_name}</td>
+                      <td className="py-2 text-muted-foreground">{PURPOSE_LABEL[classifyCase(row)]}</td>
+                      <td className="py-2">
+                        <StatusPill tone={row.status}>{statusLabel[row.status as CaseStatus]}</StatusPill>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </Panel>
+
+          <div className="grid gap-px border border-[var(--rule)] bg-[var(--rule)] sm:grid-cols-4">
+            {[
+              { label: "KYC", value: data?.kyc ?? 0, to: "/console/kyc" },
+              { label: "KYB", value: data?.kyb ?? 0, to: "/console/kyb" },
+              { label: "AML", value: data?.aml ?? 0, to: "/console/aml" },
+              { label: "Employees", value: data?.employees ?? 0, to: "/console/employees" },
+            ].map((stat) => (
+              <Link key={stat.label} to={stat.to as "/console"} className="bg-background px-5 py-4 hover:bg-[var(--paper-deep)]">
+                <div className="font-display text-2xl font-bold">{stat.value}</div>
+                <div className="mt-1 text-xs uppercase tracking-widest text-muted-foreground">{stat.label}</div>
+              </Link>
+            ))}
+          </div>
         </div>
-        {developer ? (
-          <label className="text-xs uppercase tracking-widest text-muted-foreground">
-            Environment
-            <select
-              className="ml-2 h-10 rounded-md border border-[var(--rule)] bg-background px-2 text-sm normal-case tracking-normal text-foreground"
-              value={environment}
-              onChange={(e) => setEnvironment(e.target.value as "sandbox" | "live")}
-            >
-              <option value="sandbox">SANDBOX</option>
-              <option value="live" disabled={!canUseLive}>
-                LIVE
-              </option>
-            </select>
-          </label>
-        ) : null}
-      </div>
 
-      <div className="mt-8 grid gap-px border border-[var(--rule)] bg-[var(--rule)] sm:grid-cols-2 lg:grid-cols-4">
-        {[
-          { label: "API Status", value: "Operational" },
-          { label: "API Requests Today", value: data?.requestsToday ?? 0 },
-          { label: "Successful", value: data?.successful ?? 0 },
-          { label: "Failed", value: data?.failed ?? 0 },
-        ].map((stat) => (
-          <div key={stat.label} className="bg-background px-5 py-4">
-            <div className="font-display text-2xl font-bold">{stat.value}</div>
-            <div className="mt-1 text-xs uppercase tracking-widest text-muted-foreground">{stat.label}</div>
-          </div>
-        ))}
-      </div>
+        <div className="space-y-6">
+          <Panel title="Additional resources">
+            <ul className="space-y-2 text-sm">
+              <li>
+                <Link to="/console/api-keys" className="text-[var(--verify)] underline-offset-4 hover:underline">
+                  Getting started — API keys
+                </Link>
+              </li>
+              <li>
+                <a href="/developers" className="text-[var(--verify)] underline-offset-4 hover:underline">
+                  Developer documentation
+                </a>
+              </li>
+              <li>
+                <a href="/compliance" className="text-[var(--verify)] underline-offset-4 hover:underline">
+                  Regulatory coverage
+                </a>
+              </li>
+            </ul>
+          </Panel>
 
-      <div className="mt-px grid gap-px border-x border-b border-[var(--rule)] bg-[var(--rule)] sm:grid-cols-3">
-        {[
-          { label: "KYC Checks", value: data?.kyc ?? 0 },
-          { label: "KYB Checks", value: data?.kyb ?? 0 },
-          { label: "AML Screens", value: data?.aml ?? 0 },
-        ].map((stat) => (
-          <div key={stat.label} className="bg-background px-5 py-4">
-            <div className="font-display text-2xl font-bold">{stat.value}</div>
-            <div className="mt-1 text-xs uppercase tracking-widest text-muted-foreground">{stat.label}</div>
-          </div>
-        ))}
-      </div>
+          <Panel title="Explore all solutions">
+            <p className="text-sm text-muted-foreground">
+              Pre-built KYC, KYB, AML and employee onboarding blocks for fintech and localized industries.
+            </p>
+            <div className="mt-4 space-y-3">
+              {solutions.map((item) => (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  className="block rounded-md border border-[var(--rule)] px-3 py-2 hover:bg-[var(--paper-deep)]"
+                >
+                  <div className="text-sm font-medium">{item.title}</div>
+                  <p className="text-xs text-muted-foreground">{item.body}</p>
+                </Link>
+              ))}
+            </div>
+          </Panel>
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-2">
-        <Panel title="Quick Actions">
-          <div className="flex flex-wrap gap-2">
-            {has("api_keys.create") || isAdmin ? (
-              <Link to="/console/api-keys" className={`${inkButtonClass} inline-flex items-center`}>
-                Create API Key
+          <Panel title="Invite your teammates">
+            <p className="text-sm text-muted-foreground">
+              Invite reviewers, developers and operations staff and assign sandbox or live access.
+            </p>
+            {canInvite ? (
+              <Link to="/console/team" className={`${inkButtonClass} mt-4 inline-flex items-center`}>
+                Invite users
               </Link>
-            ) : null}
-            <a
-              href="/developers"
-              className="inline-flex h-10 items-center rounded-md border border-[var(--rule)] px-4 text-sm"
-            >
-              View API Documentation
-            </a>
-            {has("webhooks.manage") || isAdmin ? (
-              <Link
-                to="/console/webhooks"
-                className="inline-flex h-10 items-center rounded-md border border-[var(--rule)] px-4 text-sm"
-              >
-                Create Webhook
-              </Link>
-            ) : null}
-            {has("api_logs.view") || isAdmin ? (
-              <Link
-                to="/console/api-logs"
-                className="inline-flex h-10 items-center rounded-md border border-[var(--rule)] px-4 text-sm"
-              >
-                View API Logs
-              </Link>
-            ) : null}
-            <Link
-              to="/console/cases"
-              className="inline-flex h-10 items-center rounded-md border border-[var(--rule)] px-4 text-sm"
-            >
-              Run Sandbox Test
-            </Link>
-          </div>
-        </Panel>
-
-        <Panel title="Access">
-          <ul className="space-y-3 text-sm">
-            <li className="flex items-center justify-between">
-              <span>Sandbox access</span>
-              <StatusPill tone={organization?.sandboxAccess ? "approved" : "closed"}>
-                {organization?.sandboxAccess ? "granted" : "off"}
-              </StatusPill>
-            </li>
-            <li className="flex items-center justify-between">
-              <span>Live API access</span>
-              <StatusPill tone={organization?.liveAccess ? "approved" : "closed"}>
-                {organization?.liveAccess ? "authorized" : "not authorized"}
-              </StatusPill>
-            </li>
-            <li className="flex items-center justify-between">
-              <span>Organization live status</span>
-              <StatusPill tone={organization?.orgLiveAccess === "approved" ? "approved" : "pending"}>
-                {organization?.orgLiveAccess ?? "locked"}
-              </StatusPill>
-            </li>
-          </ul>
-          {!organization?.liveAccess ? (
-            <Link to="/console/live-access" className="mt-4 inline-block text-sm text-[var(--signal)]">
-              Request Live Access
-            </Link>
-          ) : null}
-        </Panel>
+            ) : (
+              <p className="mt-3 text-xs text-muted-foreground">Ask an administrator to invite teammates.</p>
+            )}
+          </Panel>
+        </div>
       </div>
     </ConsoleShell>
   );

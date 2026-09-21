@@ -14,6 +14,26 @@ import {
   type UserType,
 } from "@/lib/access";
 import { randomToken, sha256Hex } from "@/lib/crypto-hash";
+import {
+  addCreatedCompanyMemberArgs,
+  companyCreateErrorMessage,
+  creatorRpcAccepted,
+  creatorRpcMissing,
+  dashboardFromCreatedCompany,
+  inviteToCreatedCompanyArgs,
+  isCreatorDeniedError,
+  joinCreatedCompanyArgs,
+  liveMemberInsert,
+  liveOrganizationInsert,
+  newCompanyId,
+  resolveCreatorAdminOrgId,
+  resolveInsertedCompany,
+  restAcceptedWrite,
+  updateCreatedCompanyArgs,
+} from "@/lib/create-company";
+import { companyApplicationPayload, liveInviteInsert, liveOrganizationProfileUpdate, mergeCompanyProfile } from "@/lib/company-profile";
+import { isMissingRpcError, isMissingSchemaError, isUniqueConflict, writeIgnoringUnknownColumns } from "@/lib/schema-compat";
+import { callerAccessToken, firstRow, userRest, userRpc } from "@/lib/user-rest.server";
 
 const accessRoleSchema = z.enum(["administrator", "developer", "compliance", "analyst", "viewer"]);
 const userTypeSchema = z.enum(["employee", "contractor", "consultant"]);
@@ -43,15 +63,32 @@ export type MembershipRow = {
 };
 
 async function membershipsFor(supabase: any, userId: string) {
-  const { data } = await supabase
+  const full = await supabase
     .from("organization_members")
     .select(
       "org_id, role, access_role, is_owner, sandbox_access, live_access, permissions, mfa_required, user_type, job_title, status",
     )
-    .eq("user_id", userId)
-    .eq("status", "active")
-    .order("created_at");
-  return (data ?? []) as MembershipRow[];
+    .eq("user_id", userId);
+  const result =
+    full.error && isMissingSchemaError(full.error.message)
+      ? await supabase.from("organization_members").select("org_id, role").eq("user_id", userId)
+      : full;
+  if (result.error) throw new Error(result.error.message);
+  return ((result.data ?? []) as Array<Partial<MembershipRow> & { org_id: string; role: MembershipRow["role"] }>)
+    .filter((row) => row.status !== "disabled")
+    .map((row) => ({
+      org_id: row.org_id,
+      role: row.role,
+      access_role: row.access_role ?? (row.role === "admin" ? "owner" : "viewer"),
+      is_owner: row.is_owner ?? row.role === "admin",
+      sandbox_access: row.sandbox_access !== false,
+      live_access: row.live_access ?? row.role === "admin",
+      permissions: row.permissions ?? [],
+      mfa_required: row.mfa_required ?? row.role === "admin",
+      user_type: row.user_type ?? "employee",
+      job_title: row.job_title ?? null,
+      status: row.status ?? "active",
+    })) as MembershipRow[];
 }
 
 async function membershipForOrg(supabase: any, userId: string, orgId?: string | null) {
@@ -61,13 +98,142 @@ async function membershipForOrg(supabase: any, userId: string, orgId?: string | 
   return rows[0];
 }
 
-async function requireAdmin(supabase: any, userId: string, orgId?: string | null) {
-  const membership = await membershipForOrg(supabase, userId, orgId);
-  if (!membership) throw new Error("You are not part of a team yet");
-  if (membership.role !== "admin" && !membership.is_owner) {
-    throw new Error("Only team administrators can do that");
+function asAdminMembership(orgId: string): MembershipRow {
+  return {
+    org_id: orgId,
+    role: "admin",
+    access_role: "owner",
+    is_owner: true,
+    sandbox_access: true,
+    live_access: true,
+    permissions: [],
+    mfa_required: true,
+    user_type: "employee",
+    job_title: null,
+    status: "active",
+  };
+}
+
+function isCompanyAdmin(membership: MembershipRow) {
+  return membership.role === "admin" || membership.is_owner || membership.access_role === "administrator";
+}
+
+async function organizationCreatedBy(supabase: any, userId: string, orgId?: string | null, token?: string | null) {
+  if (orgId) {
+    const { data } = await supabase.from("organizations").select("id, created_by").eq("id", orgId).maybeSingle();
+    if (data && (data as { created_by?: string }).created_by === userId) return String((data as { id: string }).id);
+  } else {
+    const { data } = await supabase
+      .from("organizations")
+      .select("id, created_by")
+      .eq("created_by", userId)
+      .limit(1)
+      .maybeSingle();
+    if (data) return String((data as { id: string }).id);
   }
-  return membership;
+  if (!token) return null;
+  const query = orgId
+    ? `id=eq.${orgId}&created_by=eq.${userId}&select=id,name`
+    : `created_by=eq.${userId}&select=id,name&order=created_at.desc&limit=1`;
+  const found = await userRest<Array<{ id: string }>>("organizations", { query, token });
+  const row = firstRow(found.data);
+  return row && !found.error ? String(row.id) : null;
+}
+
+async function joinAsCreator(supabase: any, orgId: string, userId: string, token: string | null) {
+  if (token) {
+    const rpc = await userRpc<string>("join_created_company", joinCreatedCompanyArgs(orgId), token);
+    if (creatorRpcAccepted(rpc.error)) return orgId;
+    if (isCreatorDeniedError(rpc.error ?? "")) return null;
+  }
+  const payload = liveMemberInsert({ orgId, userId });
+  const viaClient = await writeIgnoringUnknownColumns(async (body) => {
+    const result = await supabase.from("organization_members").insert(body as never);
+    if (!result.error || isUniqueConflict(result.error.message)) {
+      return { data: { ok: true }, error: null };
+    }
+    return { data: null, error: result.error };
+  }, payload);
+  if (viaClient.data) return orgId;
+  if (!token) return null;
+  const viaUser = await writeIgnoringUnknownColumns(async (body) => {
+    const result = await userRest("organization_members", {
+      method: "POST",
+      prefer: "return=minimal",
+      body,
+      token,
+    });
+    if (restAcceptedWrite(result) || isUniqueConflict(result.error ?? "")) {
+      return { data: { ok: true }, error: null };
+    }
+    return { data: null, error: { message: result.error ?? "Could not join the company" } };
+  }, payload);
+  return viaUser.data ? orgId : null;
+}
+
+async function requireAdmin(supabase: any, userId: string, orgId?: string | null) {
+  let membership: MembershipRow | null = null;
+  try {
+    membership = await membershipForOrg(supabase, userId, orgId);
+  } catch {
+    membership = null;
+  }
+  const token = await callerAccessToken();
+  let joinedId: string | null = null;
+  const createdId = await organizationCreatedBy(supabase, userId, orgId ?? membership?.org_id, token);
+  const target = orgId ?? createdId ?? membership?.org_id ?? null;
+  if (target && !(membership && isCompanyAdmin(membership))) {
+    joinedId = await joinAsCreator(supabase, target, userId, token);
+  }
+  const adminOrgId = resolveCreatorAdminOrgId({
+    membershipOrgId: membership?.org_id,
+    membershipIsAdmin: membership ? isCompanyAdmin(membership) : false,
+    createdOrgId: createdId,
+    joinedOrgId: joinedId,
+    claimedOrgId: orgId,
+  });
+  if (adminOrgId) {
+    if (membership && membership.org_id === adminOrgId && isCompanyAdmin(membership)) return membership;
+    return asAdminMembership(adminOrgId);
+  }
+  if (!membership) throw new Error("You are not part of a team yet");
+  throw new Error("Only team administrators can do that");
+}
+
+function callerEmail(claims: unknown) {
+  if (!claims || typeof claims !== "object") return "";
+  const email = (claims as { email?: unknown }).email;
+  return typeof email === "string" ? email.trim().toLowerCase() : "";
+}
+
+async function rpcUpdateCreatedCompany(orgId: string, name: string, token: string | null) {
+  if (!token) return false;
+  const rpc = await userRpc<string>("update_created_company", updateCreatedCompanyArgs(orgId, name), token);
+  if (creatorRpcAccepted(rpc.error)) return true;
+  if (isCreatorDeniedError(rpc.error ?? "")) throw new Error("Only the person who created this company can update it");
+  if (creatorRpcMissing(rpc.error)) return false;
+  throw new Error(rpc.error ?? "The company details could not be saved");
+}
+
+async function rpcAddCreatedMember(orgId: string, userId: string, role: string, token: string | null) {
+  if (!token) return false;
+  const rpc = await userRpc<string>("add_created_company_member", addCreatedCompanyMemberArgs(orgId, userId, role), token);
+  if (creatorRpcAccepted(rpc.error)) return true;
+  if (isCreatorDeniedError(rpc.error ?? "")) throw new Error("Only the person who created this company can add teammates");
+  if (creatorRpcMissing(rpc.error)) return false;
+  throw new Error(rpc.error ?? "That teammate could not be added");
+}
+
+async function rpcInviteCreatedCompany(
+  input: { orgId: string; email: string; role: string; tokenHash: string; expiresAt: string },
+  token: string | null,
+) {
+  if (!token) return false;
+  const rpc = await userRpc<string>("invite_to_created_company", inviteToCreatedCompanyArgs(input), token);
+  if (creatorRpcAccepted(rpc.error)) return true;
+  if (isCreatorDeniedError(rpc.error ?? "")) throw new Error("Only the person who created this company can add teammates");
+  if (creatorRpcMissing(rpc.error)) return false;
+  throw new Error(rpc.error ?? "That teammate could not be invited");
 }
 
 function originFrom(data: { origin?: string | undefined }) {
@@ -78,6 +244,22 @@ function environmentLabel(sandbox: boolean, live: boolean) {
   if (sandbox && live) return "Sandbox and Live";
   if (live) return "Live";
   return "Sandbox";
+}
+
+async function readCreatorMembership(supabase: any, userId: string, orgId: string, token: string) {
+  try {
+    const local = await membershipForOrg(supabase, userId, orgId);
+    if (local) return { orgId: local.org_id, role: local.role };
+  } catch {
+    /* live membership select may omit extra columns */
+  }
+  const viaUser = await userRest<Array<{ org_id: string; role: MembershipRow["role"] }>>("organization_members", {
+    query: `user_id=eq.${userId}&org_id=eq.${orgId}&select=org_id,role`,
+    token,
+  });
+  const row = firstRow(viaUser.data);
+  if (row && !viaUser.error) return { orgId: String(row.org_id), role: row.role || "admin" };
+  return null;
 }
 
 export const createOrganization = createServerFn({ method: "POST" })
@@ -100,55 +282,218 @@ export const createOrganization = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { projectRest, supabaseServiceRoleKey } = await import("@/lib/supabase-project");
+    const db = context.supabase;
+    let already: MembershipRow | null = null;
+    try {
+      already = await membershipForOrg(db, context.userId);
+    } catch {
+      already = null;
+    }
+    if (already) return { orgId: already.org_id, name: data.name, role: already.role, existing: true };
+
     const legalName = data.legalName?.trim() || data.name;
-    const { data: org, error } = await supabaseAdmin
-      .from("organizations")
-      .insert({
-        name: data.name,
+    const profile = {
+      legal_name: legalName,
+      registration_number: data.registrationNumber || null,
+      country: data.country?.toUpperCase() || null,
+      address_line1: data.addressLine1 || null,
+      city: data.city || null,
+      region: data.region || null,
+      postal_code: data.postalCode || null,
+      website: data.website || null,
+    };
+    const slug = slugify(data.name);
+    const userToken = await callerAccessToken();
+    if (!userToken) throw new Error("Sign in again after confirming your email, then create the company dashboard.");
+
+    const known = { id: newCompanyId(), name: data.name };
+    const rpc = await userRpc<string>("create_company_workspace", { _name: data.name, _slug: slug }, userToken);
+    if (rpc.error && !isMissingRpcError(rpc.error)) {
+      throw new Error(companyCreateErrorMessage(rpc.error));
+    }
+    const rpcId = firstRow(rpc.data);
+    let org: { id: string; name: string } | null =
+      rpcId && !rpc.error ? { id: String(rpcId), name: data.name } : null;
+
+    if (!org && supabaseServiceRoleKey()) {
+      const found = await projectRest<Array<{ id: string; name: string }>>("organizations", {
+        query: `created_by=eq.${context.userId}&select=id,name&order=created_at.desc&limit=1`,
+      });
+      const row = firstRow(found.data);
+      if (row && !found.error) org = { id: String(row.id), name: String(row.name ?? data.name) };
+    }
+
+    if (!org) {
+      const found = await userRest<Array<{ id: string; name: string }>>("organizations", {
+        query: `created_by=eq.${context.userId}&select=id,name&order=created_at.desc&limit=1`,
+        token: userToken,
+      });
+      const row = firstRow(found.data);
+      if (row && !found.error) org = { id: String(row.id), name: String(row.name ?? data.name) };
+    }
+
+    if (!org) {
+      const created = await writeIgnoringUnknownColumns(async (payload) => {
+        const viaUser = await userRest<Array<{ id: string; name: string }>>("organizations", {
+          method: "POST",
+          prefer: "return=minimal",
+          body: payload,
+          token: userToken,
+        });
+        if (restAcceptedWrite(viaUser)) {
+          const resolved = resolveInsertedCompany(known, viaUser);
+          return { data: resolved.org, error: resolved.error ? { message: resolved.error } : null };
+        }
+        if (isMissingSchemaError(viaUser.error ?? "")) {
+          return { data: null, error: { message: viaUser.error ?? "" } };
+        }
+        if (supabaseServiceRoleKey()) {
+          const viaAdmin = await projectRest<Array<{ id: string; name: string }>>("organizations", {
+            method: "POST",
+            query: "select=id,name",
+            prefer: "return=representation",
+            body: payload,
+          });
+          if (restAcceptedWrite(viaAdmin) || isUniqueConflict(viaAdmin.error ?? "")) {
+            const resolved = resolveInsertedCompany(known, viaAdmin);
+            return { data: resolved.org, error: resolved.error ? { message: resolved.error } : null };
+          }
+          if (isMissingSchemaError(viaAdmin.error ?? "")) {
+            return { data: null, error: { message: viaAdmin.error ?? "" } };
+          }
+        }
+        return { data: null, error: { message: viaUser.error ?? "The company could not be created" } };
+      }, liveOrganizationInsert({ id: known.id, name: data.name, slug, createdBy: context.userId }));
+      const resolved = resolveInsertedCompany(known, created);
+      if (!resolved.org) {
+        throw new Error(companyCreateErrorMessage(resolved.error ?? created.error?.message ?? "The company could not be created"));
+      }
+      org = resolved.org;
+    }
+
+    if (!org) throw new Error("The company could not be created");
+
+    if (!rpcId || rpc.error || isMissingRpcError(String(rpc.error ?? ""))) {
+      const member = await writeIgnoringUnknownColumns(async (payload) => {
+        const viaUser = await userRest("organization_members", {
+          method: "POST",
+          prefer: "return=minimal",
+          body: payload,
+          token: userToken,
+        });
+        if (restAcceptedWrite(viaUser)) return { data: { ok: true }, error: null };
+        if (isMissingSchemaError(viaUser.error ?? "")) {
+          return { data: null, error: { message: viaUser.error ?? "" } };
+        }
+        if (supabaseServiceRoleKey()) {
+          const viaAdmin = await projectRest("organization_members", {
+            method: "POST",
+            prefer: "return=minimal",
+            body: payload,
+          });
+          if (restAcceptedWrite(viaAdmin)) return { data: { ok: true }, error: null };
+          if (isMissingSchemaError(viaAdmin.error ?? "")) {
+            return { data: null, error: { message: viaAdmin.error ?? "" } };
+          }
+        }
+        const viaClient = await db.from("organization_members").insert(payload as never);
+        if (!viaClient.error || isUniqueConflict(viaClient.error.message)) {
+          return { data: { ok: true }, error: null };
+        }
+        const viaAdminClient = await supabaseAdmin.from("organization_members").insert(payload as never);
+        if (!viaAdminClient.error || isUniqueConflict(viaAdminClient.error.message)) {
+          return { data: { ok: true }, error: null };
+        }
+        return {
+          data: null,
+          error: viaAdminClient.error ?? viaClient.error ?? { message: viaUser.error ?? "Could not open the company dashboard" },
+        };
+      }, liveMemberInsert({ orgId: org.id, userId: context.userId }));
+    }
+
+    let opened = await readCreatorMembership(db, context.userId, org.id, userToken);
+    if (!opened) {
+      await writeIgnoringUnknownColumns(async (payload) => {
+        const viaUser = await userRest("organization_members", {
+          method: "POST",
+          prefer: "return=minimal",
+          body: payload,
+          token: userToken,
+        });
+        if (restAcceptedWrite(viaUser) || isUniqueConflict(viaUser.error ?? "")) {
+          return { data: { ok: true }, error: null };
+        }
+        if (supabaseServiceRoleKey()) {
+          const viaAdmin = await projectRest("organization_members", {
+            method: "POST",
+            prefer: "return=minimal",
+            body: payload,
+          });
+          if (restAcceptedWrite(viaAdmin) || isUniqueConflict(viaAdmin.error ?? "")) {
+            return { data: { ok: true }, error: null };
+          }
+        }
+        const viaAdminClient = await supabaseAdmin.from("organization_members").insert(payload as never);
+        if (!viaAdminClient.error || isUniqueConflict(viaAdminClient.error.message ?? "")) {
+          return { data: { ok: true }, error: null };
+        }
+        return { data: null, error: viaAdminClient.error ?? { message: viaUser.error ?? "Could not join the company" } };
+      }, liveMemberInsert({ orgId: org.id, userId: context.userId }));
+      opened = await readCreatorMembership(db, context.userId, org.id, userToken);
+    }
+    const dashboard = dashboardFromCreatedCompany({
+      org,
+      membership: opened,
+    });
+    if (!dashboard) throw new Error("The company could not be created");
+
+    const environments = await writeIgnoringUnknownColumns(async (payload) => {
+      const result = await supabaseAdmin.from("org_environments").insert(payload["rows"] as never);
+      return { data: result.error ? null : { ok: true }, error: result.error };
+    }, {
+      rows: [
+        { org_id: org.id, code: "sandbox", label: "Sandbox", publishable_prefix: "ef_test_" },
+        { org_id: org.id, code: "live", label: "Live", publishable_prefix: "ef_live_" },
+      ],
+    });
+    if (environments.error && !environments.skipped && !isMissingSchemaError(environments.error.message)) {
+      /* environments are optional on the live project */
+    }
+
+    try {
+      await writeIgnoringUnknownColumns(async (payload) => {
+        const result = await userRest("org_applications", {
+          method: "POST",
+          prefer: "return=minimal",
+          body: payload,
+          token: userToken,
+        });
+        if (restAcceptedWrite(result)) return { data: { ok: true }, error: null };
+        return { data: { ok: true }, error: null };
+      }, {
+        org_id: org.id,
         legal_name: legalName,
-        slug: slugify(data.name),
-        created_by: context.userId,
-        primary_admin_user_id: context.userId,
-        registration_number: data.registrationNumber || null,
-        country: data.country?.toUpperCase() || null,
-        address_line1: data.addressLine1 || null,
-        city: data.city || null,
-        region: data.region || null,
-        postal_code: data.postalCode || null,
-        website: data.website || null,
-      })
-      .select("id, name")
-      .single();
-    if (error) throw new Error(error.message);
+        ...profile,
+        submitted_by: context.userId,
+        status: "draft",
+      });
+    } catch {
+      /* company profile is optional until Go live */
+    }
 
-    const { error: memberError } = await supabaseAdmin.from("organization_members").insert({
-      org_id: org.id,
-      user_id: context.userId,
-      role: "admin",
-      access_role: "owner",
-      is_owner: true,
-      user_type: "employee",
-      sandbox_access: true,
-      live_access: true,
-      permissions: defaultPermissions("owner"),
-      mfa_required: true,
-      status: "active",
-    });
-    if (memberError) throw new Error(memberError.message);
-
-    await supabaseAdmin.from("org_environments").insert([
-      { org_id: org.id, code: "sandbox", label: "Sandbox", publishable_prefix: "ef_test_" },
-      { org_id: org.id, code: "live", label: "Live", publishable_prefix: "ef_live_" },
-    ]);
-
-    await supabaseAdmin.from("audit_events").insert({
-      org_id: org.id,
-      actor_id: context.userId,
-      action: "team.created",
-      entity_type: "organization",
-      entity_id: org.id,
-      detail: { name: data.name, legalName } as never,
-    });
+    try {
+      await db.from("audit_events").insert({
+        org_id: org.id,
+        actor_id: context.userId,
+        action: "team.created",
+        entity_type: "organization",
+        entity_id: org.id,
+        detail: { name: data.name, legalName, ...profile } as never,
+      });
+    } catch {
+      /* audit must never block creating the company */
+    }
 
     try {
       const email = context.claims?.email as string | undefined;
@@ -171,7 +516,7 @@ export const createOrganization = createServerFn({ method: "POST" })
       /* the welcome email must never block sign-up */
     }
 
-    return { orgId: org.id as string, existing: false };
+    return { orgId: dashboard.orgId, name: dashboard.name, role: dashboard.role, existing: false };
   });
 
 export const updateOrganizationProfile = createServerFn({ method: "POST" })
@@ -183,7 +528,7 @@ export const updateOrganizationProfile = createServerFn({ method: "POST" })
         name: z.string().trim().min(2).max(80),
         legalName: z.string().trim().max(200).optional(),
         registrationNumber: z.string().trim().max(60).optional(),
-        country: z.string().trim().max(2).optional(),
+        country: z.string().trim().max(80).optional(),
         addressLine1: z.string().trim().max(200).optional(),
         city: z.string().trim().max(80).optional(),
         region: z.string().trim().max(80).optional(),
@@ -194,30 +539,109 @@ export const updateOrganizationProfile = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const membership = await requireAdmin(context.supabase, context.userId, data.orgId);
-    const { error } = await context.supabase
-      .from("organizations")
-      .update({
-        name: data.name,
-        legal_name: data.legalName || data.name,
-        registration_number: data.registrationNumber || null,
-        country: data.country?.toUpperCase() || null,
-        address_line1: data.addressLine1 || null,
-        city: data.city || null,
-        region: data.region || null,
-        postal_code: data.postalCode || null,
-        website: data.website || null,
-      })
-      .eq("id", membership.org_id);
-    if (error) throw new Error(error.message);
-    await context.supabase.from("audit_events").insert({
-      org_id: membership.org_id,
-      actor_id: context.userId,
-      action: "org.profile_updated",
-      entity_type: "organization",
-      entity_id: membership.org_id,
-      detail: { name: data.name } as never,
+    const displayName = data.name.trim();
+    const legalName = (data.legalName || data.name).trim();
+    const userToken = await callerAccessToken();
+    const updatedViaRpc = await rpcUpdateCreatedCompany(membership.org_id, displayName, userToken);
+    const orgUpdate = await writeIgnoringUnknownColumns(async (payload) => {
+      const result = await context.supabase
+        .from("organizations")
+        .update(payload as never)
+        .eq("id", membership.org_id)
+        .eq("created_by", context.userId)
+        .select("id, name");
+      if (!result.error) return { data: { ok: true }, error: null };
+      if (userToken) {
+        const viaUser = await userRest("organizations", {
+          method: "PATCH",
+          query: `id=eq.${membership.org_id}&created_by=eq.${context.userId}`,
+          body: payload,
+          prefer: "return=minimal",
+          token: userToken,
+        });
+        if (restAcceptedWrite(viaUser)) return { data: { ok: true }, error: null };
+        return { data: null, error: { message: viaUser.error ?? result.error.message } };
+      }
+      return { data: null, error: result.error };
+    }, {
+      ...liveOrganizationProfileUpdate({ name: displayName }),
+      legal_name: legalName,
+      registration_number: data.registrationNumber || null,
+      country: data.country?.toUpperCase() || null,
+      address_line1: data.addressLine1 || null,
+      city: data.city || null,
+      region: data.region || null,
+      postal_code: data.postalCode || null,
+      website: data.website || null,
     });
-    return { ok: true };
+    if (!updatedViaRpc && orgUpdate.error && !isMissingSchemaError(orgUpdate.error.message)) {
+      throw new Error(orgUpdate.error.message);
+    }
+
+    const application = companyApplicationPayload({
+      orgId: membership.org_id,
+      userId: context.userId,
+      legalName,
+      registrationNumber: data.registrationNumber,
+      country: data.country,
+      addressLine1: data.addressLine1,
+      city: data.city,
+      region: data.region,
+      postalCode: data.postalCode,
+      website: data.website,
+    });
+    const existing = await context.supabase
+      .from("org_applications")
+      .select("id")
+      .eq("org_id", membership.org_id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (existing.error && !isMissingSchemaError(existing.error.message)) {
+      /* profile columns live on the application row; ignore read errors that are just missing extras */
+    }
+    const existingId = (existing.data as { id?: string } | null)?.id;
+    if (existingId) {
+      const updatedApp = await writeIgnoringUnknownColumns(async (payload) => {
+        const result = await context.supabase
+          .from("org_applications")
+          .update(payload as never)
+          .eq("id", existingId);
+        return { data: result.error ? null : { ok: true }, error: result.error };
+      }, application);
+      if (updatedApp.error && !isMissingSchemaError(updatedApp.error.message) && !updatedApp.skipped) {
+        throw new Error(updatedApp.error.message);
+      }
+    } else if (!(existing.error && isMissingSchemaError(existing.error.message))) {
+      const insertedApp = await writeIgnoringUnknownColumns(async (payload) => {
+        const result = await context.supabase.from("org_applications").insert(payload as never);
+        if (result.error && isUniqueConflict(result.error.message) && existingId) {
+          return { data: { ok: true }, error: null };
+        }
+        return { data: result.error ? null : { ok: true }, error: result.error };
+      }, application);
+      if (insertedApp.error && !isUniqueConflict(insertedApp.error.message) && !insertedApp.skipped) {
+        if (!isMissingSchemaError(insertedApp.error.message)) throw new Error(insertedApp.error.message);
+      }
+    }
+
+    try {
+      await context.supabase.from("audit_events").insert({
+        org_id: membership.org_id,
+        actor_id: context.userId,
+        action: "org.profile_updated",
+        entity_type: "organization",
+        entity_id: membership.org_id,
+        detail: { name: displayName, legalName } as never,
+      });
+    } catch {
+      /* audit must not block saving the company */
+    }
+
+    return mergeCompanyProfile(
+      { id: membership.org_id, name: displayName, legal_name: legalName },
+      application,
+    );
   });
 
 export const inviteMember = createServerFn({ method: "POST" })
@@ -241,7 +665,7 @@ export const inviteMember = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const membership = await requireAdmin(context.supabase, context.userId, data.orgId);
-    if (data.liveAccess && membership.role !== "admin") {
+    if (data.liveAccess && membership.role !== "admin" && !membership.is_owner) {
       throw new Error("Only administrators can grant Live access");
     }
 
@@ -257,77 +681,189 @@ export const inviteMember = createServerFn({ method: "POST" })
       permissions = permissions.filter((p) => p !== "live.api");
     }
 
+    const email = data.email.toLowerCase();
+    const expiresAt = invitationExpiryIso();
     const token = randomToken();
     const tokenHash = await sha256Hex(token);
-    const expiresAt = invitationExpiryIso();
-
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: invite, error } = await supabaseAdmin
-      .from("organization_invites")
-      .insert({
-        org_id: membership.org_id,
-        email: data.email.toLowerCase(),
-        role: mapAccessRoleToAppRole(accessRole),
-        access_role: accessRole,
-        first_name: data.firstName,
-        last_name: data.lastName,
-        job_title: data.jobTitle || null,
-        user_type: data.userType,
-        sandbox_access: data.sandboxAccess,
-        live_access: data.liveAccess,
-        permissions,
-        token_hash: tokenHash,
-        invited_by: context.userId,
-        expires_at: expiresAt,
-      })
-      .select("id, email, role, access_role, expires_at")
-      .single();
-    if (error) throw new Error(error.message);
-
-    await supabaseAdmin.from("audit_events").insert({
-      org_id: membership.org_id,
-      actor_id: context.userId,
-      action: "team.invited",
-      entity_type: "organization_invite",
-      entity_id: invite.id,
-      detail: {
-        email: data.email,
-        role: accessRole,
-        sandbox: data.sandboxAccess,
-        live: data.liveAccess,
-        permissions,
-      } as never,
-    });
-
-    const { sendNotification } = await import("@/lib/email.server");
-    const { data: org } = await supabaseAdmin
+    const userToken = await callerAccessToken();
+    const { data: orgRow } = await context.supabase
       .from("organizations")
-      .select("name, legal_name")
+      .select("name")
       .eq("id", membership.org_id)
       .maybeSingle();
-    const { data: inviter } = await supabaseAdmin
-      .from("profiles")
-      .select("full_name, email")
-      .eq("id", context.userId)
-      .maybeSingle();
-    const link = `${originFrom(data)}/invite/${token}`;
-    const orgName = org?.legal_name || org?.name || "your team";
-    const emailed = await sendNotification(supabaseAdmin, {
-      event: "team.invite",
-      to: data.email,
-      orgId: membership.org_id,
-      data: {
-        org: orgName,
-        name: data.firstName,
-        inviter: inviter?.full_name ?? inviter?.email ?? "A colleague",
-        role: displayRole(mapAccessRoleToAppRole(accessRole), accessRole),
-        environment: environmentLabel(data.sandboxAccess, data.liveAccess),
-        hours: "72",
-        link,
-      },
-    });
+    const orgName = (orgRow as { name?: string } | null)?.name || "your team";
+    const appRole = mapAccessRoleToAppRole(accessRole);
 
-    return { invite, token, emailed };
+    let added: { userId: string } | null = null;
+    const { data: existingProfile } = await context.supabase
+      .from("profiles")
+      .select("id, email, full_name")
+      .eq("email", email)
+      .maybeSingle();
+    const existingUserId =
+      (existingProfile as { id?: string } | null)?.id ||
+      (email && email === callerEmail(context.claims) ? context.userId : undefined);
+    if (existingUserId) {
+      const addedViaRpc = await rpcAddCreatedMember(membership.org_id, existingUserId, appRole, userToken);
+      if (addedViaRpc) {
+        added = { userId: existingUserId };
+      } else {
+        const member = await writeIgnoringUnknownColumns(async (payload) => {
+          const result = await context.supabase.from("organization_members").insert(payload as never).select("user_id").maybeSingle();
+          if (result.error && isUniqueConflict(result.error.message)) {
+            return { data: { user_id: existingUserId }, error: null };
+          }
+          return { data: result.data as { user_id: string } | null, error: result.error };
+        }, {
+          ...liveMemberInsert({ orgId: membership.org_id, userId: existingUserId }),
+          role: appRole,
+          access_role: accessRole,
+          is_owner: existingUserId === context.userId,
+          user_type: data.userType,
+          job_title: data.jobTitle || null,
+          sandbox_access: data.sandboxAccess,
+          live_access: data.liveAccess,
+          permissions,
+          status: "active",
+        });
+        if (member.error && !isUniqueConflict(member.error.message)) {
+          added = null;
+        } else {
+          added = { userId: existingUserId };
+        }
+      }
+    }
+
+    let inviteRow: {
+      data: { id: string; email: string; role: string; access_role?: string; expires_at: string } | null;
+      error: { message: string } | null;
+    } = { data: null, error: null };
+    if (!added) {
+      const invitedViaRpc = await rpcInviteCreatedCompany(
+        { orgId: membership.org_id, email, role: appRole, tokenHash, expiresAt },
+        userToken,
+      );
+      if (invitedViaRpc) {
+        inviteRow = {
+          data: { id: membership.org_id, email, role: appRole, access_role: accessRole, expires_at: expiresAt },
+          error: null,
+        };
+      } else {
+        inviteRow = await writeIgnoringUnknownColumns(async (payload) => {
+          const result = await context.supabase
+            .from("organization_invites")
+            .insert(payload as never)
+            .select("id, email, role, access_role, expires_at")
+            .maybeSingle();
+          return {
+            data: result.data as { id: string; email: string; role: string; access_role?: string; expires_at: string } | null,
+            error: result.error,
+          };
+        }, {
+          ...liveInviteInsert({
+            orgId: membership.org_id,
+            email,
+            role: appRole,
+            tokenHash,
+            invitedBy: context.userId,
+            expiresAt,
+          }),
+          access_role: accessRole,
+          first_name: data.firstName,
+          last_name: data.lastName,
+          job_title: data.jobTitle || null,
+          user_type: data.userType,
+          sandbox_access: data.sandboxAccess,
+          live_access: data.liveAccess,
+          permissions,
+        });
+      }
+      if (inviteRow.error && !isMissingSchemaError(inviteRow.error.message) && !isUniqueConflict(inviteRow.error.message)) {
+        throw new Error(inviteRow.error.message);
+      }
+    }
+    let signedToken = token;
+    try {
+      const { signTeamInvite } = await import("@/lib/team-invite.server");
+      signedToken = await signTeamInvite({
+        email,
+        orgId: membership.org_id,
+        orgName,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        jobTitle: data.jobTitle || null,
+        accessRole,
+        userType: data.userType,
+        sandboxAccess: data.sandboxAccess,
+        liveAccess: data.liveAccess,
+      });
+    } catch {
+      signedToken = token;
+    }
+
+    try {
+      await context.supabase.from("audit_events").insert({
+        org_id: membership.org_id,
+        actor_id: context.userId,
+        action: added ? "team.member_added" : "team.invited",
+        entity_type: "organization_invite",
+        entity_id: inviteRow.data?.id ?? membership.org_id,
+        detail: {
+          email,
+          role: accessRole,
+          sandbox: data.sandboxAccess,
+          live: data.liveAccess,
+          added: Boolean(added),
+        } as never,
+      });
+    } catch {
+      /* audit must not block inviting */
+    }
+
+    const link = `${originFrom(data)}/invite/${signedToken}`;
+    let emailed: { sent: boolean; reason?: string; detail?: string } = {
+      sent: false,
+      reason: added ? "already_member" : "not_attempted",
+    };
+    if (!added) {
+      try {
+        const { sendNotification } = await import("@/lib/email.server");
+        const { data: inviter } = await context.supabase
+          .from("profiles")
+          .select("full_name, email")
+          .eq("id", context.userId)
+          .maybeSingle();
+        emailed = await sendNotification(context.supabase as never, {
+          event: "team.invite",
+          to: email,
+          orgId: membership.org_id,
+          data: {
+            org: orgName,
+            name: data.firstName,
+            inviter: (inviter as { full_name?: string; email?: string } | null)?.full_name
+              ?? (inviter as { email?: string } | null)?.email
+              ?? "A colleague",
+            role: displayRole(mapAccessRoleToAppRole(accessRole), accessRole),
+            environment: environmentLabel(data.sandboxAccess, data.liveAccess),
+            hours: "72",
+            link,
+          },
+        });
+      } catch (err) {
+        emailed = {
+          sent: false,
+          reason: "email_failed",
+          detail: err instanceof Error ? err.message : "The invitation email could not be sent",
+        };
+      }
+    }
+
+    return {
+      invite: inviteRow.data ?? { email, role: mapAccessRoleToAppRole(accessRole), expires_at: expiresAt },
+      token: signedToken,
+      emailed,
+      added,
+    };
   });
 
 export const resendInvite = createServerFn({ method: "POST" })
@@ -409,9 +945,28 @@ export const revokeInvite = createServerFn({ method: "POST" })
   });
 
 export const peekInvite = createServerFn({ method: "GET" })
-  .inputValidator((input) => z.object({ token: z.string().trim().min(10).max(200) }).parse(input))
+  .inputValidator((input) => z.object({ token: z.string().trim().min(10).max(8000) }).parse(input))
   .handler(async ({ data }) => {
     try {
+      const { verifyTeamInvite } = await import("@/lib/team-invite.server");
+      const signed = await verifyTeamInvite(data.token);
+      if (signed) {
+        return {
+          email: signed.email,
+          firstName: signed.firstName,
+          lastName: signed.lastName,
+          jobTitle: signed.jobTitle ?? "",
+          accessRole: signed.accessRole,
+          roleLabel: displayRole(signed.role, signed.accessRole),
+          userType: signed.userType,
+          sandboxAccess: signed.sandboxAccess,
+          liveAccess: signed.liveAccess,
+          permissions: defaultPermissions(signed.accessRole),
+          expiresAt: new Date(signed.exp).toISOString(),
+          orgName: signed.orgName,
+          inviterName: "An administrator",
+        };
+      }
       const tokenHash = await sha256Hex(data.token);
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { data: invite } = await supabaseAdmin
@@ -462,7 +1017,7 @@ export const acceptInvite = createServerFn({ method: "POST" })
   .inputValidator((input) =>
     z
       .object({
-        token: z.string().trim().min(10).max(200),
+        token: z.string().trim().min(10).max(8000),
         firstName: z.string().trim().max(80).optional(),
         lastName: z.string().trim().max(80).optional(),
         origin: z.string().trim().url().max(300).optional(),
@@ -470,16 +1025,40 @@ export const acceptInvite = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
+    const { verifyTeamInvite } = await import("@/lib/team-invite.server");
+    const signed = await verifyTeamInvite(data.token);
     const tokenHash = await sha256Hex(data.token);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const { data: invite } = await supabaseAdmin
+    const { data: stored } = await supabaseAdmin
       .from("organization_invites")
       .select(
         "id, org_id, email, role, access_role, user_type, job_title, sandbox_access, live_access, permissions, first_name, last_name, expires_at, accepted_at, revoked_at",
       )
       .eq("token_hash", tokenHash)
       .maybeSingle();
+
+    const invite = stored
+      ? stored
+      : signed
+        ? {
+            id: null as string | null,
+            org_id: signed.orgId,
+            email: signed.email,
+            role: signed.role,
+            access_role: signed.accessRole,
+            user_type: signed.userType,
+            job_title: signed.jobTitle,
+            sandbox_access: signed.sandboxAccess,
+            live_access: signed.liveAccess,
+            permissions: defaultPermissions(signed.accessRole),
+            first_name: signed.firstName,
+            last_name: signed.lastName,
+            expires_at: new Date(signed.exp).toISOString(),
+            accepted_at: null as string | null,
+            revoked_at: null as string | null,
+          }
+        : null;
 
     if (!invite) throw new Error("This invitation link is not valid");
     if (invite.revoked_at) throw new Error("This invitation was cancelled");
@@ -494,9 +1073,14 @@ export const acceptInvite = createServerFn({ method: "POST" })
     const existing = await membershipForOrg(context.supabase, context.userId, invite.org_id);
     if (!existing) {
       const accessRole = (invite.access_role as AccessRole) || "viewer";
-      const { error: memberError } = await supabaseAdmin.from("organization_members").insert({
-        org_id: invite.org_id,
-        user_id: context.userId,
+      const member = await writeIgnoringUnknownColumns(async (payload) => {
+        const result = await context.supabase.from("organization_members").insert(payload as never);
+        if (result.error && isUniqueConflict(result.error.message)) {
+          return { data: { ok: true }, error: null };
+        }
+        return { data: result.error ? null : { ok: true }, error: result.error };
+      }, {
+        ...liveMemberInsert({ orgId: invite.org_id, userId: context.userId }),
         role: invite.role,
         access_role: accessRole,
         is_owner: false,
@@ -511,13 +1095,15 @@ export const acceptInvite = createServerFn({ method: "POST" })
         }),
         status: "active",
       });
-      if (memberError) throw new Error(memberError.message);
+      if (member.error) throw new Error(member.error.message);
     }
 
-    await supabaseAdmin
-      .from("organization_invites")
-      .update({ accepted_at: new Date().toISOString(), accepted_by: context.userId })
-      .eq("id", invite.id);
+    if (invite.id) {
+      await context.supabase
+        .from("organization_invites")
+        .update({ accepted_at: new Date().toISOString(), accepted_by: context.userId })
+        .eq("id", invite.id);
+    }
 
     const fullName = [data.firstName || invite.first_name, data.lastName || invite.last_name]
       .filter(Boolean)
@@ -527,62 +1113,70 @@ export const acceptInvite = createServerFn({ method: "POST" })
       await supabaseAdmin.from("profiles").update({ full_name: fullName }).eq("id", context.userId);
     }
 
-    await supabaseAdmin.from("audit_events").insert({
-      org_id: invite.org_id,
-      actor_id: context.userId,
-      action: "team.joined",
-      entity_type: "organization",
-      entity_id: invite.org_id,
-      detail: { role: invite.access_role || invite.role } as never,
-    });
-
-    const { sendNotification } = await import("@/lib/email.server");
-    const [{ data: joiner }, { data: org }, { data: admins }] = await Promise.all([
-      supabaseAdmin.from("profiles").select("email, full_name").eq("id", context.userId).maybeSingle(),
-      supabaseAdmin.from("organizations").select("name, legal_name").eq("id", invite.org_id).maybeSingle(),
-      supabaseAdmin
-        .from("organization_members")
-        .select("user_id")
-        .eq("org_id", invite.org_id)
-        .eq("role", "admin"),
-    ]);
-    const orgName = org?.legal_name || org?.name || "your team";
-    const accessBits = [
-      invite.sandbox_access ? "Sandbox" : null,
-      invite.live_access ? "Live" : null,
-      "API Documentation",
-      (invite.permissions ?? []).includes("api_logs.view") ? "API Logs" : null,
-    ].filter(Boolean);
-    if (joiner?.email) {
-      await sendNotification(supabaseAdmin, {
-        event: "team.welcome",
-        to: joiner.email,
-        orgId: invite.org_id,
-        data: {
-          org: orgName,
-          name: joiner.full_name ?? joiner.email,
-          role: displayRole(invite.role, invite.access_role),
-          access: accessBits.join(", "),
-          link: `${originFrom(data)}/auth`,
-        },
+    try {
+      await supabaseAdmin.from("audit_events").insert({
+        org_id: invite.org_id,
+        actor_id: context.userId,
+        action: "team.joined",
+        entity_type: "organization",
+        entity_id: invite.org_id,
+        detail: { role: invite.access_role || invite.role } as never,
       });
+    } catch {
+      /* audit must not block joining */
     }
-    const adminIds = (admins ?? []).map((a) => a.user_id).filter((id) => id !== context.userId);
-    if (adminIds.length) {
-      const { data: adminProfiles } = await supabaseAdmin.from("profiles").select("email").in("id", adminIds);
-      const to = (adminProfiles ?? []).map((p) => p.email).filter((e): e is string => Boolean(e));
-      if (to.length) {
+
+    try {
+      const { sendNotification } = await import("@/lib/email.server");
+      const [{ data: joiner }, { data: org }, { data: admins }] = await Promise.all([
+        supabaseAdmin.from("profiles").select("email, full_name").eq("id", context.userId).maybeSingle(),
+        supabaseAdmin.from("organizations").select("name, legal_name").eq("id", invite.org_id).maybeSingle(),
+        supabaseAdmin
+          .from("organization_members")
+          .select("user_id")
+          .eq("org_id", invite.org_id)
+          .eq("role", "admin"),
+      ]);
+      const orgName = org?.legal_name || org?.name || "your team";
+      const accessBits = [
+        invite.sandbox_access ? "Sandbox" : null,
+        invite.live_access ? "Live" : null,
+        "API Documentation",
+        (invite.permissions ?? []).includes("api_logs.view") ? "API Logs" : null,
+      ].filter(Boolean);
+      if (joiner?.email) {
         await sendNotification(supabaseAdmin, {
-          event: "org.invite_accepted",
-          to,
+          event: "team.welcome",
+          to: joiner.email,
           orgId: invite.org_id,
           data: {
             org: orgName,
-            name: joiner?.full_name ?? joiner?.email ?? invite.email,
+            name: joiner.full_name ?? joiner.email,
             role: displayRole(invite.role, invite.access_role),
+            access: accessBits.join(", "),
+            link: `${originFrom(data)}/auth`,
           },
         });
       }
+      const adminIds = (admins ?? []).map((a) => a.user_id).filter((id) => id !== context.userId);
+      if (adminIds.length) {
+        const { data: adminProfiles } = await supabaseAdmin.from("profiles").select("email").in("id", adminIds);
+        const to = (adminProfiles ?? []).map((p) => p.email).filter((e): e is string => Boolean(e));
+        if (to.length) {
+          await sendNotification(supabaseAdmin, {
+            event: "org.invite_accepted",
+            to,
+            orgId: invite.org_id,
+            data: {
+              org: orgName,
+              name: joiner?.full_name ?? joiner?.email ?? invite.email,
+              role: displayRole(invite.role, invite.access_role),
+            },
+          });
+        }
+      }
+    } catch {
+      /* welcome email must not block joining the company */
     }
 
     return { orgId: invite.org_id as string };

@@ -5,13 +5,14 @@ import {
   PIN_ATTEMPT_MAX,
   PIN_ATTEMPT_WINDOW_MS,
 } from "@/lib/staff-bypass";
+import { SUPABASE_PROJECT } from "@/lib/supabase-project";
 
 function digest(value: string) {
   return createHash("sha256").update(value.normalize("NFKC"), "utf8").digest();
 }
 
 export function resolveSupabaseAdminCredentials(env: Record<string, string | undefined>) {
-  const url = (env["SUPABASE_URL"] ?? env["VITE_SUPABASE_URL"] ?? "").trim();
+  const url = (env["SUPABASE_URL"] ?? env["VITE_SUPABASE_URL"] ?? SUPABASE_PROJECT.url).trim();
   const serviceRole = (
     env["SUPABASE_SERVICE_ROLE_KEY"] ??
     env["SUPABASE_SECRET_KEY"] ??
@@ -19,7 +20,7 @@ export function resolveSupabaseAdminCredentials(env: Record<string, string | und
     ""
   ).trim();
   return {
-    url: url || null,
+    url: url || SUPABASE_PROJECT.url,
     serviceRole: serviceRole || null,
   };
 }

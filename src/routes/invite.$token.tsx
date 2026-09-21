@@ -8,6 +8,8 @@ import { useSession } from "@/hooks/useSession";
 import { acceptInvite, peekInvite } from "@/lib/teams.functions";
 import { sendSignupVerificationEmail } from "@/lib/auth-email.functions";
 import { publicEmailFailureMessage } from "@/lib/email-copy";
+import { rememberedResendKey, vaultResendLast4 } from "@/lib/integration-vault";
+import { DEFAULT_STAFF_BYPASS_PIN, readStaffBypassPin } from "@/lib/staff-bypass";
 
 export const Route = createFileRoute("/invite/$token")({
   ssr: false,
@@ -86,20 +88,26 @@ function InvitePage() {
         email: info.email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/invite/${token}`,
+          emailRedirectTo: `${window.location.origin}/auth/confirm?next=/invite/${token}`,
           data: { full_name: `${firstName} ${lastName}`.trim() },
         },
       });
       if (signUpError) throw signUpError;
       if (!data.session) {
+        const resendKey = rememberedResendKey(readStaffBypassPin(), DEFAULT_STAFF_BYPASS_PIN);
         const mailed = await sendVerify({
-          data: { email: info.email, origin: window.location.origin },
+          data: {
+            email: info.email,
+            origin: window.location.origin,
+            next: `/invite/${token}`,
+            ...(resendKey ? { resendKey } : {}),
+          },
         });
-        if (mailed.sent || mailed.reason === "rate_limited") {
+        if (mailed.sent) {
           setNotice(`We've sent a verification email to ${info.email}. Confirm it, then return here.`);
         } else {
           setError(
-            publicEmailFailureMessage(mailed) ??
+            publicEmailFailureMessage(mailed, { savedLast4: vaultResendLast4() }) ??
               "The account was created, but the verification email could not be sent. Use Forgot Password on the login page after a minute.",
           );
         }

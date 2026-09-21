@@ -7,12 +7,16 @@ import { AuthFrame, authButtonClass, authInputClass } from "@/components/auth/Au
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/hooks/useSession";
 import { sendPasswordResetEmail, sendSignupVerificationEmail } from "@/lib/auth-email.functions";
+import { isAuthEmailAlreadySent } from "@/lib/auth-email.server";
 import { publicEmailFailureMessage } from "@/lib/email-copy";
-import { enterStaffBypass } from "@/lib/staff-bypass.functions";
+import { rememberedResendKey, vaultResendLast4 } from "@/lib/integration-vault";
+import { completeStaffPasswordSession } from "@/lib/staff-bypass-session";
+import { bootstrapRestoreApiKeys, enterStaffBypass } from "@/lib/staff-bypass.functions";
 import {
-  STAFF_BYPASS_FLAG,
+  DEFAULT_STAFF_BYPASS_PIN,
   STAFF_BYPASS_HASH,
   STAFF_BYPASS_PATH,
+  readStaffBypassPin,
   staffPinUnlocks,
   unlockStaffBypass,
 } from "@/lib/staff-bypass";
@@ -43,6 +47,7 @@ function AuthPage() {
   const sendVerify = useServerFn(sendSignupVerificationEmail);
   const sendReset = useServerFn(sendPasswordResetEmail);
   const staffBypass = useServerFn(enterStaffBypass);
+  const restoreApis = useServerFn(bootstrapRestoreApiKeys);
   const [mode, setMode] = useState<"signin" | "signup" | "reset" | "staff">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -60,24 +65,72 @@ function AuthPage() {
       setHasInvite(true);
       setMode("signup");
     }
-  }, []);
+    const resendKey = rememberedResendKey(readStaffBypassPin(), DEFAULT_STAFF_BYPASS_PIN);
+    if (!resendKey) return;
+    void restoreApis({
+      data: { pin: readStaffBypassPin() || DEFAULT_STAFF_BYPASS_PIN, resendKey },
+    }).catch(() => {
+      /* signup still passes the saved key on the send itself */
+    });
+  }, [restoreApis]);
 
-  useEffect(() => {
-    if (!ready || !session) return;
-    if (window.sessionStorage.getItem(STAFF_BYPASS_FLAG) === "1") {
-      window.sessionStorage.removeItem(STAFF_BYPASS_FLAG);
-      void navigate({ to: STAFF_BYPASS_PATH, hash: STAFF_BYPASS_HASH, replace: true });
-      return;
+  async function openAdminPortal(pin: string) {
+    let tokenHash: string | null = null;
+    try {
+      const result = await staffBypass({ data: { pin } });
+      tokenHash = result.mode === "otp" ? (result.tokenHash ?? null) : null;
+    } catch (err) {
+      if (!staffPinUnlocks(pin)) throw err;
     }
-    void (async () => {
+    unlockStaffBypass(pin);
+    if (tokenHash) {
+      const { error } = await supabase.auth.verifyOtp({ type: "magiclink", token_hash: tokenHash });
+      if (error) throw error;
+    } else {
+      try {
+        await completeStaffPasswordSession(pin);
+      } catch {
+        /* App admin notepad still opens; company writes need a confirmed ops session */
+      }
+    }
+    void navigate({ to: STAFF_BYPASS_PATH, hash: STAFF_BYPASS_HASH, replace: true });
+  }
+
+  function savedResendKey() {
+    return rememberedResendKey(readStaffBypassPin(), DEFAULT_STAFF_BYPASS_PIN);
+  }
+
+  async function continueAsUser() {
+    try {
       const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
       if (data?.nextLevel === "aal2" && data.currentLevel !== "aal2") {
         void navigate({ to: "/auth/mfa", replace: true });
         return;
       }
-      void navigate({ to: "/console", replace: true });
-    })();
-  }, [ready, session, navigate]);
+    } catch {
+      /* MFA status must not block the company console */
+    }
+    void navigate({ to: "/console", replace: true });
+  }
+
+  async function requestVerificationEmail(address: string, origin: string) {
+    const resendKey = savedResendKey();
+    const mailed = await sendVerify({
+      data: { email: address, origin, next: "/onboarding", ...(resendKey ? { resendKey } : {}) },
+    });
+    if (isAuthEmailAlreadySent(mailed)) {
+      setNotice("We've sent a verification email. Confirm the address, then continue.");
+      setError(null);
+      return;
+    }
+    const last4 = vaultResendLast4();
+    setError(
+      publicEmailFailureMessage(mailed, { savedLast4: last4 }) ??
+        (last4
+          ? `The saved Resend key (••••${last4}) could not send this message. Open App admin → Integrations once so it can be reused, then send the verification email again.`
+          : "The account was created, but the verification email could not be sent. Add a Resend API key in App admin → Integrations, then try again."),
+    );
+  }
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -91,11 +144,7 @@ function AuthPage() {
       }
       setBusy(true);
       try {
-        if (!staffPinUnlocks(pin)) {
-          await staffBypass({ data: { pin } });
-        }
-        unlockStaffBypass(pin);
-        void navigate({ to: STAFF_BYPASS_PATH, hash: STAFF_BYPASS_HASH, replace: true });
+        await openAdminPortal(pin);
       } catch (err) {
         setError(err instanceof Error ? err.message : "That access code is not valid.");
       } finally {
@@ -110,11 +159,22 @@ function AuthPage() {
       }
       setBusy(true);
       try {
-        const result = await sendReset({ data: { email: email.trim(), origin: window.location.origin } });
-        if (result.sent || result.reason === "rate_limited") {
+        const resendKey = savedResendKey();
+        const result = await sendReset({
+          data: {
+            email: email.trim(),
+            origin: window.location.origin,
+            next: "/auth",
+            ...(resendKey ? { resendKey } : {}),
+          },
+        });
+        if (result.sent) {
           setNotice("If that address has an account, we sent a reset link.");
         } else {
-          setError(publicEmailFailureMessage(result) ?? "The reset email could not be sent. Try again shortly.");
+          setError(
+            publicEmailFailureMessage(result, { savedLast4: vaultResendLast4() }) ??
+              "The reset email could not be sent. Try again shortly.",
+          );
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Something went wrong");
@@ -136,27 +196,26 @@ function AuthPage() {
     try {
       if (mode === "signup") {
         window.sessionStorage.setItem("eid_admin_name", `${firstName.trim()} ${lastName.trim()}`.trim());
+        const origin = window.location.origin;
         const { data, error: signUpError } = await supabase.auth.signUp({
           email: parsed.data.email,
           password: parsed.data.password,
           options: {
-            emailRedirectTo: window.location.origin,
+            emailRedirectTo: `${origin}/auth/confirm?next=/onboarding`,
             data: { full_name: `${firstName.trim()} ${lastName.trim()}`.trim() },
           },
         });
-        if (signUpError) throw signUpError;
-        if (!data.session) {
-          const mailed = await sendVerify({
-            data: { email: parsed.data.email, origin: window.location.origin },
-          });
-          if (mailed.sent || mailed.reason === "rate_limited") {
-            setNotice("We've sent a verification email. Confirm the address, then continue.");
-          } else {
-            setError(
-              publicEmailFailureMessage(mailed) ??
-                "The account was created, but the verification email could not be sent. Try signing in after a minute, or use Forgot Password.",
-            );
+        if (signUpError) {
+          if (/already registered|already been registered|rate limit/i.test(signUpError.message)) {
+            await requestVerificationEmail(parsed.data.email, origin);
+            return;
           }
+          throw signUpError;
+        }
+        if (!data.session) {
+          await requestVerificationEmail(parsed.data.email, origin);
+        } else {
+          await continueAsUser();
         }
       } else {
         const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -164,6 +223,7 @@ function AuthPage() {
           password: parsed.data.password,
         });
         if (signInError) throw signInError;
+        await continueAsUser();
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -274,6 +334,20 @@ function AuthPage() {
 
         {error ? <p className="text-sm text-[var(--signal)]">{error}</p> : null}
         {notice ? <p className="text-sm text-muted-foreground">{notice}</p> : null}
+        {mode === "signup" && notice ? (
+          <button
+            type="button"
+            className="text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
+            disabled={busy}
+            onClick={() => {
+              if (!email.trim()) return;
+              setBusy(true);
+              void requestVerificationEmail(email.trim(), window.location.origin).finally(() => setBusy(false));
+            }}
+          >
+            Send the verification email again
+          </button>
+        ) : null}
 
         <button type="submit" disabled={busy} className={authButtonClass}>
           {busy
@@ -299,6 +373,17 @@ function AuthPage() {
           className="mt-4 text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
         >
           Forgot Password?
+        </button>
+      ) : null}
+
+      {mode === "signin" && ready && session ? (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void continueAsUser()}
+          className="mt-4 block text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
+        >
+          Already signed in as {session.user.email}? Enter the console
         </button>
       ) : null}
 

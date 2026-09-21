@@ -1,16 +1,32 @@
-import { formatSender, parseProviderError, renderTemplate, resendSendPlan } from "./email.server";
+import {
+  formatSender,
+  normalizeResendFromAddress,
+  parseProviderError,
+  peekBootstrapResendKey,
+  renderTemplate,
+  resendSendPlan,
+  setBootstrapResendKey,
+} from "./email.server";
 import { publicEmailFailureMessage } from "./email-copy";
 
 function assert(condition: unknown, message: string) {
   if (!condition) throw new Error(message);
 }
 
-assert(formatSender(null, null) === "eterfaceID <support@eterfaceid.com>", "default sender is eterfaceid.com");
+assert(formatSender(null, null) === "eterfaceID <info@verify.eterfaceid.com>", "default sender uses the verified mailbox");
 assert(
-  formatSender("eterfaceID", "support@eterfaceid.com") === "eterfaceID <support@eterfaceid.com>",
-  "named sender",
+  formatSender("eterfaceID", "support@eterfaceid.com") === "eterfaceID <support@verify.eterfaceid.com>",
+  "apex eterfaceid.com is remapped to the verified subdomain",
 );
-assert(formatSender("  ", "  ") === "eterfaceID <support@eterfaceid.com>", "blank sender falls back");
+assert(formatSender("  ", "  ") === "eterfaceID <info@verify.eterfaceid.com>", "blank sender falls back");
+assert(
+  normalizeResendFromAddress("alerts@eterfaceid.com") === "alerts@verify.eterfaceid.com",
+  "local part is kept when remapping",
+);
+assert(
+  normalizeResendFromAddress("info@verify.eterfaceid.com") === "info@verify.eterfaceid.com",
+  "already-verified addresses stay",
+);
 
 const direct = resendSendPlan({ resendKey: "re_test_key", lovableKey: null });
 assert(direct.mode === "direct", "own Resend API keys send directly");
@@ -21,6 +37,16 @@ assert(gateway.mode === "gateway", "opaque connection keys still use the Lovable
 
 const missing = resendSendPlan({ resendKey: null, lovableKey: "lvbl_key" });
 assert(missing.mode === "unconfigured", "Lovable key alone is not enough");
+
+const staffInvite = renderTemplate("staff.invite", {
+  name: "Dev",
+  role: "Developer",
+  link: "https://example.com/auth",
+  inviter: "eterfaceID",
+});
+assert(staffInvite.subject.toLowerCase().includes("admin"), "staff invite subject");
+assert(staffInvite.html.includes("Developer"), "staff invite role");
+assert(staffInvite.html.includes("https://example.com/auth"), "staff invite link");
 
 const verify = renderTemplate("account.verify", { link: "https://example.com/confirm", name: "Sam" });
 assert(verify.subject.includes("Confirm"), "verification subject");
@@ -40,5 +66,25 @@ assert(
   ),
   "env leaks are hidden from end users",
 );
+assert(
+  publicEmailFailureMessage({ sent: false, reason: "provider_error", detail: "[401] API key is invalid" })?.includes(
+    "Open App admin → Integrations",
+  ),
+  "invalid Resend keys point back to the saved Integrations key",
+);
+assert(
+  publicEmailFailureMessage(
+    { sent: false, reason: "not_configured" },
+    { savedLast4: "m9EL" },
+  )?.includes("••••m9EL"),
+  "a key already on file is not treated as missing",
+);
+
+const previous = peekBootstrapResendKey();
+setBootstrapResendKey("re_persisted_key");
+assert(peekBootstrapResendKey() === "re_persisted_key", "bootstrap key is readable after save");
+assert(process.env["RESEND_API_KEY"] === "re_persisted_key", "bootstrap key is copied onto process.env");
+if (previous) setBootstrapResendKey(previous);
+else delete process.env["RESEND_API_KEY"];
 
 console.log("email.server.test.ts passed");

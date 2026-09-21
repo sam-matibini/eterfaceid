@@ -1,6 +1,7 @@
+import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { fieldClass, inkButtonClass, Panel, StatusPill } from "@/components/console/shell";
 import { useOrganization } from "@/hooks/useSession";
@@ -18,7 +19,19 @@ import {
 import { fetchTeam } from "@/lib/console";
 import { inviteMember, removeMember, resendInvite, revokeInvite, setMemberRole } from "@/lib/teams.functions";
 
-export function TeamPanel({ isAdmin }: { isAdmin: boolean }) {
+export function TeamPanel({
+  isAdmin,
+  canManage,
+  title,
+  compact,
+  defaultOpen,
+}: {
+  isAdmin?: boolean;
+  canManage?: boolean;
+  title?: string;
+  compact?: boolean;
+  defaultOpen?: boolean;
+}) {
   const queryClient = useQueryClient();
   const { organization } = useOrganization();
   const invite = useServerFn(inviteMember);
@@ -26,8 +39,9 @@ export function TeamPanel({ isAdmin }: { isAdmin: boolean }) {
   const resend = useServerFn(resendInvite);
   const changeRole = useServerFn(setMemberRole);
   const kick = useServerFn(removeMember);
+  const manage = Boolean(canManage ?? isAdmin);
 
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(Boolean(defaultOpen));
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
@@ -41,6 +55,12 @@ export function TeamPanel({ isAdmin }: { isAdmin: boolean }) {
   });
   const [inviteLink, setInviteLink] = useState<string | null>(null);
   const [inviteEmailed, setInviteEmailed] = useState<{ sent: boolean; reason?: string; detail?: string } | null>(null);
+  const [addedNotice, setAddedNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.location.hash === "#invite") setOpen(true);
+  }, []);
 
   const team = useQuery({ queryKey: ["team"], queryFn: fetchTeam });
   const refresh = () => {
@@ -72,9 +92,11 @@ export function TeamPanel({ isAdmin }: { isAdmin: boolean }) {
           liveAccess: form.liveAccess,
           permissions: form.permissions,
           origin: window.location.origin,
+          orgId: organization?.orgId,
         },
       }),
     onSuccess: (result) => {
+      const email = form.email;
       setForm({
         firstName: "",
         lastName: "",
@@ -87,8 +109,18 @@ export function TeamPanel({ isAdmin }: { isAdmin: boolean }) {
         permissions: defaultPermissions("developer"),
       });
       setOpen(false);
-      setInviteLink(`${window.location.origin}/invite/${result.token}`);
-      setInviteEmailed(result.emailed);
+      setAddedNotice(
+        result.added
+          ? `${email} was added to the company.`
+          : `Invitation ready for ${email}.`,
+      );
+      if (!result.added) {
+        setInviteLink(`${window.location.origin}/invite/${result.token}`);
+        setInviteEmailed(result.emailed);
+      } else {
+        setInviteLink(null);
+        setInviteEmailed(null);
+      }
       refresh();
     },
   });
@@ -128,11 +160,11 @@ export function TeamPanel({ isAdmin }: { isAdmin: boolean }) {
 
   return (
     <Panel
-      title={organization ? `${organization.name} — Users & Teams` : "Users & Teams"}
+      title={title ?? (organization ? `${organization.name} — Team` : "Team")}
       action={
-        isAdmin ? (
+        manage ? (
           <button type="button" className={inkButtonClass} onClick={() => setOpen((v) => !v)}>
-            {open ? "Close" : "Add User"}
+            {open ? "Close" : "Add teammate"}
           </button>
         ) : undefined
       }
@@ -141,7 +173,15 @@ export function TeamPanel({ isAdmin }: { isAdmin: boolean }) {
         {(team.data?.members ?? []).map((member) => (
           <div key={member.userId} className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <div className="font-medium">{member.fullName ?? member.email ?? "Team member"}</div>
+              <div className="font-medium">
+                <Link
+                  to="/console/users/$userId"
+                  params={{ userId: member.userId }}
+                  className="underline-offset-4 hover:underline"
+                >
+                  {member.fullName ?? member.email ?? "Team member"}
+                </Link>
+              </div>
               <div className="text-xs text-muted-foreground">
                 {member.email}
                 {member.jobTitle ? ` · ${member.jobTitle}` : ""}
@@ -153,7 +193,7 @@ export function TeamPanel({ isAdmin }: { isAdmin: boolean }) {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              {isAdmin && !member.isOwner ? (
+              {manage && !member.isOwner ? (
                 <select
                   value={member.accessRole === "owner" ? "administrator" : member.accessRole}
                   onChange={(e) =>
@@ -172,7 +212,7 @@ export function TeamPanel({ isAdmin }: { isAdmin: boolean }) {
                   {displayRole(member.role, member.accessRole, member.isOwner)}
                 </StatusPill>
               )}
-              {isAdmin && !member.isOwner ? (
+              {manage && !member.isOwner ? (
                 <button
                   type="button"
                   onClick={() => removeMutation.mutate(member.userId)}
@@ -189,7 +229,7 @@ export function TeamPanel({ isAdmin }: { isAdmin: boolean }) {
         ) : null}
       </div>
 
-      {open && isAdmin ? (
+      {open && manage ? (
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -197,7 +237,7 @@ export function TeamPanel({ isAdmin }: { isAdmin: boolean }) {
           }}
           className="mt-5 space-y-4 border-t border-[var(--rule)] pt-5"
         >
-          <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">Add Team Member</p>
+          <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">Add team member or user</p>
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="text-xs uppercase tracking-widest text-muted-foreground">
               First Name *
@@ -309,9 +349,13 @@ export function TeamPanel({ isAdmin }: { isAdmin: boolean }) {
           ) : null}
 
           <button type="submit" disabled={sendInvite.isPending} className={inkButtonClass}>
-            {sendInvite.isPending ? "Sending…" : "Send Invitation"}
+            {sendInvite.isPending ? "Saving…" : "Add to company"}
           </button>
         </form>
+      ) : null}
+
+      {addedNotice ? (
+        <p className="mt-3 text-sm text-[var(--verify)]">{addedNotice}</p>
       ) : null}
 
       {inviteLink ? (
@@ -337,7 +381,7 @@ export function TeamPanel({ isAdmin }: { isAdmin: boolean }) {
                   Expires {new Date(row.expires_at).toLocaleString()}
                 </span>
               </span>
-              {isAdmin ? (
+              {manage ? (
                 <div className="flex gap-2">
                   <button
                     type="button"
@@ -364,6 +408,13 @@ export function TeamPanel({ isAdmin }: { isAdmin: boolean }) {
         Roles are templates. Permissions on each person can be changed independently. Live access is never granted
         just because someone is a developer. Invitations expire after 72 hours and can be resent or revoked.
       </p>
+      {compact ? (
+        <p className="mt-3 text-xs">
+          <Link to="/console/team" className="underline underline-offset-4">
+            Open the full Team page
+          </Link>
+        </p>
+      ) : null}
     </Panel>
   );
 }

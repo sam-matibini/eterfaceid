@@ -7,8 +7,8 @@ import {
   Section,
 } from "@/components/site/primitives";
 import { ProductFilm } from "@/components/site/ProductFilm";
-import screeningFilm from "@/assets/screening-workflow.mp4.asset.json";
-import screeningPoster from "@/assets/screening-workflow-poster.png.asset.json";
+import screeningFilm from "@/assets/screening-workflow.mp4";
+import screeningPoster from "@/assets/screening-workflow-poster.png";
 import continuousScreeningImage from "@/assets/continuous-screening-workflow.jpg";
 
 export const Route = createFileRoute("/solutions/aml-screening")({
@@ -53,8 +53,8 @@ function AmlScreening() {
             />
           </figure>
           <ProductFilm
-            src={screeningFilm.url}
-            poster={screeningPoster.url}
+            src={screeningFilm}
+            poster={screeningPoster}
             title="From customer record to explained match"
             description="An illustrative live screening sequence using realistic example data."
           />

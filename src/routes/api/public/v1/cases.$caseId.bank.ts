@@ -72,7 +72,7 @@ export const Route = createFileRoute("/api/public/v1/cases/$caseId/bank")({
         }
 
         const { plaid, plaidConfigured, plaidEnvironment } = await import("@/lib/plaid.server");
-        if (!plaidConfigured()) {
+        if (!(await plaidConfigured())) {
           return jsonResponse(
             { error: "integration_not_configured", message: "Bank connections are not configured yet." },
             409,

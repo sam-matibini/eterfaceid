@@ -31,22 +31,30 @@ export const API_GROUPS: ApiGroup[] = [
   },
   {
     name: "Cases",
-    blurb: "A case is one person or one business being checked.",
+    blurb: "A case is one person, one business, or one employee being checked.",
     endpoints: [
       {
         method: "GET",
         path: "/cases",
         summary: "List cases",
-        description: "Newest first. Filter with ?status= and ?case_type=, page with ?limit= and ?offset=.",
-        response: { data: [{ id: "…", reference: "API-XYZ", case_type: "person", status: "in_review", risk_level: "low" }] },
+        description: "Newest first. Filter with ?status=, ?case_type= and ?purpose=kyc|kyb|aml|employee, page with ?limit= and ?offset=.",
+        response: { data: [{ id: "…", reference: "API-XYZ", case_type: "person", purpose: "kyc", status: "in_review", risk_level: "low" }] },
       },
       {
         method: "POST",
         path: "/cases",
         summary: "Create a case",
-        description: "Send an Idempotency-Key header so a retry never creates a second case.",
-        request: { case_type: "person", subject_name: "Jane Doe", country: "CA", reference: "EFIN-10231" },
-        response: { data: { id: "…", reference: "EFIN-10231", status: "pending" } },
+        description:
+          "Send an Idempotency-Key header so a retry never creates a second case. purpose/product select the solution (KYC, KYB, AML, employee). industry applies the localized regulatory pack (fintech default).",
+        request: {
+          purpose: "kyc",
+          product: "customer_kyc",
+          industry: "fintech",
+          subject_name: "Jane Doe",
+          country: "CA",
+          reference: "EFIN-10231",
+        },
+        response: { data: { id: "…", reference: "EFIN-10231", purpose: "kyc", status: "pending" } },
       },
       {
         method: "GET",
@@ -256,7 +264,7 @@ export const ERROR_CODES: { code: string; status: number; meaning: string }[] = 
   { code: "query_failed", status: 500, meaning: "Something went wrong on our side." },
 ];
 
-/** Sandbox keys (`eid_test_…`) never touch the real lists — these names drive the result. */
+/** Sandbox keys (`ef_test_secret_…`) never touch the real lists — these names drive the result. */
 export const SANDBOX_TEST_VALUES: { value: string; effect: string }[] = [
   { value: "test-sanctioned", effect: "Screening returns a high-confidence sanctions match and a high risk score." },
   { value: "test-pep", effect: "Screening returns a politically exposed person match and a medium risk score." },
@@ -315,13 +323,13 @@ export function buildOpenApi(serverUrl: string) {
       title: "eterfaceID API",
       version: "1.0.0",
       description:
-        "KYC, KYB, sanctions screening, transaction monitoring and regulatory reporting. Authenticate with an eterfaceID API key: Authorization: Bearer eid_…",
+        "KYC, KYB, AML, employee onboarding, sanctions screening, transaction monitoring and regulatory reporting. Authenticate with an eterfaceID secret: Authorization: Bearer ef_test_secret_… or ef_live_secret_…",
     },
     servers: [{ url: serverUrl }],
     tags: API_GROUPS.map((g) => ({ name: g.name, description: g.blurb })),
     components: {
       securitySchemes: {
-        ApiKey: { type: "http", scheme: "bearer", bearerFormat: "eid_…" },
+        ApiKey: { type: "http", scheme: "bearer", bearerFormat: "ef_test_secret_…" },
       },
     },
     security: [{ ApiKey: [] }],

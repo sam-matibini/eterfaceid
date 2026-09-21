@@ -234,14 +234,14 @@ function GoLivePage() {
                   onChange={(e) => setForm({ ...form, city: e.target.value })}
                 />
               </Field>
-              <Field label="Province or state">
+              <Field label="Prov/state">
                 <input
                   className={inputClass}
                   value={form.region}
                   onChange={(e) => setForm({ ...form, region: e.target.value })}
                 />
               </Field>
-              <Field label="Postal code">
+              <Field label="Zip/Postal code">
                 <input
                   className={inputClass}
                   value={form.postal_code}

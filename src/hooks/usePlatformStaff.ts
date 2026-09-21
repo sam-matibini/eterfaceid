@@ -14,6 +14,9 @@ export function usePlatformStaff() {
         .select("id, level")
         .eq("user_id", user!.id)
         .maybeSingle();
+      if (error && /does not exist|schema cache|permission denied|row-level security/i.test(error.message)) {
+        return null;
+      }
       if (error) throw error;
       return data;
     },

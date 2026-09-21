@@ -25,6 +25,7 @@ import { Route as SigninRouteImport } from './routes/signin'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
 import { Route as AuthenticatedSelectOrganizationRouteImport } from './routes/_authenticated/select-organization'
 import { Route as AuthIndexRouteImport } from './routes/auth.index'
+import { Route as AuthConfirmRouteImport } from './routes/auth.confirm'
 import { Route as AuthMfaRouteImport } from './routes/auth.mfa'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as SolutionsIndexRouteImport } from './routes/solutions.index'
@@ -40,31 +41,42 @@ import { Route as AuthenticatedAdminEmailsRouteImport } from './routes/_authenti
 import { Route as AuthenticatedAdminIntegrationsRouteImport } from './routes/_authenticated/admin.integrations'
 import { Route as AuthenticatedAdminOwnerRouteImport } from './routes/_authenticated/admin.owner'
 import { Route as AuthenticatedAdminPlansRouteImport } from './routes/_authenticated/admin.plans'
+import { Route as AuthenticatedAdminTeamRouteImport } from './routes/_authenticated/admin.team'
 import { Route as AuthenticatedConsoleIndexRouteImport } from './routes/_authenticated/console.index'
 import { Route as AuthenticatedConsoleAlertsRouteImport } from './routes/_authenticated/console.alerts'
+import { Route as AuthenticatedConsoleAmlRouteImport } from './routes/_authenticated/console.aml'
 import { Route as AuthenticatedConsoleApiKeysRouteImport } from './routes/_authenticated/console.api-keys'
 import { Route as AuthenticatedConsoleApiLogsRouteImport } from './routes/_authenticated/console.api-logs'
 import { Route as AuthenticatedConsoleAuditRouteImport } from './routes/_authenticated/console.audit'
 import { Route as AuthenticatedConsoleBillingRouteImport } from './routes/_authenticated/console.billing'
 import { Route as AuthenticatedConsoleComplianceRouteImport } from './routes/_authenticated/console.compliance'
 import { Route as AuthenticatedConsoleDevelopersRouteImport } from './routes/_authenticated/console.developers'
+import { Route as AuthenticatedConsoleEmployeesRouteImport } from './routes/_authenticated/console.employees'
 import { Route as AuthenticatedConsoleEnvironmentsRouteImport } from './routes/_authenticated/console.environments'
 import { Route as AuthenticatedConsoleGoLiveRouteImport } from './routes/_authenticated/console.go-live'
+import { Route as AuthenticatedConsoleInquiriesRouteImport } from './routes/_authenticated/console.inquiries'
+import { Route as AuthenticatedConsoleKybRouteImport } from './routes/_authenticated/console.kyb'
+import { Route as AuthenticatedConsoleKycRouteImport } from './routes/_authenticated/console.kyc'
 import { Route as AuthenticatedConsoleLiveAccessRouteImport } from './routes/_authenticated/console.live-access'
 import { Route as AuthenticatedConsoleOrganizationRouteImport } from './routes/_authenticated/console.organization'
 import { Route as AuthenticatedConsoleReportsRouteImport } from './routes/_authenticated/console.reports'
 import { Route as AuthenticatedConsoleRolesRouteImport } from './routes/_authenticated/console.roles'
 import { Route as AuthenticatedConsoleSecurityRouteImport } from './routes/_authenticated/console.security'
 import { Route as AuthenticatedConsoleSettingsRouteImport } from './routes/_authenticated/console.settings'
+import { Route as AuthenticatedConsoleTeamRouteImport } from './routes/_authenticated/console.team'
 import { Route as AuthenticatedConsoleTransactionsRouteImport } from './routes/_authenticated/console.transactions'
 import { Route as AuthenticatedConsoleUsersRouteImport } from './routes/_authenticated/console.users'
+import { Route as AuthenticatedConsoleVerificationsRouteImport } from './routes/_authenticated/console.verifications'
 import { Route as AuthenticatedConsoleWatchlistsRouteImport } from './routes/_authenticated/console.watchlists'
 import { Route as AuthenticatedConsoleWebhooksRouteImport } from './routes/_authenticated/console.webhooks'
 import { Route as AuthenticatedSecurityMfaRouteImport } from './routes/_authenticated/security.mfa'
+import { Route as ApiHooksAuthEmailRouteImport } from './routes/api/hooks/auth-email'
 import { Route as AuthenticatedAdminCompaniesOrgIdRouteImport } from './routes/_authenticated/admin.companies.$orgId'
 import { Route as AuthenticatedAdminInvoicesInvoiceIdRouteImport } from './routes/_authenticated/admin.invoices.$invoiceId'
 import { Route as AuthenticatedConsoleCasesIndexRouteImport } from './routes/_authenticated/console.cases.index'
 import { Route as AuthenticatedConsoleCasesCaseIdRouteImport } from './routes/_authenticated/console.cases.$caseId'
+import { Route as AuthenticatedConsoleUsersIndexRouteImport } from './routes/_authenticated/console.users.index'
+import { Route as AuthenticatedConsoleUsersUserIdRouteImport } from './routes/_authenticated/console.users.$userId'
 import { Route as ApiPublicHooksPlaidSyncRouteImport } from './routes/api/public/hooks/plaid-sync'
 import { Route as ApiPublicHooksRefreshWatchlistsRouteImport } from './routes/api/public/hooks/refresh-watchlists'
 import { Route as ApiPublicHooksRescreenRouteImport } from './routes/api/public/hooks/rescreen'
@@ -173,6 +185,11 @@ const AuthIndexRoute = AuthIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthRoute,
 } as any)
+const AuthConfirmRoute = AuthConfirmRouteImport.update({
+  id: '/confirm',
+  path: '/confirm',
+  getParentRoute: () => AuthRoute,
+} as any)
 const AuthMfaRoute = AuthMfaRouteImport.update({
   id: '/mfa',
   path: '/mfa',
@@ -254,6 +271,11 @@ const AuthenticatedAdminPlansRoute = AuthenticatedAdminPlansRouteImport.update({
   path: '/admin/plans',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAdminTeamRoute = AuthenticatedAdminTeamRouteImport.update({
+  id: '/admin/team',
+  path: '/admin/team',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedConsoleIndexRoute =
   AuthenticatedConsoleIndexRouteImport.update({
     id: '/console/',
@@ -266,6 +288,11 @@ const AuthenticatedConsoleAlertsRoute =
     path: '/console/alerts',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedConsoleAmlRoute = AuthenticatedConsoleAmlRouteImport.update({
+  id: '/console/aml',
+  path: '/console/aml',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedConsoleApiKeysRoute =
   AuthenticatedConsoleApiKeysRouteImport.update({
     id: '/console/api-keys',
@@ -302,6 +329,12 @@ const AuthenticatedConsoleDevelopersRoute =
     path: '/console/developers',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedConsoleEmployeesRoute =
+  AuthenticatedConsoleEmployeesRouteImport.update({
+    id: '/console/employees',
+    path: '/console/employees',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedConsoleEnvironmentsRoute =
   AuthenticatedConsoleEnvironmentsRouteImport.update({
     id: '/console/environments',
@@ -314,6 +347,22 @@ const AuthenticatedConsoleGoLiveRoute =
     path: '/console/go-live',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedConsoleInquiriesRoute =
+  AuthenticatedConsoleInquiriesRouteImport.update({
+    id: '/console/inquiries',
+    path: '/console/inquiries',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedConsoleKybRoute = AuthenticatedConsoleKybRouteImport.update({
+  id: '/console/kyb',
+  path: '/console/kyb',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedConsoleKycRoute = AuthenticatedConsoleKycRouteImport.update({
+  id: '/console/kyc',
+  path: '/console/kyc',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedConsoleLiveAccessRoute =
   AuthenticatedConsoleLiveAccessRouteImport.update({
     id: '/console/live-access',
@@ -350,6 +399,12 @@ const AuthenticatedConsoleSettingsRoute =
     path: '/console/settings',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedConsoleTeamRoute =
+  AuthenticatedConsoleTeamRouteImport.update({
+    id: '/console/team',
+    path: '/console/team',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedConsoleTransactionsRoute =
   AuthenticatedConsoleTransactionsRouteImport.update({
     id: '/console/transactions',
@@ -360,6 +415,12 @@ const AuthenticatedConsoleUsersRoute =
   AuthenticatedConsoleUsersRouteImport.update({
     id: '/console/users',
     path: '/console/users',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedConsoleVerificationsRoute =
+  AuthenticatedConsoleVerificationsRouteImport.update({
+    id: '/console/verifications',
+    path: '/console/verifications',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedConsoleWatchlistsRoute =
@@ -380,6 +441,11 @@ const AuthenticatedSecurityMfaRoute =
     path: '/security/mfa',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiHooksAuthEmailRoute = ApiHooksAuthEmailRouteImport.update({
+  id: '/api/hooks/auth-email',
+  path: '/api/hooks/auth-email',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedAdminCompaniesOrgIdRoute =
   AuthenticatedAdminCompaniesOrgIdRouteImport.update({
     id: '/admin/companies/$orgId',
@@ -403,6 +469,18 @@ const AuthenticatedConsoleCasesCaseIdRoute =
     id: '/console/cases/$caseId',
     path: '/console/cases/$caseId',
     getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedConsoleUsersIndexRoute =
+  AuthenticatedConsoleUsersIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedConsoleUsersRoute,
+  } as any)
+const AuthenticatedConsoleUsersUserIdRoute =
+  AuthenticatedConsoleUsersUserIdRouteImport.update({
+    id: '/$userId',
+    path: '/$userId',
+    getParentRoute: () => AuthenticatedConsoleUsersRoute,
   } as any)
 const ApiPublicHooksPlaidSyncRoute = ApiPublicHooksPlaidSyncRouteImport.update({
   id: '/api/public/hooks/plaid-sync',
@@ -571,6 +649,7 @@ export interface FileRoutesByFullPath {
   '/signin': typeof SigninRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/select-organization': typeof AuthenticatedSelectOrganizationRoute
+  '/auth/confirm': typeof AuthConfirmRoute
   '/auth/mfa': typeof AuthMfaRoute
   '/invite/$token': typeof InviteTokenRoute
   '/solutions/aml-screening': typeof SolutionsAmlScreeningRoute
@@ -586,31 +665,41 @@ export interface FileRoutesByFullPath {
   '/admin/integrations': typeof AuthenticatedAdminIntegrationsRoute
   '/admin/owner': typeof AuthenticatedAdminOwnerRoute
   '/admin/plans': typeof AuthenticatedAdminPlansRoute
+  '/admin/team': typeof AuthenticatedAdminTeamRoute
   '/console/alerts': typeof AuthenticatedConsoleAlertsRoute
+  '/console/aml': typeof AuthenticatedConsoleAmlRoute
   '/console/api-keys': typeof AuthenticatedConsoleApiKeysRoute
   '/console/api-logs': typeof AuthenticatedConsoleApiLogsRoute
   '/console/audit': typeof AuthenticatedConsoleAuditRoute
   '/console/billing': typeof AuthenticatedConsoleBillingRoute
   '/console/compliance': typeof AuthenticatedConsoleComplianceRoute
   '/console/developers': typeof AuthenticatedConsoleDevelopersRoute
+  '/console/employees': typeof AuthenticatedConsoleEmployeesRoute
   '/console/environments': typeof AuthenticatedConsoleEnvironmentsRoute
   '/console/go-live': typeof AuthenticatedConsoleGoLiveRoute
+  '/console/inquiries': typeof AuthenticatedConsoleInquiriesRoute
+  '/console/kyb': typeof AuthenticatedConsoleKybRoute
+  '/console/kyc': typeof AuthenticatedConsoleKycRoute
   '/console/live-access': typeof AuthenticatedConsoleLiveAccessRoute
   '/console/organization': typeof AuthenticatedConsoleOrganizationRoute
   '/console/reports': typeof AuthenticatedConsoleReportsRoute
   '/console/roles': typeof AuthenticatedConsoleRolesRoute
   '/console/security': typeof AuthenticatedConsoleSecurityRoute
   '/console/settings': typeof AuthenticatedConsoleSettingsRoute
+  '/console/team': typeof AuthenticatedConsoleTeamRoute
   '/console/transactions': typeof AuthenticatedConsoleTransactionsRoute
-  '/console/users': typeof AuthenticatedConsoleUsersRoute
+  '/console/users': typeof AuthenticatedConsoleUsersRouteWithChildren
+  '/console/verifications': typeof AuthenticatedConsoleVerificationsRoute
   '/console/watchlists': typeof AuthenticatedConsoleWatchlistsRoute
   '/console/webhooks': typeof AuthenticatedConsoleWebhooksRoute
   '/security/mfa': typeof AuthenticatedSecurityMfaRoute
+  '/api/hooks/auth-email': typeof ApiHooksAuthEmailRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/console/': typeof AuthenticatedConsoleIndexRoute
   '/admin/companies/$orgId': typeof AuthenticatedAdminCompaniesOrgIdRoute
   '/admin/invoices/$invoiceId': typeof AuthenticatedAdminInvoicesInvoiceIdRoute
   '/console/cases/$caseId': typeof AuthenticatedConsoleCasesCaseIdRoute
+  '/console/users/$userId': typeof AuthenticatedConsoleUsersUserIdRoute
   '/api/public/hooks/plaid-sync': typeof ApiPublicHooksPlaidSyncRoute
   '/api/public/hooks/refresh-watchlists': typeof ApiPublicHooksRefreshWatchlistsRoute
   '/api/public/hooks/rescreen': typeof ApiPublicHooksRescreenRoute
@@ -622,6 +711,7 @@ export interface FileRoutesByFullPath {
   '/api/public/v1/screening': typeof ApiPublicV1ScreeningRoute
   '/api/public/v1/transactions': typeof ApiPublicV1TransactionsRoute
   '/console/cases/': typeof AuthenticatedConsoleCasesIndexRoute
+  '/console/users/': typeof AuthenticatedConsoleUsersIndexRoute
   '/api/public/v1/alerts/$alertId': typeof ApiPublicV1AlertsAlertIdRoute
   '/api/public/v1/cases/$caseId': typeof ApiPublicV1CasesCaseIdRouteWithChildren
   '/api/public/v1/hits/$hitId': typeof ApiPublicV1HitsHitIdRoute
@@ -654,6 +744,7 @@ export interface FileRoutesByTo {
   '/signin': typeof SigninRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/select-organization': typeof AuthenticatedSelectOrganizationRoute
+  '/auth/confirm': typeof AuthConfirmRoute
   '/auth/mfa': typeof AuthMfaRoute
   '/invite/$token': typeof InviteTokenRoute
   '/solutions/aml-screening': typeof SolutionsAmlScreeningRoute
@@ -669,31 +760,40 @@ export interface FileRoutesByTo {
   '/admin/integrations': typeof AuthenticatedAdminIntegrationsRoute
   '/admin/owner': typeof AuthenticatedAdminOwnerRoute
   '/admin/plans': typeof AuthenticatedAdminPlansRoute
+  '/admin/team': typeof AuthenticatedAdminTeamRoute
   '/console/alerts': typeof AuthenticatedConsoleAlertsRoute
+  '/console/aml': typeof AuthenticatedConsoleAmlRoute
   '/console/api-keys': typeof AuthenticatedConsoleApiKeysRoute
   '/console/api-logs': typeof AuthenticatedConsoleApiLogsRoute
   '/console/audit': typeof AuthenticatedConsoleAuditRoute
   '/console/billing': typeof AuthenticatedConsoleBillingRoute
   '/console/compliance': typeof AuthenticatedConsoleComplianceRoute
   '/console/developers': typeof AuthenticatedConsoleDevelopersRoute
+  '/console/employees': typeof AuthenticatedConsoleEmployeesRoute
   '/console/environments': typeof AuthenticatedConsoleEnvironmentsRoute
   '/console/go-live': typeof AuthenticatedConsoleGoLiveRoute
+  '/console/inquiries': typeof AuthenticatedConsoleInquiriesRoute
+  '/console/kyb': typeof AuthenticatedConsoleKybRoute
+  '/console/kyc': typeof AuthenticatedConsoleKycRoute
   '/console/live-access': typeof AuthenticatedConsoleLiveAccessRoute
   '/console/organization': typeof AuthenticatedConsoleOrganizationRoute
   '/console/reports': typeof AuthenticatedConsoleReportsRoute
   '/console/roles': typeof AuthenticatedConsoleRolesRoute
   '/console/security': typeof AuthenticatedConsoleSecurityRoute
   '/console/settings': typeof AuthenticatedConsoleSettingsRoute
+  '/console/team': typeof AuthenticatedConsoleTeamRoute
   '/console/transactions': typeof AuthenticatedConsoleTransactionsRoute
-  '/console/users': typeof AuthenticatedConsoleUsersRoute
+  '/console/verifications': typeof AuthenticatedConsoleVerificationsRoute
   '/console/watchlists': typeof AuthenticatedConsoleWatchlistsRoute
   '/console/webhooks': typeof AuthenticatedConsoleWebhooksRoute
   '/security/mfa': typeof AuthenticatedSecurityMfaRoute
+  '/api/hooks/auth-email': typeof ApiHooksAuthEmailRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/console': typeof AuthenticatedConsoleIndexRoute
   '/admin/companies/$orgId': typeof AuthenticatedAdminCompaniesOrgIdRoute
   '/admin/invoices/$invoiceId': typeof AuthenticatedAdminInvoicesInvoiceIdRoute
   '/console/cases/$caseId': typeof AuthenticatedConsoleCasesCaseIdRoute
+  '/console/users/$userId': typeof AuthenticatedConsoleUsersUserIdRoute
   '/api/public/hooks/plaid-sync': typeof ApiPublicHooksPlaidSyncRoute
   '/api/public/hooks/refresh-watchlists': typeof ApiPublicHooksRefreshWatchlistsRoute
   '/api/public/hooks/rescreen': typeof ApiPublicHooksRescreenRoute
@@ -705,6 +805,7 @@ export interface FileRoutesByTo {
   '/api/public/v1/screening': typeof ApiPublicV1ScreeningRoute
   '/api/public/v1/transactions': typeof ApiPublicV1TransactionsRoute
   '/console/cases': typeof AuthenticatedConsoleCasesIndexRoute
+  '/console/users': typeof AuthenticatedConsoleUsersIndexRoute
   '/api/public/v1/alerts/$alertId': typeof ApiPublicV1AlertsAlertIdRoute
   '/api/public/v1/cases/$caseId': typeof ApiPublicV1CasesCaseIdRouteWithChildren
   '/api/public/v1/hits/$hitId': typeof ApiPublicV1HitsHitIdRoute
@@ -740,6 +841,7 @@ export interface FileRoutesById {
   '/signin': typeof SigninRoute
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/_authenticated/select-organization': typeof AuthenticatedSelectOrganizationRoute
+  '/auth/confirm': typeof AuthConfirmRoute
   '/auth/mfa': typeof AuthMfaRoute
   '/invite/$token': typeof InviteTokenRoute
   '/solutions/aml-screening': typeof SolutionsAmlScreeningRoute
@@ -755,31 +857,41 @@ export interface FileRoutesById {
   '/_authenticated/admin/integrations': typeof AuthenticatedAdminIntegrationsRoute
   '/_authenticated/admin/owner': typeof AuthenticatedAdminOwnerRoute
   '/_authenticated/admin/plans': typeof AuthenticatedAdminPlansRoute
+  '/_authenticated/admin/team': typeof AuthenticatedAdminTeamRoute
   '/_authenticated/console/alerts': typeof AuthenticatedConsoleAlertsRoute
+  '/_authenticated/console/aml': typeof AuthenticatedConsoleAmlRoute
   '/_authenticated/console/api-keys': typeof AuthenticatedConsoleApiKeysRoute
   '/_authenticated/console/api-logs': typeof AuthenticatedConsoleApiLogsRoute
   '/_authenticated/console/audit': typeof AuthenticatedConsoleAuditRoute
   '/_authenticated/console/billing': typeof AuthenticatedConsoleBillingRoute
   '/_authenticated/console/compliance': typeof AuthenticatedConsoleComplianceRoute
   '/_authenticated/console/developers': typeof AuthenticatedConsoleDevelopersRoute
+  '/_authenticated/console/employees': typeof AuthenticatedConsoleEmployeesRoute
   '/_authenticated/console/environments': typeof AuthenticatedConsoleEnvironmentsRoute
   '/_authenticated/console/go-live': typeof AuthenticatedConsoleGoLiveRoute
+  '/_authenticated/console/inquiries': typeof AuthenticatedConsoleInquiriesRoute
+  '/_authenticated/console/kyb': typeof AuthenticatedConsoleKybRoute
+  '/_authenticated/console/kyc': typeof AuthenticatedConsoleKycRoute
   '/_authenticated/console/live-access': typeof AuthenticatedConsoleLiveAccessRoute
   '/_authenticated/console/organization': typeof AuthenticatedConsoleOrganizationRoute
   '/_authenticated/console/reports': typeof AuthenticatedConsoleReportsRoute
   '/_authenticated/console/roles': typeof AuthenticatedConsoleRolesRoute
   '/_authenticated/console/security': typeof AuthenticatedConsoleSecurityRoute
   '/_authenticated/console/settings': typeof AuthenticatedConsoleSettingsRoute
+  '/_authenticated/console/team': typeof AuthenticatedConsoleTeamRoute
   '/_authenticated/console/transactions': typeof AuthenticatedConsoleTransactionsRoute
-  '/_authenticated/console/users': typeof AuthenticatedConsoleUsersRoute
+  '/_authenticated/console/users': typeof AuthenticatedConsoleUsersRouteWithChildren
+  '/_authenticated/console/verifications': typeof AuthenticatedConsoleVerificationsRoute
   '/_authenticated/console/watchlists': typeof AuthenticatedConsoleWatchlistsRoute
   '/_authenticated/console/webhooks': typeof AuthenticatedConsoleWebhooksRoute
   '/_authenticated/security/mfa': typeof AuthenticatedSecurityMfaRoute
+  '/api/hooks/auth-email': typeof ApiHooksAuthEmailRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/console/': typeof AuthenticatedConsoleIndexRoute
   '/_authenticated/admin/companies/$orgId': typeof AuthenticatedAdminCompaniesOrgIdRoute
   '/_authenticated/admin/invoices/$invoiceId': typeof AuthenticatedAdminInvoicesInvoiceIdRoute
   '/_authenticated/console/cases/$caseId': typeof AuthenticatedConsoleCasesCaseIdRoute
+  '/_authenticated/console/users/$userId': typeof AuthenticatedConsoleUsersUserIdRoute
   '/api/public/hooks/plaid-sync': typeof ApiPublicHooksPlaidSyncRoute
   '/api/public/hooks/refresh-watchlists': typeof ApiPublicHooksRefreshWatchlistsRoute
   '/api/public/hooks/rescreen': typeof ApiPublicHooksRescreenRoute
@@ -791,6 +903,7 @@ export interface FileRoutesById {
   '/api/public/v1/screening': typeof ApiPublicV1ScreeningRoute
   '/api/public/v1/transactions': typeof ApiPublicV1TransactionsRoute
   '/_authenticated/console/cases/': typeof AuthenticatedConsoleCasesIndexRoute
+  '/_authenticated/console/users/': typeof AuthenticatedConsoleUsersIndexRoute
   '/api/public/v1/alerts/$alertId': typeof ApiPublicV1AlertsAlertIdRoute
   '/api/public/v1/cases/$caseId': typeof ApiPublicV1CasesCaseIdRouteWithChildren
   '/api/public/v1/hits/$hitId': typeof ApiPublicV1HitsHitIdRoute
@@ -826,6 +939,7 @@ export interface FileRouteTypes {
     | '/signin'
     | '/onboarding'
     | '/select-organization'
+    | '/auth/confirm'
     | '/auth/mfa'
     | '/invite/$token'
     | '/solutions/aml-screening'
@@ -841,31 +955,41 @@ export interface FileRouteTypes {
     | '/admin/integrations'
     | '/admin/owner'
     | '/admin/plans'
+    | '/admin/team'
     | '/console/alerts'
+    | '/console/aml'
     | '/console/api-keys'
     | '/console/api-logs'
     | '/console/audit'
     | '/console/billing'
     | '/console/compliance'
     | '/console/developers'
+    | '/console/employees'
     | '/console/environments'
     | '/console/go-live'
+    | '/console/inquiries'
+    | '/console/kyb'
+    | '/console/kyc'
     | '/console/live-access'
     | '/console/organization'
     | '/console/reports'
     | '/console/roles'
     | '/console/security'
     | '/console/settings'
+    | '/console/team'
     | '/console/transactions'
     | '/console/users'
+    | '/console/verifications'
     | '/console/watchlists'
     | '/console/webhooks'
     | '/security/mfa'
+    | '/api/hooks/auth-email'
     | '/admin/'
     | '/console/'
     | '/admin/companies/$orgId'
     | '/admin/invoices/$invoiceId'
     | '/console/cases/$caseId'
+    | '/console/users/$userId'
     | '/api/public/hooks/plaid-sync'
     | '/api/public/hooks/refresh-watchlists'
     | '/api/public/hooks/rescreen'
@@ -877,6 +1001,7 @@ export interface FileRouteTypes {
     | '/api/public/v1/screening'
     | '/api/public/v1/transactions'
     | '/console/cases/'
+    | '/console/users/'
     | '/api/public/v1/alerts/$alertId'
     | '/api/public/v1/cases/$caseId'
     | '/api/public/v1/hits/$hitId'
@@ -909,6 +1034,7 @@ export interface FileRouteTypes {
     | '/signin'
     | '/onboarding'
     | '/select-organization'
+    | '/auth/confirm'
     | '/auth/mfa'
     | '/invite/$token'
     | '/solutions/aml-screening'
@@ -924,31 +1050,40 @@ export interface FileRouteTypes {
     | '/admin/integrations'
     | '/admin/owner'
     | '/admin/plans'
+    | '/admin/team'
     | '/console/alerts'
+    | '/console/aml'
     | '/console/api-keys'
     | '/console/api-logs'
     | '/console/audit'
     | '/console/billing'
     | '/console/compliance'
     | '/console/developers'
+    | '/console/employees'
     | '/console/environments'
     | '/console/go-live'
+    | '/console/inquiries'
+    | '/console/kyb'
+    | '/console/kyc'
     | '/console/live-access'
     | '/console/organization'
     | '/console/reports'
     | '/console/roles'
     | '/console/security'
     | '/console/settings'
+    | '/console/team'
     | '/console/transactions'
-    | '/console/users'
+    | '/console/verifications'
     | '/console/watchlists'
     | '/console/webhooks'
     | '/security/mfa'
+    | '/api/hooks/auth-email'
     | '/admin'
     | '/console'
     | '/admin/companies/$orgId'
     | '/admin/invoices/$invoiceId'
     | '/console/cases/$caseId'
+    | '/console/users/$userId'
     | '/api/public/hooks/plaid-sync'
     | '/api/public/hooks/refresh-watchlists'
     | '/api/public/hooks/rescreen'
@@ -960,6 +1095,7 @@ export interface FileRouteTypes {
     | '/api/public/v1/screening'
     | '/api/public/v1/transactions'
     | '/console/cases'
+    | '/console/users'
     | '/api/public/v1/alerts/$alertId'
     | '/api/public/v1/cases/$caseId'
     | '/api/public/v1/hits/$hitId'
@@ -994,6 +1130,7 @@ export interface FileRouteTypes {
     | '/signin'
     | '/_authenticated/onboarding'
     | '/_authenticated/select-organization'
+    | '/auth/confirm'
     | '/auth/mfa'
     | '/invite/$token'
     | '/solutions/aml-screening'
@@ -1009,31 +1146,41 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/integrations'
     | '/_authenticated/admin/owner'
     | '/_authenticated/admin/plans'
+    | '/_authenticated/admin/team'
     | '/_authenticated/console/alerts'
+    | '/_authenticated/console/aml'
     | '/_authenticated/console/api-keys'
     | '/_authenticated/console/api-logs'
     | '/_authenticated/console/audit'
     | '/_authenticated/console/billing'
     | '/_authenticated/console/compliance'
     | '/_authenticated/console/developers'
+    | '/_authenticated/console/employees'
     | '/_authenticated/console/environments'
     | '/_authenticated/console/go-live'
+    | '/_authenticated/console/inquiries'
+    | '/_authenticated/console/kyb'
+    | '/_authenticated/console/kyc'
     | '/_authenticated/console/live-access'
     | '/_authenticated/console/organization'
     | '/_authenticated/console/reports'
     | '/_authenticated/console/roles'
     | '/_authenticated/console/security'
     | '/_authenticated/console/settings'
+    | '/_authenticated/console/team'
     | '/_authenticated/console/transactions'
     | '/_authenticated/console/users'
+    | '/_authenticated/console/verifications'
     | '/_authenticated/console/watchlists'
     | '/_authenticated/console/webhooks'
     | '/_authenticated/security/mfa'
+    | '/api/hooks/auth-email'
     | '/_authenticated/admin/'
     | '/_authenticated/console/'
     | '/_authenticated/admin/companies/$orgId'
     | '/_authenticated/admin/invoices/$invoiceId'
     | '/_authenticated/console/cases/$caseId'
+    | '/_authenticated/console/users/$userId'
     | '/api/public/hooks/plaid-sync'
     | '/api/public/hooks/refresh-watchlists'
     | '/api/public/hooks/rescreen'
@@ -1045,6 +1192,7 @@ export interface FileRouteTypes {
     | '/api/public/v1/screening'
     | '/api/public/v1/transactions'
     | '/_authenticated/console/cases/'
+    | '/_authenticated/console/users/'
     | '/api/public/v1/alerts/$alertId'
     | '/api/public/v1/cases/$caseId'
     | '/api/public/v1/hits/$hitId'
@@ -1085,6 +1233,7 @@ export interface RootRouteChildren {
   SolutionsPersonVerificationRoute: typeof SolutionsPersonVerificationRoute
   VerifyTokenRoute: typeof VerifyTokenRoute
   SolutionsIndexRoute: typeof SolutionsIndexRoute
+  ApiHooksAuthEmailRoute: typeof ApiHooksAuthEmailRoute
   ApiPublicHooksPlaidSyncRoute: typeof ApiPublicHooksPlaidSyncRoute
   ApiPublicHooksRefreshWatchlistsRoute: typeof ApiPublicHooksRefreshWatchlistsRoute
   ApiPublicHooksRescreenRoute: typeof ApiPublicHooksRescreenRoute
@@ -1213,6 +1362,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthIndexRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/auth/confirm': {
+      id: '/auth/confirm'
+      path: '/confirm'
+      fullPath: '/auth/confirm'
+      preLoaderRoute: typeof AuthConfirmRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/auth/mfa': {
       id: '/auth/mfa'
       path: '/mfa'
@@ -1318,6 +1474,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminPlansRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/team': {
+      id: '/_authenticated/admin/team'
+      path: '/admin/team'
+      fullPath: '/admin/team'
+      preLoaderRoute: typeof AuthenticatedAdminTeamRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/console/': {
       id: '/_authenticated/console/'
       path: '/console'
@@ -1330,6 +1493,13 @@ declare module '@tanstack/react-router' {
       path: '/console/alerts'
       fullPath: '/console/alerts'
       preLoaderRoute: typeof AuthenticatedConsoleAlertsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/console/aml': {
+      id: '/_authenticated/console/aml'
+      path: '/console/aml'
+      fullPath: '/console/aml'
+      preLoaderRoute: typeof AuthenticatedConsoleAmlRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/console/api-keys': {
@@ -1374,6 +1544,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedConsoleDevelopersRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/console/employees': {
+      id: '/_authenticated/console/employees'
+      path: '/console/employees'
+      fullPath: '/console/employees'
+      preLoaderRoute: typeof AuthenticatedConsoleEmployeesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/console/environments': {
       id: '/_authenticated/console/environments'
       path: '/console/environments'
@@ -1386,6 +1563,27 @@ declare module '@tanstack/react-router' {
       path: '/console/go-live'
       fullPath: '/console/go-live'
       preLoaderRoute: typeof AuthenticatedConsoleGoLiveRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/console/inquiries': {
+      id: '/_authenticated/console/inquiries'
+      path: '/console/inquiries'
+      fullPath: '/console/inquiries'
+      preLoaderRoute: typeof AuthenticatedConsoleInquiriesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/console/kyb': {
+      id: '/_authenticated/console/kyb'
+      path: '/console/kyb'
+      fullPath: '/console/kyb'
+      preLoaderRoute: typeof AuthenticatedConsoleKybRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/console/kyc': {
+      id: '/_authenticated/console/kyc'
+      path: '/console/kyc'
+      fullPath: '/console/kyc'
+      preLoaderRoute: typeof AuthenticatedConsoleKycRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/console/live-access': {
@@ -1430,6 +1628,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedConsoleSettingsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/console/team': {
+      id: '/_authenticated/console/team'
+      path: '/console/team'
+      fullPath: '/console/team'
+      preLoaderRoute: typeof AuthenticatedConsoleTeamRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/console/transactions': {
       id: '/_authenticated/console/transactions'
       path: '/console/transactions'
@@ -1442,6 +1647,13 @@ declare module '@tanstack/react-router' {
       path: '/console/users'
       fullPath: '/console/users'
       preLoaderRoute: typeof AuthenticatedConsoleUsersRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/console/verifications': {
+      id: '/_authenticated/console/verifications'
+      path: '/console/verifications'
+      fullPath: '/console/verifications'
+      preLoaderRoute: typeof AuthenticatedConsoleVerificationsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/console/watchlists': {
@@ -1464,6 +1676,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/security/mfa'
       preLoaderRoute: typeof AuthenticatedSecurityMfaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/api/hooks/auth-email': {
+      id: '/api/hooks/auth-email'
+      path: '/api/hooks/auth-email'
+      fullPath: '/api/hooks/auth-email'
+      preLoaderRoute: typeof ApiHooksAuthEmailRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/admin/companies/$orgId': {
       id: '/_authenticated/admin/companies/$orgId'
@@ -1492,6 +1711,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/console/cases/$caseId'
       preLoaderRoute: typeof AuthenticatedConsoleCasesCaseIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/console/users/': {
+      id: '/_authenticated/console/users/'
+      path: '/'
+      fullPath: '/console/users/'
+      preLoaderRoute: typeof AuthenticatedConsoleUsersIndexRouteImport
+      parentRoute: typeof AuthenticatedConsoleUsersRoute
+    }
+    '/_authenticated/console/users/$userId': {
+      id: '/_authenticated/console/users/$userId'
+      path: '/$userId'
+      fullPath: '/console/users/$userId'
+      preLoaderRoute: typeof AuthenticatedConsoleUsersUserIdRouteImport
+      parentRoute: typeof AuthenticatedConsoleUsersRoute
     }
     '/api/public/hooks/plaid-sync': {
       id: '/api/public/hooks/plaid-sync'
@@ -1685,6 +1918,22 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedConsoleUsersRouteChildren {
+  AuthenticatedConsoleUsersUserIdRoute: typeof AuthenticatedConsoleUsersUserIdRoute
+  AuthenticatedConsoleUsersIndexRoute: typeof AuthenticatedConsoleUsersIndexRoute
+}
+
+const AuthenticatedConsoleUsersRouteChildren: AuthenticatedConsoleUsersRouteChildren =
+  {
+    AuthenticatedConsoleUsersUserIdRoute: AuthenticatedConsoleUsersUserIdRoute,
+    AuthenticatedConsoleUsersIndexRoute: AuthenticatedConsoleUsersIndexRoute,
+  }
+
+const AuthenticatedConsoleUsersRouteWithChildren =
+  AuthenticatedConsoleUsersRoute._addFileChildren(
+    AuthenticatedConsoleUsersRouteChildren,
+  )
+
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
   AuthenticatedSelectOrganizationRoute: typeof AuthenticatedSelectOrganizationRoute
@@ -1694,23 +1943,31 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminIntegrationsRoute: typeof AuthenticatedAdminIntegrationsRoute
   AuthenticatedAdminOwnerRoute: typeof AuthenticatedAdminOwnerRoute
   AuthenticatedAdminPlansRoute: typeof AuthenticatedAdminPlansRoute
+  AuthenticatedAdminTeamRoute: typeof AuthenticatedAdminTeamRoute
   AuthenticatedConsoleAlertsRoute: typeof AuthenticatedConsoleAlertsRoute
+  AuthenticatedConsoleAmlRoute: typeof AuthenticatedConsoleAmlRoute
   AuthenticatedConsoleApiKeysRoute: typeof AuthenticatedConsoleApiKeysRoute
   AuthenticatedConsoleApiLogsRoute: typeof AuthenticatedConsoleApiLogsRoute
   AuthenticatedConsoleAuditRoute: typeof AuthenticatedConsoleAuditRoute
   AuthenticatedConsoleBillingRoute: typeof AuthenticatedConsoleBillingRoute
   AuthenticatedConsoleComplianceRoute: typeof AuthenticatedConsoleComplianceRoute
   AuthenticatedConsoleDevelopersRoute: typeof AuthenticatedConsoleDevelopersRoute
+  AuthenticatedConsoleEmployeesRoute: typeof AuthenticatedConsoleEmployeesRoute
   AuthenticatedConsoleEnvironmentsRoute: typeof AuthenticatedConsoleEnvironmentsRoute
   AuthenticatedConsoleGoLiveRoute: typeof AuthenticatedConsoleGoLiveRoute
+  AuthenticatedConsoleInquiriesRoute: typeof AuthenticatedConsoleInquiriesRoute
+  AuthenticatedConsoleKybRoute: typeof AuthenticatedConsoleKybRoute
+  AuthenticatedConsoleKycRoute: typeof AuthenticatedConsoleKycRoute
   AuthenticatedConsoleLiveAccessRoute: typeof AuthenticatedConsoleLiveAccessRoute
   AuthenticatedConsoleOrganizationRoute: typeof AuthenticatedConsoleOrganizationRoute
   AuthenticatedConsoleReportsRoute: typeof AuthenticatedConsoleReportsRoute
   AuthenticatedConsoleRolesRoute: typeof AuthenticatedConsoleRolesRoute
   AuthenticatedConsoleSecurityRoute: typeof AuthenticatedConsoleSecurityRoute
   AuthenticatedConsoleSettingsRoute: typeof AuthenticatedConsoleSettingsRoute
+  AuthenticatedConsoleTeamRoute: typeof AuthenticatedConsoleTeamRoute
   AuthenticatedConsoleTransactionsRoute: typeof AuthenticatedConsoleTransactionsRoute
-  AuthenticatedConsoleUsersRoute: typeof AuthenticatedConsoleUsersRoute
+  AuthenticatedConsoleUsersRoute: typeof AuthenticatedConsoleUsersRouteWithChildren
+  AuthenticatedConsoleVerificationsRoute: typeof AuthenticatedConsoleVerificationsRoute
   AuthenticatedConsoleWatchlistsRoute: typeof AuthenticatedConsoleWatchlistsRoute
   AuthenticatedConsoleWebhooksRoute: typeof AuthenticatedConsoleWebhooksRoute
   AuthenticatedSecurityMfaRoute: typeof AuthenticatedSecurityMfaRoute
@@ -1731,23 +1988,32 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminIntegrationsRoute: AuthenticatedAdminIntegrationsRoute,
   AuthenticatedAdminOwnerRoute: AuthenticatedAdminOwnerRoute,
   AuthenticatedAdminPlansRoute: AuthenticatedAdminPlansRoute,
+  AuthenticatedAdminTeamRoute: AuthenticatedAdminTeamRoute,
   AuthenticatedConsoleAlertsRoute: AuthenticatedConsoleAlertsRoute,
+  AuthenticatedConsoleAmlRoute: AuthenticatedConsoleAmlRoute,
   AuthenticatedConsoleApiKeysRoute: AuthenticatedConsoleApiKeysRoute,
   AuthenticatedConsoleApiLogsRoute: AuthenticatedConsoleApiLogsRoute,
   AuthenticatedConsoleAuditRoute: AuthenticatedConsoleAuditRoute,
   AuthenticatedConsoleBillingRoute: AuthenticatedConsoleBillingRoute,
   AuthenticatedConsoleComplianceRoute: AuthenticatedConsoleComplianceRoute,
   AuthenticatedConsoleDevelopersRoute: AuthenticatedConsoleDevelopersRoute,
+  AuthenticatedConsoleEmployeesRoute: AuthenticatedConsoleEmployeesRoute,
   AuthenticatedConsoleEnvironmentsRoute: AuthenticatedConsoleEnvironmentsRoute,
   AuthenticatedConsoleGoLiveRoute: AuthenticatedConsoleGoLiveRoute,
+  AuthenticatedConsoleInquiriesRoute: AuthenticatedConsoleInquiriesRoute,
+  AuthenticatedConsoleKybRoute: AuthenticatedConsoleKybRoute,
+  AuthenticatedConsoleKycRoute: AuthenticatedConsoleKycRoute,
   AuthenticatedConsoleLiveAccessRoute: AuthenticatedConsoleLiveAccessRoute,
   AuthenticatedConsoleOrganizationRoute: AuthenticatedConsoleOrganizationRoute,
   AuthenticatedConsoleReportsRoute: AuthenticatedConsoleReportsRoute,
   AuthenticatedConsoleRolesRoute: AuthenticatedConsoleRolesRoute,
   AuthenticatedConsoleSecurityRoute: AuthenticatedConsoleSecurityRoute,
   AuthenticatedConsoleSettingsRoute: AuthenticatedConsoleSettingsRoute,
+  AuthenticatedConsoleTeamRoute: AuthenticatedConsoleTeamRoute,
   AuthenticatedConsoleTransactionsRoute: AuthenticatedConsoleTransactionsRoute,
-  AuthenticatedConsoleUsersRoute: AuthenticatedConsoleUsersRoute,
+  AuthenticatedConsoleUsersRoute: AuthenticatedConsoleUsersRouteWithChildren,
+  AuthenticatedConsoleVerificationsRoute:
+    AuthenticatedConsoleVerificationsRoute,
   AuthenticatedConsoleWatchlistsRoute: AuthenticatedConsoleWatchlistsRoute,
   AuthenticatedConsoleWebhooksRoute: AuthenticatedConsoleWebhooksRoute,
   AuthenticatedSecurityMfaRoute: AuthenticatedSecurityMfaRoute,
@@ -1764,11 +2030,13 @@ const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
 interface AuthRouteChildren {
+  AuthConfirmRoute: typeof AuthConfirmRoute
   AuthMfaRoute: typeof AuthMfaRoute
   AuthIndexRoute: typeof AuthIndexRoute
 }
 
 const AuthRouteChildren: AuthRouteChildren = {
+  AuthConfirmRoute: AuthConfirmRoute,
   AuthMfaRoute: AuthMfaRoute,
   AuthIndexRoute: AuthIndexRoute,
 }
@@ -1866,6 +2134,7 @@ const rootRouteChildren: RootRouteChildren = {
   SolutionsPersonVerificationRoute: SolutionsPersonVerificationRoute,
   VerifyTokenRoute: VerifyTokenRoute,
   SolutionsIndexRoute: SolutionsIndexRoute,
+  ApiHooksAuthEmailRoute: ApiHooksAuthEmailRoute,
   ApiPublicHooksPlaidSyncRoute: ApiPublicHooksPlaidSyncRoute,
   ApiPublicHooksRefreshWatchlistsRoute: ApiPublicHooksRefreshWatchlistsRoute,
   ApiPublicHooksRescreenRoute: ApiPublicHooksRescreenRoute,

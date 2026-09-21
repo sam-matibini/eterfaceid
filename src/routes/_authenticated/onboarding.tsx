@@ -4,7 +4,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 
 import { AuthFrame, authButtonClass, authInputClass } from "@/components/auth/AuthFrame";
-import { useOrganization } from "@/hooks/useSession";
+import { setActiveOrganization, useOrganization, useSession } from "@/hooks/useSession";
+import { membershipFromCreate, OPENING_COMPANY_KEY, persistCreatedWorkspace } from "@/lib/organization-memberships";
 import { acceptInvite, createOrganization } from "@/lib/teams.functions";
 
 export const Route = createFileRoute("/_authenticated/onboarding")({
@@ -21,6 +22,7 @@ function OnboardingPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { organization, memberships, ready } = useOrganization();
+  const { user } = useSession();
   const create = useServerFn(createOrganization);
   const join = useServerFn(acceptInvite);
 
@@ -50,17 +52,30 @@ function OnboardingPage() {
     if (storedCompany) setForm((f) => ({ ...f, name: storedCompany, legalName: storedCompany }));
   }, []);
 
-  async function finish(run: () => Promise<unknown>) {
+  async function finish(run: () => Promise<{ orgId?: string; name?: string; role?: string } | unknown>) {
     setBusy(true);
     setError(null);
     try {
-      await run();
+      const result = await run();
+      const payload = result && typeof result === "object" ? (result as { orgId?: string; name?: string; role?: "admin" | "analyst" | "viewer" }) : {};
+      const orgId = String(payload.orgId ?? "");
+      if (!orgId) throw new Error("The company dashboard could not be opened. Try Create company dashboard again.");
+      const companyName = payload.name || form.legalName || form.name;
+      const snapshot = membershipFromCreate({ orgId, name: companyName, role: payload.role ?? "admin" });
+      setActiveOrganization(orgId);
+      persistCreatedWorkspace(snapshot);
+      window.sessionStorage.setItem(OPENING_COMPANY_KEY, orgId);
       window.sessionStorage.removeItem("eid_invite_token");
       window.sessionStorage.removeItem("eid_company");
-      await queryClient.invalidateQueries();
-      void navigate({ to: "/security/mfa", replace: true });
+      queryClient.setQueryData(["my-org", user?.id], { memberships: [snapshot], current: snapshot });
+      void navigate({ to: "/console", replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      const message = err instanceof Error ? err.message : "The company dashboard could not be created. Try again.";
+      setError(
+        /Unauthorized|authorization header/i.test(message)
+          ? "Sign in with your confirmed company account to create the workspace, then you can update details and add team members."
+          : message,
+      );
     } finally {
       setBusy(false);
     }
@@ -99,14 +114,14 @@ function OnboardingPage() {
           }}
           className="space-y-3"
         >
-          <Field label="Legal Company Name" value={form.legalName || form.name} onChange={(v) => setForm({ ...form, legalName: v, name: v || form.name })} />
+          <Field label="Legal Company Name" value={form.legalName || form.name} onChange={(v) => setForm({ ...form, legalName: v, name: v || form.name })} required />
           <Field label="Registration Number" value={form.registrationNumber} onChange={(v) => setForm({ ...form, registrationNumber: v })} />
           <Field label="Country" value={form.country} onChange={(v) => setForm({ ...form, country: v.toUpperCase() })} />
           <Field label="Business Address" value={form.addressLine1} onChange={(v) => setForm({ ...form, addressLine1: v })} />
           <div className="grid gap-3 sm:grid-cols-3">
             <Field label="City" value={form.city} onChange={(v) => setForm({ ...form, city: v })} />
-            <Field label="Region" value={form.region} onChange={(v) => setForm({ ...form, region: v })} />
-            <Field label="Postal code" value={form.postalCode} onChange={(v) => setForm({ ...form, postalCode: v })} />
+            <Field label="Prov/state" value={form.region} onChange={(v) => setForm({ ...form, region: v })} />
+            <Field label="Zip/Postal code" value={form.postalCode} onChange={(v) => setForm({ ...form, postalCode: v })} />
           </div>
           <Field label="Website" value={form.website} onChange={(v) => setForm({ ...form, website: v })} />
           <button type="submit" disabled={busy} className={authButtonClass}>
@@ -146,11 +161,21 @@ function OnboardingPage() {
   );
 }
 
-function Field({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+function Field({
+  label,
+  value,
+  onChange,
+  required,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  required?: boolean;
+}) {
   return (
     <label className="block text-sm font-medium">
       {label}
-      <input value={value} onChange={(e) => onChange(e.target.value)} className={authInputClass} />
+      <input value={value} onChange={(e) => onChange(e.target.value)} className={authInputClass} required={required} />
     </label>
   );
 }

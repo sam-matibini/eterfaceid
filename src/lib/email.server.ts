@@ -4,13 +4,27 @@ import { NOTIFICATION_EVENT_LIST, type NotificationEvent } from "@/lib/notificat
 
 export const RESEND_PROVIDER = "resend";
 export const DEFAULT_FROM_NAME = "eterfaceID";
-export const DEFAULT_FROM_ADDRESS = "support@eterfaceid.com";
+export const VERIFIED_RESEND_DOMAIN = "verify.eterfaceid.com";
+export const DEFAULT_FROM_ADDRESS = `info@${VERIFIED_RESEND_DOMAIN}`;
+
+export function normalizeResendFromAddress(address?: string | null) {
+  const raw = (address ?? "").trim() || DEFAULT_FROM_ADDRESS;
+  const at = raw.lastIndexOf("@");
+  if (at < 1) return DEFAULT_FROM_ADDRESS;
+  const local = raw.slice(0, at);
+  const domain = raw.slice(at + 1).toLowerCase();
+  if (domain === "eterfaceid.com" || domain === "www.eterfaceid.com") {
+    return `${local}@${VERIFIED_RESEND_DOMAIN}`;
+  }
+  return raw;
+}
+
 export const RESEND_API_URL = "https://api.resend.com/emails";
 export const RESEND_GATEWAY_URL = "https://connector-gateway.lovable.dev/resend/emails";
 
 export function formatSender(name?: string | null, address?: string | null) {
   const fromName = (name ?? "").trim() || DEFAULT_FROM_NAME;
-  const fromAddress = (address ?? "").trim() || DEFAULT_FROM_ADDRESS;
+  const fromAddress = normalizeResendFromAddress(address);
   return `${fromName} <${fromAddress}>`;
 }
 
@@ -92,6 +106,21 @@ export function renderTemplate(
     data["footer"] ??
     "Sent by the eterfaceID Security &amp; Compliance Team. Never share passwords, MFA codes, API secret keys or webhook secrets.";
   switch (event) {
+    case "staff.invite":
+      return {
+        subject: `You've been invited to the eterfaceID App admin team`,
+        html: layout(
+          `Join the eterfaceID App admin team`,
+          p(`Hello ${data["name"] ?? "there"},`) +
+            p(
+              `${data["inviter"] ?? "eterfaceID"} has invited you to App admin as <strong>${data["role"] ?? "Operations"}</strong>.`,
+            ) +
+            p("Use this to open Integrations, companies and the rest of App admin.") +
+            button(data["link"] ?? "#", "Open App admin") +
+            p("If you did not expect this invitation, ignore this message."),
+          footer,
+        ),
+      };
     case "team.invite":
       return {
         subject: `You've been invited to join ${org} on eterfaceID`,
@@ -276,15 +305,44 @@ async function senderIdentity(admin: Admin) {
   };
 }
 
+const RESEND_KEY_STORE = Symbol.for("eid.resend.apiKey");
+
+function readGlobalResendKey() {
+  try {
+    const value = (globalThis as Record<PropertyKey, unknown>)[RESEND_KEY_STORE];
+    return typeof value === "string" && value.trim() ? value.trim() : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeGlobalResendKey(apiKey: string) {
+  try {
+    (globalThis as Record<PropertyKey, unknown>)[RESEND_KEY_STORE] = apiKey;
+  } catch {
+    /* isolate memory is best-effort */
+  }
+  try {
+    process.env["RESEND_API_KEY"] = apiKey;
+  } catch {
+    /* process.env can be immutable on Workers */
+  }
+}
+
 let bootstrapResendKey: string | null = null;
 
 export function setBootstrapResendKey(apiKey: string) {
   bootstrapResendKey = apiKey.trim();
-  process.env["RESEND_API_KEY"] = bootstrapResendKey;
+  writeGlobalResendKey(bootstrapResendKey);
 }
 
 export function peekBootstrapResendKey() {
-  return bootstrapResendKey ?? process.env["RESEND_API_KEY"]?.trim() ?? null;
+  return (
+    bootstrapResendKey ??
+    readGlobalResendKey() ??
+    process.env["RESEND_API_KEY"]?.trim() ??
+    null
+  );
 }
 
 async function storedResendKey(admin: Admin) {

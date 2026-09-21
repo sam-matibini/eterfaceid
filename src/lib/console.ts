@@ -1,6 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { AccessRole, AppRole } from "@/lib/access";
 import { inferAccessRole } from "@/lib/access";
+import { isEmployeeReference } from "@/lib/case-purpose";
+import { mergeCompanyProfile } from "@/lib/company-profile";
 
 export type { AppRole, AccessRole };
 export type CaseType = "person" | "business";
@@ -116,10 +118,19 @@ export async function fetchTeam() {
         invites: [],
       };
     }
+    if (/row-level security|permission denied|42501/i.test(members.error.message)) {
+      return { members: [], invites: [] };
+    }
     throw members.error;
   }
   if (profiles.error) throw profiles.error;
-  if (invites.error) throw invites.error;
+  let pendingInvites = invites.data ?? [];
+  if (invites.error) {
+    if (!/does not exist|schema cache|Could not find/i.test(invites.error.message)) {
+      throw invites.error;
+    }
+    pendingInvites = [];
+  }
   return {
     members: (members.data ?? []).map((m) => {
       const profile = (profiles.data ?? []).find((p) => p.id === m.user_id);
@@ -139,7 +150,7 @@ export async function fetchTeam() {
         fullName: profile?.full_name ?? null,
       };
     }),
-    invites: invites.data ?? [],
+    invites: pendingInvites,
   };
 }
 
@@ -170,15 +181,27 @@ export async function fetchApiRequestLogs() {
 
 export async function fetchOrganizationProfile(orgId: string) {
   const { data, error } = await supabase.from("organizations").select("*").eq("id", orgId).maybeSingle();
-  if (error) throw error;
-  return data;
+  if (error && !/row-level security|permission denied|42501/i.test(error.message)) throw error;
+  let application: Record<string, unknown> | null = null;
+  const apps = await supabase
+    .from("org_applications")
+    .select("*")
+    .eq("org_id", orgId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!apps.error && apps.data) application = apps.data as Record<string, unknown>;
+  return mergeCompanyProfile(
+    ((data ?? { id: orgId }) as Record<string, unknown> | null),
+    application,
+  );
 }
 
 export async function fetchDashboardStats() {
   const since = new Date();
   since.setHours(0, 0, 0, 0);
   const [cases, logs, keys] = await Promise.all([
-    supabase.from("cases").select("id, case_type, status, created_at"),
+    supabase.from("cases").select("id, case_type, status, reference, created_at"),
     supabase
       .from("api_request_logs")
       .select("id, success, created_at, environment")
@@ -188,10 +211,12 @@ export async function fetchDashboardStats() {
   if (cases.error) throw cases.error;
   const allCases = cases.data ?? [];
   const allLogs = logs.error ? [] : (logs.data ?? []);
+  const employees = allCases.filter((c) => isEmployeeReference(c.reference)).length;
   return {
-    kyc: allCases.filter((c) => c.case_type === "person").length,
+    kyc: allCases.filter((c) => c.case_type === "person" && !isEmployeeReference(c.reference)).length,
     kyb: allCases.filter((c) => c.case_type === "business").length,
     aml: allCases.length,
+    employees,
     requestsToday: allLogs.length,
     successful: allLogs.filter((l) => l.success !== false).length,
     failed: allLogs.filter((l) => l.success === false).length,

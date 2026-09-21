@@ -9,6 +9,7 @@ import { z } from "zod";
 
 import type { Database } from "@/integrations/supabase/types";
 import { CORS_HEADERS, corsPreflight, jsonResponse, sha256Hex } from "@/lib/api-gateway.server";
+import { ensurePublicSupabaseEnv, publicSupabaseUrl, supabaseAccessKey } from "@/lib/supabase-public-env";
 import { processDocument, processSelfie } from "@/lib/verification-core.server";
 
 const schema = z.object({
@@ -42,7 +43,8 @@ const schema = z.object({
 });
 
 function admin() {
-  return createClient<Database>(process.env["SUPABASE_URL"]!, process.env["SUPABASE_SERVICE_ROLE_KEY"]!, {
+  ensurePublicSupabaseEnv();
+  return createClient<Database>(publicSupabaseUrl(), supabaseAccessKey(), {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 }

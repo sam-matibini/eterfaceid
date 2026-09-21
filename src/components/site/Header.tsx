@@ -1,10 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Menu, X } from "lucide-react";
-import { useSession } from "@/hooks/useSession";
 import { megaMenu, solutionsGroup } from "./nav-data";
 import { BrandLogo } from "./BrandLogo";
-
 
 const topLevel = [
   { label: "Solutions", panel: true },
@@ -18,8 +16,6 @@ export function Header() {
   const [panelOpen, setPanelOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
-  const { session } = useSession();
-
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -79,10 +75,10 @@ export function Header() {
               Company
             </Link>
             <Link
-              to={session ? "/console" : "/auth"}
+              to="/auth"
               className="text-[0.875rem] text-ink-soft transition-colors hover:text-ink"
             >
-              {session ? "Console" : "Sign in"}
+              Sign in
             </Link>
             <Link
               to="/contact"
@@ -91,7 +87,6 @@ export function Header() {
               Talk to us
             </Link>
           </div>
-
 
           <button
             type="button"
@@ -161,7 +156,7 @@ export function Header() {
               { label: "About us", to: "/about" },
               { label: "Careers", to: "/careers" },
               { label: "Contact us", to: "/contact" },
-              { label: session ? "Console" : "Sign in", to: session ? "/console" : "/auth" },
+              { label: "Sign in", to: "/auth" },
             ].map((l) => (
               <li key={l.to}>
                 <Link

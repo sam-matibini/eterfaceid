@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { CheckList, CTASection, PageHero, Section } from "@/components/site/primitives";
 import { ProductFilm } from "@/components/site/ProductFilm";
-import transactionFilm from "@/assets/transaction-monitoring.mp4.asset.json";
-import transactionPoster from "@/assets/transaction-monitoring-poster.png.asset.json";
+import transactionFilm from "@/assets/transaction-monitoring.mp4";
+import transactionPoster from "@/assets/transaction-monitoring-poster.png";
 
 export const Route = createFileRoute("/solutions/fraud-risk")({
   head: () => ({
@@ -38,8 +38,8 @@ function FraudRisk() {
         intro="eterfaceID evaluates individual payments and the pattern around them, then gives the analyst the reason behind every alert."
       >
         <ProductFilm
-          src={transactionFilm.url}
-          poster={transactionPoster.url}
+          src={transactionFilm}
+          poster={transactionPoster}
           title="Transaction monitoring in motion"
           description="Illustrative structuring detection and alert escalation."
         />

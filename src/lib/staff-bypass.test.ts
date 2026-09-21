@@ -37,7 +37,7 @@ const fromVite = resolveSupabaseAdminCredentials({
 assert(fromVite.url === "https://example.supabase.co", "falls back to VITE_SUPABASE_URL");
 assert(fromVite.serviceRole === "service-role", "reads service role");
 assert(resolveSupabaseAdminCredentials({}).serviceRole === null, "missing service role is null");
-assert(resolveSupabaseAdminCredentials({}).url === null, "missing url is null");
+assert(resolveSupabaseAdminCredentials({}).url === FALLBACK_SUPABASE_URL, "empty env still uses the Eterfaceid project");
 
 const previousUrl = process.env["TEST_WORKER_BIND"];
 applyWorkerEnv({ TEST_WORKER_BIND: "bound-value", skip: 1 });
