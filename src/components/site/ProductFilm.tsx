@@ -14,7 +14,8 @@ export function ProductFilm({
   description: string;
   className?: string;
 }) {
-  const [reduceMotion, setReduceMotion] = useState(true);
+  const [reduceMotion, setReduceMotion] = useState(false);
+  const [videoFailed, setVideoFailed] = useState(false);
 
   useEffect(() => {
     const query = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -24,10 +25,12 @@ export function ProductFilm({
     return () => query.removeEventListener("change", update);
   }, []);
 
+  const showPoster = reduceMotion || videoFailed;
+
   return (
     <figure className={cn("overflow-hidden border border-rule bg-paper", className)}>
       <div className="aspect-[8/5] overflow-hidden bg-paper">
-        {reduceMotion ? (
+        {showPoster ? (
           <img
             src={poster}
             alt={`${title}: ${description}`}
@@ -44,7 +47,8 @@ export function ProductFilm({
             muted
             loop
             playsInline
-            preload="metadata"
+            preload="auto"
+            onError={() => setVideoFailed(true)}
           />
         )}
       </div>

@@ -1,13 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Container, CTASection, Section } from "@/components/site/primitives";
+import { useOrganization, useSession } from "@/hooks/useSession";
 import { solutionsGroup } from "@/components/site/nav-data";
 import { ProductFilm } from "@/components/site/ProductFilm";
-import screeningFilm from "@/assets/screening-workflow.mp4.asset.json";
-import screeningPoster from "@/assets/screening-workflow-poster.png.asset.json";
-import transactionFilm from "@/assets/transaction-monitoring.mp4.asset.json";
-import transactionPoster from "@/assets/transaction-monitoring-poster.png.asset.json";
-import fintechFilm from "@/assets/fintech-real-time-monitoring.mp4.asset.json";
-import fintechPoster from "@/assets/fintech-real-time-monitoring-poster.png.asset.json";
+import screeningFilm from "@/assets/screening-workflow.mp4";
+import screeningPoster from "@/assets/screening-workflow-poster.png";
+import transactionFilm from "@/assets/transaction-monitoring.mp4";
+import transactionPoster from "@/assets/transaction-monitoring-poster.png";
+import fintechFilm from "@/assets/fintech-real-time-monitoring.mp4";
+import fintechPoster from "@/assets/fintech-real-time-monitoring-poster.png";
 import verifyPeopleImage from "@/assets/verify-people-workflow.jpg";
 import verifyBusinessImage from "@/assets/verify-business-workflow.jpg";
 import continuousScreeningImage from "@/assets/continuous-screening-workflow.jpg";
@@ -68,6 +69,10 @@ const coverage = [
 ];
 
 function Home() {
+  const { session } = useSession();
+  const { organization, ready } = useOrganization();
+  const consoleTo = session && ready && !organization ? "/onboarding" : "/console";
+
   return (
     <>
       <section className="border-b border-rule">
@@ -85,12 +90,21 @@ function Home() {
               account is open — through one API and one review console.
             </p>
             <div className="mt-9 flex flex-wrap gap-3">
-              <Link
-                to="/contact"
-                className="rounded-sm bg-primary px-5 py-3 text-[0.88rem] font-medium text-primary-foreground transition-colors hover:bg-ink"
-              >
-                Book a walkthrough
-              </Link>
+              {session ? (
+                <Link
+                  to={consoleTo}
+                  className="rounded-sm bg-primary px-5 py-3 text-[0.88rem] font-medium text-primary-foreground transition-colors hover:bg-ink"
+                >
+                  {organization ? "Open console" : "Continue to console"}
+                </Link>
+              ) : (
+                <Link
+                  to="/contact"
+                  className="rounded-sm bg-primary px-5 py-3 text-[0.88rem] font-medium text-primary-foreground transition-colors hover:bg-ink"
+                >
+                  Book a walkthrough
+                </Link>
+              )}
               <Link
                 to="/developers"
                 className="rounded-sm border border-ink/25 px-5 py-3 text-[0.88rem] font-medium text-ink transition-colors hover:border-ink"
@@ -102,14 +116,14 @@ function Home() {
 
           <div className="space-y-4">
             <ProductFilm
-              src={screeningFilm.url}
-              poster={screeningPoster.url}
+              src={screeningFilm}
+              poster={screeningPoster}
               title="Screening in motion"
               description="Lists resolve and a reviewable match is explained."
             />
             <ProductFilm
-              src={transactionFilm.url}
-              poster={transactionPoster.url}
+              src={transactionFilm}
+              poster={transactionPoster}
               title="Monitoring in motion"
               description="A suspicious pattern becomes an analyst alert."
             />
@@ -186,8 +200,8 @@ function Home() {
             </Link>
           </div>
           <ProductFilm
-            src={fintechFilm.url}
-            poster={fintechPoster.url}
+            src={fintechFilm}
+            poster={fintechPoster}
             title="Fintech monitoring in real time"
             description="Live payment and counterparty signals become a focused analyst review."
           />
