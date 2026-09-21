@@ -22,6 +22,7 @@ import {
   resolveInsertedCompany,
   restAcceptedWrite,
 } from "@/lib/create-company";
+import { companyApplicationPayload, liveInviteInsert, liveOrganizationProfileUpdate, mergeCompanyProfile } from "@/lib/company-profile";
 import { isMissingRpcError, isMissingSchemaError, isUniqueConflict, writeIgnoringUnknownColumns } from "@/lib/schema-compat";
 import { callerAccessToken, firstRow, userRest, userRpc } from "@/lib/user-rest.server";
 
@@ -88,13 +89,48 @@ async function membershipForOrg(supabase: any, userId: string, orgId?: string | 
   return rows[0];
 }
 
+function asAdminMembership(orgId: string): MembershipRow {
+  return {
+    org_id: orgId,
+    role: "admin",
+    access_role: "owner",
+    is_owner: true,
+    sandbox_access: true,
+    live_access: true,
+    permissions: [],
+    mfa_required: true,
+    user_type: "employee",
+    job_title: null,
+    status: "active",
+  };
+}
+
+function isCompanyAdmin(membership: MembershipRow) {
+  return membership.role === "admin" || membership.is_owner || membership.access_role === "administrator";
+}
+
+async function organizationCreatedBy(supabase: any, userId: string, orgId?: string | null) {
+  if (orgId) {
+    const { data } = await supabase.from("organizations").select("id, created_by").eq("id", orgId).maybeSingle();
+    if (data && (data as { created_by?: string }).created_by === userId) return String((data as { id: string }).id);
+    return null;
+  }
+  const { data } = await supabase
+    .from("organizations")
+    .select("id, created_by")
+    .eq("created_by", userId)
+    .limit(1)
+    .maybeSingle();
+  return data ? String((data as { id: string }).id) : null;
+}
+
 async function requireAdmin(supabase: any, userId: string, orgId?: string | null) {
   const membership = await membershipForOrg(supabase, userId, orgId);
+  if (membership && isCompanyAdmin(membership)) return membership;
+  const createdId = await organizationCreatedBy(supabase, userId, orgId ?? membership?.org_id);
+  if (createdId) return asAdminMembership(createdId);
   if (!membership) throw new Error("You are not part of a team yet");
-  if (membership.role !== "admin" && !membership.is_owner) {
-    throw new Error("Only team administrators can do that");
-  }
-  return membership;
+  throw new Error("Only team administrators can do that");
 }
 
 function originFrom(data: { origin?: string | undefined }) {
@@ -378,7 +414,7 @@ export const updateOrganizationProfile = createServerFn({ method: "POST" })
         name: z.string().trim().min(2).max(80),
         legalName: z.string().trim().max(200).optional(),
         registrationNumber: z.string().trim().max(60).optional(),
-        country: z.string().trim().max(2).optional(),
+        country: z.string().trim().max(80).optional(),
         addressLine1: z.string().trim().max(200).optional(),
         city: z.string().trim().max(80).optional(),
         region: z.string().trim().max(80).optional(),
@@ -389,28 +425,18 @@ export const updateOrganizationProfile = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const membership = await requireAdmin(context.supabase, context.userId, data.orgId);
-    const profile = {
-      name: data.name,
-      legal_name: data.legalName || data.name,
-      registration_number: data.registrationNumber || null,
-      country: data.country?.toUpperCase() || null,
-      address_line1: data.addressLine1 || null,
-      city: data.city || null,
-      region: data.region || null,
-      postal_code: data.postalCode || null,
-      website: data.website || null,
-    };
-    const updated = await writeIgnoringUnknownColumns(async (payload) => {
-      const result = await context.supabase.from("organizations").update(payload as never).eq("id", membership.org_id);
-      return { data: result.error ? null : { ok: true }, error: result.error };
-    }, profile);
-    if (updated.error) throw new Error(updated.error.message);
-    await writeIgnoringUnknownColumns(async (payload) => {
-      const result = await context.supabase.from("org_applications").insert(payload as never);
+    const displayName = data.name.trim();
+    const legalName = (data.legalName || data.name).trim();
+    const orgUpdate = await writeIgnoringUnknownColumns(async (payload) => {
+      const result = await context.supabase
+        .from("organizations")
+        .update(payload as never)
+        .eq("id", membership.org_id)
+        .select("id, name");
       return { data: result.error ? null : { ok: true }, error: result.error };
     }, {
-      org_id: membership.org_id,
-      legal_name: data.legalName || data.name,
+      ...liveOrganizationProfileUpdate({ name: displayName }),
+      legal_name: legalName,
       registration_number: data.registrationNumber || null,
       country: data.country?.toUpperCase() || null,
       address_line1: data.addressLine1 || null,
@@ -418,18 +444,75 @@ export const updateOrganizationProfile = createServerFn({ method: "POST" })
       region: data.region || null,
       postal_code: data.postalCode || null,
       website: data.website || null,
-      submitted_by: context.userId,
-      status: "draft",
     });
-    await context.supabase.from("audit_events").insert({
-      org_id: membership.org_id,
-      actor_id: context.userId,
-      action: "org.profile_updated",
-      entity_type: "organization",
-      entity_id: membership.org_id,
-      detail: { name: data.name } as never,
+    if (orgUpdate.error && !isMissingSchemaError(orgUpdate.error.message)) {
+      throw new Error(orgUpdate.error.message);
+    }
+
+    const application = companyApplicationPayload({
+      orgId: membership.org_id,
+      userId: context.userId,
+      legalName,
+      registrationNumber: data.registrationNumber,
+      country: data.country,
+      addressLine1: data.addressLine1,
+      city: data.city,
+      region: data.region,
+      postalCode: data.postalCode,
+      website: data.website,
     });
-    return { ok: true };
+    const existing = await context.supabase
+      .from("org_applications")
+      .select("id")
+      .eq("org_id", membership.org_id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (existing.error && !isMissingSchemaError(existing.error.message)) {
+      /* profile columns live on the application row; ignore read errors that are just missing extras */
+    }
+    const existingId = (existing.data as { id?: string } | null)?.id;
+    if (existingId) {
+      const updatedApp = await writeIgnoringUnknownColumns(async (payload) => {
+        const result = await context.supabase
+          .from("org_applications")
+          .update(payload as never)
+          .eq("id", existingId);
+        return { data: result.error ? null : { ok: true }, error: result.error };
+      }, application);
+      if (updatedApp.error && !isMissingSchemaError(updatedApp.error.message) && !updatedApp.skipped) {
+        throw new Error(updatedApp.error.message);
+      }
+    } else if (!(existing.error && isMissingSchemaError(existing.error.message))) {
+      const insertedApp = await writeIgnoringUnknownColumns(async (payload) => {
+        const result = await context.supabase.from("org_applications").insert(payload as never);
+        if (result.error && isUniqueConflict(result.error.message) && existingId) {
+          return { data: { ok: true }, error: null };
+        }
+        return { data: result.error ? null : { ok: true }, error: result.error };
+      }, application);
+      if (insertedApp.error && !isUniqueConflict(insertedApp.error.message) && !insertedApp.skipped) {
+        if (!isMissingSchemaError(insertedApp.error.message)) throw new Error(insertedApp.error.message);
+      }
+    }
+
+    try {
+      await context.supabase.from("audit_events").insert({
+        org_id: membership.org_id,
+        actor_id: context.userId,
+        action: "org.profile_updated",
+        entity_type: "organization",
+        entity_id: membership.org_id,
+        detail: { name: displayName, legalName } as never,
+      });
+    } catch {
+      /* audit must not block saving the company */
+    }
+
+    return mergeCompanyProfile(
+      { id: membership.org_id, name: displayName, legal_name: legalName },
+      application,
+    );
   });
 
 export const inviteMember = createServerFn({ method: "POST" })
@@ -453,7 +536,7 @@ export const inviteMember = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const membership = await requireAdmin(context.supabase, context.userId, data.orgId);
-    if (data.liveAccess && membership.role !== "admin") {
+    if (data.liveAccess && membership.role !== "admin" && !membership.is_owner) {
       throw new Error("Only administrators can grant Live access");
     }
 
@@ -469,77 +552,160 @@ export const inviteMember = createServerFn({ method: "POST" })
       permissions = permissions.filter((p) => p !== "live.api");
     }
 
+    const email = data.email.toLowerCase();
+    const expiresAt = invitationExpiryIso();
     const token = randomToken();
     const tokenHash = await sha256Hex(token);
-    const expiresAt = invitationExpiryIso();
+    const { data: orgRow } = await context.supabase
+      .from("organizations")
+      .select("name")
+      .eq("id", membership.org_id)
+      .maybeSingle();
+    const orgName = (orgRow as { name?: string } | null)?.name || "your team";
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: invite, error } = await supabaseAdmin
-      .from("organization_invites")
-      .insert({
-        org_id: membership.org_id,
-        email: data.email.toLowerCase(),
+    let added: { userId: string } | null = null;
+    const { data: existingProfile } = await context.supabase
+      .from("profiles")
+      .select("id, email, full_name")
+      .eq("email", email)
+      .maybeSingle();
+    const existingUserId = (existingProfile as { id?: string } | null)?.id;
+    if (existingUserId) {
+      const member = await writeIgnoringUnknownColumns(async (payload) => {
+        const result = await context.supabase.from("organization_members").insert(payload as never).select("user_id").maybeSingle();
+        if (result.error && isUniqueConflict(result.error.message)) {
+          return { data: { user_id: existingUserId }, error: null };
+        }
+        return { data: result.data as { user_id: string } | null, error: result.error };
+      }, {
+        ...liveMemberInsert({ orgId: membership.org_id, userId: existingUserId }),
         role: mapAccessRoleToAppRole(accessRole),
         access_role: accessRole,
-        first_name: data.firstName,
-        last_name: data.lastName,
-        job_title: data.jobTitle || null,
+        is_owner: false,
         user_type: data.userType,
+        job_title: data.jobTitle || null,
         sandbox_access: data.sandboxAccess,
         live_access: data.liveAccess,
         permissions,
-        token_hash: tokenHash,
-        invited_by: context.userId,
-        expires_at: expiresAt,
-      })
-      .select("id, email, role, access_role, expires_at")
-      .single();
-    if (error) throw new Error(error.message);
+        status: "active",
+      });
+      if (member.error && !isUniqueConflict(member.error.message)) {
+        added = null;
+      } else {
+        added = { userId: existingUserId };
+      }
+    }
 
-    await supabaseAdmin.from("audit_events").insert({
-      org_id: membership.org_id,
-      actor_id: context.userId,
-      action: "team.invited",
-      entity_type: "organization_invite",
-      entity_id: invite.id,
-      detail: {
-        email: data.email,
-        role: accessRole,
-        sandbox: data.sandboxAccess,
-        live: data.liveAccess,
-        permissions,
-      } as never,
-    });
+    const inviteRow = added
+      ? { data: null as { id: string; email: string; role: string; access_role?: string; expires_at: string } | null, error: null }
+      : await writeIgnoringUnknownColumns(async (payload) => {
+          const result = await context.supabase
+            .from("organization_invites")
+            .insert(payload as never)
+            .select("id, email, role, access_role, expires_at")
+            .maybeSingle();
+          return { data: result.data as { id: string; email: string; role: string; access_role?: string; expires_at: string } | null, error: result.error };
+        }, {
+          ...liveInviteInsert({
+            orgId: membership.org_id,
+            email,
+            role: mapAccessRoleToAppRole(accessRole),
+            tokenHash,
+            invitedBy: context.userId,
+            expiresAt,
+          }),
+          access_role: accessRole,
+          first_name: data.firstName,
+          last_name: data.lastName,
+          job_title: data.jobTitle || null,
+          user_type: data.userType,
+          sandbox_access: data.sandboxAccess,
+          live_access: data.liveAccess,
+          permissions,
+        });
 
-    const { sendNotification } = await import("@/lib/email.server");
-    const { data: org } = await supabaseAdmin
-      .from("organizations")
-      .select("name, legal_name")
-      .eq("id", membership.org_id)
-      .maybeSingle();
-    const { data: inviter } = await supabaseAdmin
-      .from("profiles")
-      .select("full_name, email")
-      .eq("id", context.userId)
-      .maybeSingle();
-    const link = `${originFrom(data)}/invite/${token}`;
-    const orgName = org?.legal_name || org?.name || "your team";
-    const emailed = await sendNotification(supabaseAdmin, {
-      event: "team.invite",
-      to: data.email,
-      orgId: membership.org_id,
-      data: {
-        org: orgName,
-        name: data.firstName,
-        inviter: inviter?.full_name ?? inviter?.email ?? "A colleague",
-        role: displayRole(mapAccessRoleToAppRole(accessRole), accessRole),
-        environment: environmentLabel(data.sandboxAccess, data.liveAccess),
-        hours: "72",
-        link,
-      },
-    });
+    let signedToken = token;
+    try {
+      const { signTeamInvite } = await import("@/lib/team-invite.server");
+      signedToken = await signTeamInvite({
+        email,
+        orgId: membership.org_id,
+        orgName,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        jobTitle: data.jobTitle || null,
+        accessRole,
+        userType: data.userType,
+        sandboxAccess: data.sandboxAccess,
+        liveAccess: data.liveAccess,
+      });
+    } catch {
+      signedToken = token;
+    }
 
-    return { invite, token, emailed };
+    try {
+      await context.supabase.from("audit_events").insert({
+        org_id: membership.org_id,
+        actor_id: context.userId,
+        action: added ? "team.member_added" : "team.invited",
+        entity_type: "organization_invite",
+        entity_id: inviteRow.data?.id ?? membership.org_id,
+        detail: {
+          email,
+          role: accessRole,
+          sandbox: data.sandboxAccess,
+          live: data.liveAccess,
+          added: Boolean(added),
+        } as never,
+      });
+    } catch {
+      /* audit must not block inviting */
+    }
+
+    const link = `${originFrom(data)}/invite/${signedToken}`;
+    let emailed: { sent: boolean; reason?: string; detail?: string } = {
+      sent: false,
+      reason: added ? "already_member" : "not_attempted",
+    };
+    if (!added) {
+      try {
+        const { sendNotification } = await import("@/lib/email.server");
+        const { data: inviter } = await context.supabase
+          .from("profiles")
+          .select("full_name, email")
+          .eq("id", context.userId)
+          .maybeSingle();
+        emailed = await sendNotification(context.supabase as never, {
+          event: "team.invite",
+          to: email,
+          orgId: membership.org_id,
+          data: {
+            org: orgName,
+            name: data.firstName,
+            inviter: (inviter as { full_name?: string; email?: string } | null)?.full_name
+              ?? (inviter as { email?: string } | null)?.email
+              ?? "A colleague",
+            role: displayRole(mapAccessRoleToAppRole(accessRole), accessRole),
+            environment: environmentLabel(data.sandboxAccess, data.liveAccess),
+            hours: "72",
+            link,
+          },
+        });
+      } catch (err) {
+        emailed = {
+          sent: false,
+          reason: "email_failed",
+          detail: err instanceof Error ? err.message : "The invitation email could not be sent",
+        };
+      }
+    }
+
+    return {
+      invite: inviteRow.data ?? { email, role: mapAccessRoleToAppRole(accessRole), expires_at: expiresAt },
+      token: signedToken,
+      emailed,
+      added,
+    };
   });
 
 export const resendInvite = createServerFn({ method: "POST" })
@@ -621,9 +787,28 @@ export const revokeInvite = createServerFn({ method: "POST" })
   });
 
 export const peekInvite = createServerFn({ method: "GET" })
-  .inputValidator((input) => z.object({ token: z.string().trim().min(10).max(200) }).parse(input))
+  .inputValidator((input) => z.object({ token: z.string().trim().min(10).max(8000) }).parse(input))
   .handler(async ({ data }) => {
     try {
+      const { verifyTeamInvite } = await import("@/lib/team-invite.server");
+      const signed = await verifyTeamInvite(data.token);
+      if (signed) {
+        return {
+          email: signed.email,
+          firstName: signed.firstName,
+          lastName: signed.lastName,
+          jobTitle: signed.jobTitle ?? "",
+          accessRole: signed.accessRole,
+          roleLabel: displayRole(signed.role, signed.accessRole),
+          userType: signed.userType,
+          sandboxAccess: signed.sandboxAccess,
+          liveAccess: signed.liveAccess,
+          permissions: defaultPermissions(signed.accessRole),
+          expiresAt: new Date(signed.exp).toISOString(),
+          orgName: signed.orgName,
+          inviterName: "An administrator",
+        };
+      }
       const tokenHash = await sha256Hex(data.token);
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { data: invite } = await supabaseAdmin
@@ -674,7 +859,7 @@ export const acceptInvite = createServerFn({ method: "POST" })
   .inputValidator((input) =>
     z
       .object({
-        token: z.string().trim().min(10).max(200),
+        token: z.string().trim().min(10).max(8000),
         firstName: z.string().trim().max(80).optional(),
         lastName: z.string().trim().max(80).optional(),
         origin: z.string().trim().url().max(300).optional(),
@@ -682,16 +867,40 @@ export const acceptInvite = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
+    const { verifyTeamInvite } = await import("@/lib/team-invite.server");
+    const signed = await verifyTeamInvite(data.token);
     const tokenHash = await sha256Hex(data.token);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const { data: invite } = await supabaseAdmin
+    const { data: stored } = await supabaseAdmin
       .from("organization_invites")
       .select(
         "id, org_id, email, role, access_role, user_type, job_title, sandbox_access, live_access, permissions, first_name, last_name, expires_at, accepted_at, revoked_at",
       )
       .eq("token_hash", tokenHash)
       .maybeSingle();
+
+    const invite = stored
+      ? stored
+      : signed
+        ? {
+            id: null as string | null,
+            org_id: signed.orgId,
+            email: signed.email,
+            role: signed.role,
+            access_role: signed.accessRole,
+            user_type: signed.userType,
+            job_title: signed.jobTitle,
+            sandbox_access: signed.sandboxAccess,
+            live_access: signed.liveAccess,
+            permissions: defaultPermissions(signed.accessRole),
+            first_name: signed.firstName,
+            last_name: signed.lastName,
+            expires_at: new Date(signed.exp).toISOString(),
+            accepted_at: null as string | null,
+            revoked_at: null as string | null,
+          }
+        : null;
 
     if (!invite) throw new Error("This invitation link is not valid");
     if (invite.revoked_at) throw new Error("This invitation was cancelled");
@@ -706,9 +915,14 @@ export const acceptInvite = createServerFn({ method: "POST" })
     const existing = await membershipForOrg(context.supabase, context.userId, invite.org_id);
     if (!existing) {
       const accessRole = (invite.access_role as AccessRole) || "viewer";
-      const { error: memberError } = await supabaseAdmin.from("organization_members").insert({
-        org_id: invite.org_id,
-        user_id: context.userId,
+      const member = await writeIgnoringUnknownColumns(async (payload) => {
+        const result = await context.supabase.from("organization_members").insert(payload as never);
+        if (result.error && isUniqueConflict(result.error.message)) {
+          return { data: { ok: true }, error: null };
+        }
+        return { data: result.error ? null : { ok: true }, error: result.error };
+      }, {
+        ...liveMemberInsert({ orgId: invite.org_id, userId: context.userId }),
         role: invite.role,
         access_role: accessRole,
         is_owner: false,
@@ -723,13 +937,15 @@ export const acceptInvite = createServerFn({ method: "POST" })
         }),
         status: "active",
       });
-      if (memberError) throw new Error(memberError.message);
+      if (member.error) throw new Error(member.error.message);
     }
 
-    await supabaseAdmin
-      .from("organization_invites")
-      .update({ accepted_at: new Date().toISOString(), accepted_by: context.userId })
-      .eq("id", invite.id);
+    if (invite.id) {
+      await context.supabase
+        .from("organization_invites")
+        .update({ accepted_at: new Date().toISOString(), accepted_by: context.userId })
+        .eq("id", invite.id);
+    }
 
     const fullName = [data.firstName || invite.first_name, data.lastName || invite.last_name]
       .filter(Boolean)
@@ -739,62 +955,70 @@ export const acceptInvite = createServerFn({ method: "POST" })
       await supabaseAdmin.from("profiles").update({ full_name: fullName }).eq("id", context.userId);
     }
 
-    await supabaseAdmin.from("audit_events").insert({
-      org_id: invite.org_id,
-      actor_id: context.userId,
-      action: "team.joined",
-      entity_type: "organization",
-      entity_id: invite.org_id,
-      detail: { role: invite.access_role || invite.role } as never,
-    });
-
-    const { sendNotification } = await import("@/lib/email.server");
-    const [{ data: joiner }, { data: org }, { data: admins }] = await Promise.all([
-      supabaseAdmin.from("profiles").select("email, full_name").eq("id", context.userId).maybeSingle(),
-      supabaseAdmin.from("organizations").select("name, legal_name").eq("id", invite.org_id).maybeSingle(),
-      supabaseAdmin
-        .from("organization_members")
-        .select("user_id")
-        .eq("org_id", invite.org_id)
-        .eq("role", "admin"),
-    ]);
-    const orgName = org?.legal_name || org?.name || "your team";
-    const accessBits = [
-      invite.sandbox_access ? "Sandbox" : null,
-      invite.live_access ? "Live" : null,
-      "API Documentation",
-      (invite.permissions ?? []).includes("api_logs.view") ? "API Logs" : null,
-    ].filter(Boolean);
-    if (joiner?.email) {
-      await sendNotification(supabaseAdmin, {
-        event: "team.welcome",
-        to: joiner.email,
-        orgId: invite.org_id,
-        data: {
-          org: orgName,
-          name: joiner.full_name ?? joiner.email,
-          role: displayRole(invite.role, invite.access_role),
-          access: accessBits.join(", "),
-          link: `${originFrom(data)}/auth`,
-        },
+    try {
+      await supabaseAdmin.from("audit_events").insert({
+        org_id: invite.org_id,
+        actor_id: context.userId,
+        action: "team.joined",
+        entity_type: "organization",
+        entity_id: invite.org_id,
+        detail: { role: invite.access_role || invite.role } as never,
       });
+    } catch {
+      /* audit must not block joining */
     }
-    const adminIds = (admins ?? []).map((a) => a.user_id).filter((id) => id !== context.userId);
-    if (adminIds.length) {
-      const { data: adminProfiles } = await supabaseAdmin.from("profiles").select("email").in("id", adminIds);
-      const to = (adminProfiles ?? []).map((p) => p.email).filter((e): e is string => Boolean(e));
-      if (to.length) {
+
+    try {
+      const { sendNotification } = await import("@/lib/email.server");
+      const [{ data: joiner }, { data: org }, { data: admins }] = await Promise.all([
+        supabaseAdmin.from("profiles").select("email, full_name").eq("id", context.userId).maybeSingle(),
+        supabaseAdmin.from("organizations").select("name, legal_name").eq("id", invite.org_id).maybeSingle(),
+        supabaseAdmin
+          .from("organization_members")
+          .select("user_id")
+          .eq("org_id", invite.org_id)
+          .eq("role", "admin"),
+      ]);
+      const orgName = org?.legal_name || org?.name || "your team";
+      const accessBits = [
+        invite.sandbox_access ? "Sandbox" : null,
+        invite.live_access ? "Live" : null,
+        "API Documentation",
+        (invite.permissions ?? []).includes("api_logs.view") ? "API Logs" : null,
+      ].filter(Boolean);
+      if (joiner?.email) {
         await sendNotification(supabaseAdmin, {
-          event: "org.invite_accepted",
-          to,
+          event: "team.welcome",
+          to: joiner.email,
           orgId: invite.org_id,
           data: {
             org: orgName,
-            name: joiner?.full_name ?? joiner?.email ?? invite.email,
+            name: joiner.full_name ?? joiner.email,
             role: displayRole(invite.role, invite.access_role),
+            access: accessBits.join(", "),
+            link: `${originFrom(data)}/auth`,
           },
         });
       }
+      const adminIds = (admins ?? []).map((a) => a.user_id).filter((id) => id !== context.userId);
+      if (adminIds.length) {
+        const { data: adminProfiles } = await supabaseAdmin.from("profiles").select("email").in("id", adminIds);
+        const to = (adminProfiles ?? []).map((p) => p.email).filter((e): e is string => Boolean(e));
+        if (to.length) {
+          await sendNotification(supabaseAdmin, {
+            event: "org.invite_accepted",
+            to,
+            orgId: invite.org_id,
+            data: {
+              org: orgName,
+              name: joiner?.full_name ?? joiner?.email ?? invite.email,
+              role: displayRole(invite.role, invite.access_role),
+            },
+          });
+        }
+      }
+    } catch {
+      /* welcome email must not block joining the company */
     }
 
     return { orgId: invite.org_id as string };

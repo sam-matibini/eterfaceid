@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { AccessRole, AppRole } from "@/lib/access";
 import { inferAccessRole } from "@/lib/access";
 import { isEmployeeReference } from "@/lib/case-purpose";
+import { mergeCompanyProfile } from "@/lib/company-profile";
 
 export type { AppRole, AccessRole };
 export type CaseType = "person" | "business";
@@ -120,7 +121,13 @@ export async function fetchTeam() {
     throw members.error;
   }
   if (profiles.error) throw profiles.error;
-  if (invites.error) throw invites.error;
+  let pendingInvites = invites.data ?? [];
+  if (invites.error) {
+    if (!/does not exist|schema cache|Could not find/i.test(invites.error.message)) {
+      throw invites.error;
+    }
+    pendingInvites = [];
+  }
   return {
     members: (members.data ?? []).map((m) => {
       const profile = (profiles.data ?? []).find((p) => p.id === m.user_id);
@@ -140,7 +147,7 @@ export async function fetchTeam() {
         fullName: profile?.full_name ?? null,
       };
     }),
-    invites: invites.data ?? [],
+    invites: pendingInvites,
   };
 }
 
@@ -172,7 +179,16 @@ export async function fetchApiRequestLogs() {
 export async function fetchOrganizationProfile(orgId: string) {
   const { data, error } = await supabase.from("organizations").select("*").eq("id", orgId).maybeSingle();
   if (error) throw error;
-  return data;
+  let application: Record<string, unknown> | null = null;
+  const apps = await supabase
+    .from("org_applications")
+    .select("*")
+    .eq("org_id", orgId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!apps.error && apps.data) application = apps.data as Record<string, unknown>;
+  return mergeCompanyProfile((data ?? null) as Record<string, unknown> | null, application);
 }
 
 export async function fetchDashboardStats() {

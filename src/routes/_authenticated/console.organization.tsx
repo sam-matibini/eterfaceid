@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
@@ -6,7 +6,9 @@ import { useState } from "react";
 import { ConsoleShell, fieldClass, inkButtonClass, Panel } from "@/components/console/shell";
 import { TeamPanel } from "@/components/console/team";
 import { useOrganization, useRoles } from "@/hooks/useSession";
+import { canEditCompany } from "@/lib/company-profile";
 import { fetchOrganizationProfile } from "@/lib/console";
+import { isStaffBypassUnlocked } from "@/lib/staff-bypass";
 import { updateOrganizationProfile } from "@/lib/teams.functions";
 
 export const Route = createFileRoute("/_authenticated/console/organization")({
@@ -30,10 +32,17 @@ type ProfileForm = {
 
 function OrganizationPage() {
   const { organization } = useOrganization();
-  const { isAdmin } = useRoles();
+  const { isAdmin, isOwner, has } = useRoles();
   const queryClient = useQueryClient();
   const save = useServerFn(updateOrganizationProfile);
   const orgId = organization?.orgId ?? "";
+  const canEdit = canEditCompany({
+    isAdmin,
+    isOwner,
+    hasUsersManage: has("users.manage"),
+    pinUnlocked: isStaffBypassUnlocked(),
+    hasOrganization: Boolean(orgId),
+  });
   const profile = useQuery({
     queryKey: ["org-profile", orgId],
     enabled: Boolean(orgId),
@@ -41,9 +50,10 @@ function OrganizationPage() {
   });
   const row = profile.data;
   const [form, setForm] = useState<ProfileForm | null>(null);
+  const [saved, setSaved] = useState(false);
   const current: ProfileForm = form ?? {
-    name: row?.name ?? "",
-    legalName: row?.legal_name ?? row?.name ?? "",
+    name: row?.name ?? organization?.name ?? "",
+    legalName: row?.legal_name ?? organization?.legalName ?? row?.name ?? "",
     registrationNumber: row?.registration_number ?? "",
     country: row?.country ?? "",
     addressLine1: row?.address_line1 ?? "",
@@ -69,13 +79,27 @@ function OrganizationPage() {
           website: current.website || undefined,
         },
       }),
-    onSuccess: () => {
+    onSuccess: (result) => {
+      setSaved(true);
+      setForm({
+        name: result.name,
+        legalName: result.legal_name,
+        registrationNumber: result.registration_number,
+        country: result.country,
+        addressLine1: result.address_line1,
+        city: result.city,
+        region: result.region,
+        postalCode: result.postal_code,
+        website: result.website,
+      });
       void queryClient.invalidateQueries({ queryKey: ["org-profile"] });
       void queryClient.invalidateQueries({ queryKey: ["my-org"] });
+      void queryClient.invalidateQueries({ queryKey: ["team"] });
     },
   });
 
   function set(key: keyof ProfileForm, value: string) {
+    setSaved(false);
     setForm({ ...current, [key]: value });
   }
 
@@ -83,54 +107,69 @@ function OrganizationPage() {
     <ConsoleShell>
       <h1 className="font-display text-3xl font-bold tracking-tight">Company Profile</h1>
       <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-        Legal identity for this eterfaceID organization. Used for KYB, Live access and invoices.
+        Legal identity for this eterfaceID organization. Used for KYB, Live access, invoices and teammate invites.
       </p>
-      <div className="mt-8 max-w-4xl">
-        <Panel title="Company Information">
-          <form
-            className="grid gap-3 sm:grid-cols-2"
-            onSubmit={(e) => {
-              e.preventDefault();
-              mutation.mutate();
-            }}
-          >
-            {[
-              ["legalName", "Legal Company Name"],
-              ["registrationNumber", "Registration Number"],
-              ["country", "Country"],
-              ["addressLine1", "Business Address"],
-              ["city", "City"],
-              ["region", "Prov/state"],
-              ["postalCode", "Zip/Postal code"],
-              ["website", "Website"],
-            ].map(([key, label]) => (
-              <label key={key} className="text-xs uppercase tracking-widest text-muted-foreground">
-                {label}
-                <input
-                  className={`${fieldClass} mt-1 normal-case tracking-normal text-foreground`}
+      <div className="mt-8 max-w-4xl space-y-6">
+        {!orgId ? (
+          <Panel title="No company yet">
+            <p className="text-sm text-muted-foreground">
+              Create the company workspace first. You can then update details and add team members and users.
+            </p>
+            <Link to="/onboarding" className={`${inkButtonClass} mt-4 inline-flex items-center`}>
+              Create company
+            </Link>
+          </Panel>
+        ) : (
+          <Panel title="Company Information">
+            <form
+              className="grid gap-3 sm:grid-cols-2"
+              onSubmit={(e) => {
+                e.preventDefault();
+                mutation.mutate();
+              }}
+            >
+              {[
+                ["name", "Display name"],
+                ["legalName", "Legal Company Name"],
+                ["registrationNumber", "Registration Number"],
+                ["country", "Country"],
+                ["addressLine1", "Business Address"],
+                ["city", "City"],
+                ["region", "Prov/state"],
+                ["postalCode", "Zip/Postal code"],
+                ["website", "Website"],
+              ].map(([key, label]) => (
+                <label key={key} className="text-xs uppercase tracking-widest text-muted-foreground">
+                  {label}
+                  <input
+                    className={`${fieldClass} mt-1 normal-case tracking-normal text-foreground`}
                     value={current[key as keyof ProfileForm]}
-                    disabled={!isAdmin}
+                    disabled={!canEdit}
                     onChange={(e) => set(key as keyof ProfileForm, e.target.value)}
-                />
-              </label>
-            ))}
-            {isAdmin ? (
-              <div className="sm:col-span-2">
-                <button type="submit" className={inkButtonClass} disabled={mutation.isPending}>
-                  Save profile
-                </button>
-                {mutation.isError ? (
-                  <p className="mt-2 text-sm text-[var(--signal)]">{(mutation.error as Error).message}</p>
-                ) : null}
-              </div>
-            ) : (
-              <p className="sm:col-span-2 text-sm text-muted-foreground">Only administrators can edit company details.</p>
-            )}
-          </form>
-        </Panel>
-        <div className="mt-6">
-          <TeamPanel isAdmin={isAdmin} title="Team" compact />
-        </div>
+                  />
+                </label>
+              ))}
+              {canEdit ? (
+                <div className="sm:col-span-2">
+                  <button type="submit" className={inkButtonClass} disabled={mutation.isPending}>
+                    {mutation.isPending ? "Saving…" : "Save company details"}
+                  </button>
+                  {saved && !mutation.isError ? (
+                    <p className="mt-2 text-sm text-[var(--verify)]">Company details saved.</p>
+                  ) : null}
+                  {mutation.isError ? (
+                    <p className="mt-2 text-sm text-[var(--signal)]">{(mutation.error as Error).message}</p>
+                  ) : null}
+                </div>
+              ) : (
+                <p className="sm:col-span-2 text-sm text-muted-foreground">
+                  Only administrators can edit company details.
+                </p>
+              )}
+            </form>
+          </Panel>
+        )}
+        {orgId ? <TeamPanel canManage={canEdit} title="Team members" compact defaultOpen /> : null}
       </div>
     </ConsoleShell>
   );

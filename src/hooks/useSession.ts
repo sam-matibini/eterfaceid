@@ -7,6 +7,7 @@ import { hasPermission, mfaRequiredFor, type PermissionCode } from "@/lib/access
 import {
   fetchMembershipRows,
   mapMembershipRows,
+  mergeOwnedOrganizations,
   type OrganizationMembership,
 } from "@/lib/organization-memberships";
 
@@ -60,7 +61,11 @@ export function useOrganization() {
         return request;
       });
       if (result.error) throw new Error(result.error.message);
-      const memberships = mapMembershipRows(result.data);
+      let memberships = mapMembershipRows(result.data);
+      const owned = await supabase.from("organizations").select("id, name").eq("created_by", user!.id);
+      if (!owned.error && owned.data?.length) {
+        memberships = mergeOwnedOrganizations(memberships, owned.data);
+      }
       if (!memberships.length) return { memberships: [], current: null as OrganizationMembership | null };
       const stored = readStoredOrg();
       const current = memberships.find((m) => m.orgId === stored) ?? memberships[0];

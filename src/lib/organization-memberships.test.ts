@@ -1,4 +1,4 @@
-import { isMembershipQueryError, mapMembershipRows, fetchMembershipRows, membershipFromCreate, shouldRedirectToOnboarding } from "./organization-memberships";
+import { isMembershipQueryError, mapMembershipRows, fetchMembershipRows, membershipFromCreate, mergeOwnedOrganizations, shouldRedirectToOnboarding } from "./organization-memberships";
 
 function assert(condition: unknown, message: string) {
   if (!condition) throw new Error(message);
@@ -22,6 +22,13 @@ assert(mapped[0]?.legalName === "eFinTax Advisors Ltd", "uses org name when lega
 const created = membershipFromCreate({ orgId: "org-9", name: "eFinTax Advisors Ltd" });
 assert(created.isOwner && created.role === "admin", "create snapshot is owner");
 assert(created.orgId === "org-9", "create snapshot keeps org id");
+
+const mergedOwned = mergeOwnedOrganizations(mapped, [
+  { id: "org-1", name: "Already a member" },
+  { id: "org-owned", name: "eFinMoney" },
+]);
+assert(mergedOwned.some((row) => row.orgId === "org-owned" && row.isOwner), "created_by company is attached as owner");
+assert(mergedOwned.filter((row) => row.orgId === "org-1").length === 1, "does not duplicate memberships");
 
 assert(shouldRedirectToOnboarding({ ready: true, loaded: true, organization: null }) === true, "empty membership goes to onboarding");
 assert(

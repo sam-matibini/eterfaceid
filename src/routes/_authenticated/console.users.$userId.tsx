@@ -2,9 +2,12 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 
 import { ConsoleShell, Panel, StatusPill } from "@/components/console/shell";
-import { useOrganization } from "@/hooks/useSession";
+import { TeamPanel } from "@/components/console/team";
+import { useOrganization, useRoles } from "@/hooks/useSession";
+import { canEditCompany } from "@/lib/company-profile";
 import { displayRole, PERMISSIONS } from "@/lib/access";
 import { fetchTeam } from "@/lib/console";
+import { isStaffBypassUnlocked } from "@/lib/staff-bypass";
 
 export const Route = createFileRoute("/_authenticated/console/users/$userId")({
   head: () => ({
@@ -16,6 +19,14 @@ export const Route = createFileRoute("/_authenticated/console/users/$userId")({
 function UserProfilePage() {
   const { userId } = Route.useParams();
   const { organization } = useOrganization();
+  const { isAdmin, isOwner, has } = useRoles();
+  const canManage = canEditCompany({
+    isAdmin,
+    isOwner,
+    hasUsersManage: has("users.manage"),
+    pinUnlocked: isStaffBypassUnlocked(),
+    hasOrganization: Boolean(organization?.orgId),
+  });
   const team = useQuery({ queryKey: ["team"], queryFn: fetchTeam });
   const member = (team.data?.members ?? []).find((row) => row.userId === userId);
 
@@ -82,6 +93,9 @@ function UserProfilePage() {
             </p>
           )}
         </Panel>
+      </div>
+      <div className="mt-6 max-w-4xl">
+        <TeamPanel canManage={canManage} title="Add another user" compact />
       </div>
     </ConsoleShell>
   );

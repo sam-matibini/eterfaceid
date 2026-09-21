@@ -47,6 +47,22 @@ export function membershipFromCreate(input: { orgId: string; name: string; role?
   };
 }
 
+/** Creator still owns the company when the membership insert was blocked by RLS. */
+export function mergeOwnedOrganizations(
+  memberships: OrganizationMembership[],
+  owned: Array<{ id?: unknown; name?: unknown; legal_name?: unknown }>,
+) {
+  const seen = new Set(memberships.map((row) => row.orgId));
+  const extra = owned
+    .map((row) => {
+      const orgId = typeof row.id === "string" ? row.id : "";
+      const name = String(row.legal_name || row.name || "Your team");
+      return membershipFromCreate({ orgId, name });
+    })
+    .filter((row) => row.orgId && !seen.has(row.orgId));
+  return extra.length ? [...memberships, ...extra] : memberships;
+}
+
 export function shouldRedirectToOnboarding(input: {
   ready: boolean;
   loaded: boolean;
