@@ -1,4 +1,4 @@
-export type AfterSignInPath = "/auth/mfa" | "/onboarding" | "/console";
+export type AfterSignInPath = "/auth" | "/auth/mfa" | "/onboarding" | "/console";
 
 export function authCallbackUrl(origin: string) {
   return `${origin.trim().replace(/\/$/, "")}/auth`;
@@ -10,7 +10,17 @@ export function isAuthCallbackLocation(search: string, hash: string) {
   return /access_token=|refresh_token=|type=(signup|magiclink|recovery|invite|email)/i.test(combined);
 }
 
-export function pathAfterSignIn(input: { mfaNeeded: boolean; hasOrganization: boolean }): AfterSignInPath {
+/** Login/signup stays on /auth until the user submits credentials or returns from an email link. */
+export function shouldResumeAuthSession(input: { search: string; hash: string; submitted: boolean }) {
+  return input.submitted || isAuthCallbackLocation(input.search, input.hash);
+}
+
+export function pathAfterSignIn(input: {
+  signedIn: boolean;
+  mfaNeeded: boolean;
+  hasOrganization: boolean;
+}): AfterSignInPath {
+  if (!input.signedIn) return "/auth";
   if (input.mfaNeeded) return "/auth/mfa";
   return input.hasOrganization ? "/console" : "/onboarding";
 }
@@ -25,14 +35,15 @@ export async function resolveHasOrganization(userId: string) {
 
 export async function continueSignedIn(options?: { skipMfa?: boolean }): Promise<AfterSignInPath> {
   const { supabase } = await import("@/integrations/supabase/client");
-  if (!options?.skipMfa) {
-    const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-    if (data?.nextLevel === "aal2" && data.currentLevel !== "aal2") return "/auth/mfa";
-  }
   const { data } = await supabase.auth.getUser();
   const userId = data.user?.id;
-  if (!userId) return "/onboarding";
+  if (!userId) return "/auth";
+  if (!options?.skipMfa) {
+    const aal = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (aal.data?.nextLevel === "aal2" && aal.data.currentLevel !== "aal2") return "/auth/mfa";
+  }
   return pathAfterSignIn({
+    signedIn: true,
     mfaNeeded: false,
     hasOrganization: await resolveHasOrganization(userId),
   });

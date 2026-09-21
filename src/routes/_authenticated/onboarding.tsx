@@ -4,14 +4,15 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState, type ReactNode } from "react";
 
 import { AuthFrame, authButtonClass, authInputClass } from "@/components/auth/AuthFrame";
-import { setActiveOrganization, useOrganization } from "@/hooks/useSession";
+import { setActiveOrganization, useOrganization, useSession } from "@/hooks/useSession";
+import { supabase } from "@/integrations/supabase/client";
 import { COUNTRY_OPTIONS, countrySelectValue } from "@/lib/company-country";
 import { acceptInvite, createOrganization } from "@/lib/teams.functions";
 
 export const Route = createFileRoute("/_authenticated/onboarding")({
   head: () => ({
     meta: [
-      { title: "Create company account — eterfaceID" },
+      { title: "Set up your company — eterfaceID" },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -21,6 +22,7 @@ export const Route = createFileRoute("/_authenticated/onboarding")({
 function OnboardingPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { session } = useSession();
   const { organization, memberships, ready } = useOrganization();
   const create = useServerFn(createOrganization);
   const join = useServerFn(acceptInvite);
@@ -76,11 +78,11 @@ function OnboardingPage() {
 
   return (
     <AuthFrame
-      title={token ? "Accept your invitation" : "Create Company Account"}
+      title={token ? "Accept your invitation" : "Set up your company"}
       subtitle={
         token
           ? "Join the organization you were invited to. You can belong to more than one company."
-          : "Company information is used for KYB, billing and Live access review. You will be the Organization Owner."
+          : "These details are used for KYB, billing and Live access review. You will be the Organization Owner."
       }
     >
       {!token ? (
@@ -193,6 +195,19 @@ function OnboardingPage() {
       ) : null}
 
       {token && error ? <p className="mt-5 text-sm text-[var(--signal)]">{error}</p> : null}
+
+      {session?.user?.email ? (
+        <button
+          type="button"
+          className="mt-6 block text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
+          onClick={async () => {
+            await supabase.auth.signOut();
+            void navigate({ to: "/auth", replace: true });
+          }}
+        >
+          Sign in with a different account
+        </button>
+      ) : null}
     </AuthFrame>
   );
 }

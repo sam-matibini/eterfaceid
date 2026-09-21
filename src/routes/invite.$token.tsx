@@ -109,7 +109,7 @@ function InvitePage() {
         data: { token, firstName, lastName, origin: window.location.origin },
       });
       window.sessionStorage.removeItem("eid_invite_token");
-      void navigate({ to: "/security/mfa", replace: true });
+      void navigate({ to: "/console", replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
