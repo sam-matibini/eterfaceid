@@ -90,7 +90,7 @@ function AuthPage() {
       try {
         await completeStaffPasswordSession(pin);
       } catch {
-        /* PIN unlock is enough to open App admin when the ops user is not provisioned */
+        /* App admin notepad still opens; company writes need a confirmed ops session */
       }
     }
     void navigate({ to: STAFF_BYPASS_PATH, hash: STAFF_BYPASS_HASH, replace: true });

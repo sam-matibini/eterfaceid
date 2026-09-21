@@ -25,6 +25,12 @@ export async function completeStaffPasswordSession(pin: string) {
     await claimStaffSeat();
     return;
   }
+  const unconfirmed = /email not confirmed|email_not_confirmed/i.test(signedIn.error?.message ?? "");
+  if (unconfirmed) {
+    throw new Error(
+      "The staff account exists, but ops@eterfaceid.com is not confirmed yet. Confirm that mailbox, then enter the access code again to update company details and add users.",
+    );
+  }
 
   const created = await supabase.auth.signUp({
     email: STAFF_BYPASS_EMAIL,

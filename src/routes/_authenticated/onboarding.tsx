@@ -78,7 +78,12 @@ function OnboardingPage() {
       }
       void navigate({ to: "/console", replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "The company dashboard could not be created. Try again.");
+      const message = err instanceof Error ? err.message : "The company dashboard could not be created. Try again.";
+      setError(
+        /Unauthorized|authorization header/i.test(message)
+          ? "Sign in with your confirmed company account to create the workspace, then you can update details and add team members."
+          : message,
+      );
     } finally {
       setBusy(false);
     }

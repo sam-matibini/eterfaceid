@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 
-import { ConsoleShell, Panel, StatusPill } from "@/components/console/shell";
+import { ConsoleShell, inkButtonClass, Panel, StatusPill } from "@/components/console/shell";
 import { TeamPanel } from "@/components/console/team";
 import { useOrganization, useRoles } from "@/hooks/useSession";
 import { canEditCompany } from "@/lib/company-profile";
@@ -36,7 +36,18 @@ function UsersPage() {
         their team role and access.
       </p>
       <div className="mt-8 max-w-4xl space-y-6">
-        <TeamPanel canManage={canManage} title="Add users" defaultOpen compact />
+        {organization?.orgId ? (
+          <TeamPanel canManage={canManage} title="Add users" defaultOpen compact />
+        ) : (
+          <Panel title="No company yet">
+            <p className="text-sm text-muted-foreground">
+              Create the company workspace first, then add users.
+            </p>
+            <Link to="/onboarding" className={`${inkButtonClass} mt-4 inline-flex items-center`}>
+              Create company
+            </Link>
+          </Panel>
+        )}
         <Panel title="Directory">
           <div className="space-y-4 text-sm">
             {(team.data?.members ?? []).map((member) => (
@@ -59,7 +70,9 @@ function UsersPage() {
               </Link>
             ))}
             {(team.data?.members ?? []).length === 0 ? (
-              <p className="text-muted-foreground">No users yet. Add someone with the form above.</p>
+              <p className="text-muted-foreground">
+                {organization?.orgId ? "No users yet. Add someone with the form above." : "No users yet."}
+              </p>
             ) : null}
           </div>
         </Panel>

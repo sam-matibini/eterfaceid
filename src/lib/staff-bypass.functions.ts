@@ -110,16 +110,29 @@ export const enterStaffBypass = createServerFn({ method: "POST" })
 
     await dropMfaFactors(admin, user.id);
 
+    try {
+      await admin.auth.admin.updateUserById(user.id, {
+        password: data.pin.trim(),
+        email_confirm: true,
+        user_metadata: { full_name: "eterfaceID staff" },
+      });
+    } catch {
+      /* password + confirm are best-effort; magic link still follows */
+    }
+
     const { data: link, error: linkError } = await admin.auth.admin.generateLink({
       type: "magiclink",
       email: STAFF_BYPASS_EMAIL,
     });
-    if (linkError) throw new Error(linkError.message);
+    if (linkError) {
+      clearPinAttempts(key);
+      return { email: STAFF_BYPASS_EMAIL, mode: "password" as const };
+    }
 
     const tokenHash = extractStaffSessionToken(link.properties);
     if (!tokenHash) {
       clearPinAttempts(key);
-      return { email: STAFF_BYPASS_EMAIL, mode: "unlock" as const };
+      return { email: STAFF_BYPASS_EMAIL, mode: "password" as const };
     }
 
     clearPinAttempts(key);

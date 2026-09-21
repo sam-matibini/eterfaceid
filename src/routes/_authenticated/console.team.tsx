@@ -1,6 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 
-import { ConsoleShell } from "@/components/console/shell";
+import { ConsoleShell, inkButtonClass, Panel } from "@/components/console/shell";
 import { TeamPanel } from "@/components/console/team";
 import { useOrganization, useRoles } from "@/hooks/useSession";
 import { canEditCompany } from "@/lib/company-profile";
@@ -31,7 +31,18 @@ function TeamPage() {
         access is authorized separately.
       </p>
       <div className="mt-8 max-w-4xl">
-        <TeamPanel canManage={canManage} defaultOpen />
+        {organization?.orgId ? (
+          <TeamPanel canManage={canManage} defaultOpen />
+        ) : (
+          <Panel title="No company yet">
+            <p className="text-sm text-muted-foreground">
+              Create the company workspace first, then add team members.
+            </p>
+            <Link to="/onboarding" className={`${inkButtonClass} mt-4 inline-flex items-center`}>
+              Create company
+            </Link>
+          </Panel>
+        )}
       </div>
     </ConsoleShell>
   );
