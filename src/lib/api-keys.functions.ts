@@ -5,7 +5,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { hasPermission, secretKeyPrefix, type PermissionCode } from "@/lib/access";
 import { sha256Hex } from "@/lib/crypto-hash";
 
-const KEY_SCOPES = [
+export const KEY_SCOPES = [
   "sandbox.api",
   "live.api",
   "kyc.reports.view",
@@ -13,6 +13,13 @@ const KEY_SCOPES = [
   "aml.results.view",
   "api_logs.view",
 ] as const;
+
+export type KeyScope = (typeof KEY_SCOPES)[number];
+
+export function defaultKeyScopes(environment: "sandbox" | "live"): KeyScope[] {
+  const product: KeyScope[] = ["kyc.reports.view", "kyb.reports.view", "aml.results.view"];
+  return environment === "live" ? ["live.api", ...product] : ["sandbox.api", ...product];
+}
 
 async function callerMembership(supabase: any, userId: string) {
   const { data } = await supabase
@@ -98,15 +105,12 @@ export const createApiKey = createServerFn({ method: "POST" })
         : secretKeyPrefix(data.environment);
     const secret = `${prefix}${raw}`;
     const keyHash = await sha256Hex(secret);
-    const scopes = (data.scopes?.length
-      ? data.scopes
-      : data.environment === "live"
-        ? ["live.api"]
-        : ["sandbox.api"]) as PermissionCode[];
+    const scopes = (data.scopes?.length ? data.scopes : defaultKeyScopes(data.environment)) as PermissionCode[];
 
     const { data: inserted, error } = await context.supabase
       .from("api_keys")
       .insert({
+        org_id: membership.org_id,
         name: data.name,
         environment: data.environment,
         key_kind: data.kind,

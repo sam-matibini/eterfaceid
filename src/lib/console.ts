@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { AccessRole, AppRole } from "@/lib/access";
 import { inferAccessRole } from "@/lib/access";
+import { isEmployeeReference } from "@/lib/case-purpose";
 
 export type { AppRole, AccessRole };
 export type CaseType = "person" | "business";
@@ -178,7 +179,7 @@ export async function fetchDashboardStats() {
   const since = new Date();
   since.setHours(0, 0, 0, 0);
   const [cases, logs, keys] = await Promise.all([
-    supabase.from("cases").select("id, case_type, status, created_at"),
+    supabase.from("cases").select("id, case_type, status, reference, created_at"),
     supabase
       .from("api_request_logs")
       .select("id, success, created_at, environment")
@@ -188,10 +189,12 @@ export async function fetchDashboardStats() {
   if (cases.error) throw cases.error;
   const allCases = cases.data ?? [];
   const allLogs = logs.error ? [] : (logs.data ?? []);
+  const employees = allCases.filter((c) => isEmployeeReference(c.reference)).length;
   return {
-    kyc: allCases.filter((c) => c.case_type === "person").length,
+    kyc: allCases.filter((c) => c.case_type === "person" && !isEmployeeReference(c.reference)).length,
     kyb: allCases.filter((c) => c.case_type === "business").length,
     aml: allCases.length,
+    employees,
     requestsToday: allLogs.length,
     successful: allLogs.filter((l) => l.success !== false).length,
     failed: allLogs.filter((l) => l.success === false).length,

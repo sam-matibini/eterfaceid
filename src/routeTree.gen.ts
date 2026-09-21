@@ -44,14 +44,19 @@ import { Route as AuthenticatedAdminPlansRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAdminTeamRouteImport } from './routes/_authenticated/admin.team'
 import { Route as AuthenticatedConsoleIndexRouteImport } from './routes/_authenticated/console.index'
 import { Route as AuthenticatedConsoleAlertsRouteImport } from './routes/_authenticated/console.alerts'
+import { Route as AuthenticatedConsoleAmlRouteImport } from './routes/_authenticated/console.aml'
 import { Route as AuthenticatedConsoleApiKeysRouteImport } from './routes/_authenticated/console.api-keys'
 import { Route as AuthenticatedConsoleApiLogsRouteImport } from './routes/_authenticated/console.api-logs'
 import { Route as AuthenticatedConsoleAuditRouteImport } from './routes/_authenticated/console.audit'
 import { Route as AuthenticatedConsoleBillingRouteImport } from './routes/_authenticated/console.billing'
 import { Route as AuthenticatedConsoleComplianceRouteImport } from './routes/_authenticated/console.compliance'
 import { Route as AuthenticatedConsoleDevelopersRouteImport } from './routes/_authenticated/console.developers'
+import { Route as AuthenticatedConsoleEmployeesRouteImport } from './routes/_authenticated/console.employees'
 import { Route as AuthenticatedConsoleEnvironmentsRouteImport } from './routes/_authenticated/console.environments'
 import { Route as AuthenticatedConsoleGoLiveRouteImport } from './routes/_authenticated/console.go-live'
+import { Route as AuthenticatedConsoleInquiriesRouteImport } from './routes/_authenticated/console.inquiries'
+import { Route as AuthenticatedConsoleKybRouteImport } from './routes/_authenticated/console.kyb'
+import { Route as AuthenticatedConsoleKycRouteImport } from './routes/_authenticated/console.kyc'
 import { Route as AuthenticatedConsoleLiveAccessRouteImport } from './routes/_authenticated/console.live-access'
 import { Route as AuthenticatedConsoleOrganizationRouteImport } from './routes/_authenticated/console.organization'
 import { Route as AuthenticatedConsoleReportsRouteImport } from './routes/_authenticated/console.reports'
@@ -282,6 +287,11 @@ const AuthenticatedConsoleAlertsRoute =
     path: '/console/alerts',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedConsoleAmlRoute = AuthenticatedConsoleAmlRouteImport.update({
+  id: '/console/aml',
+  path: '/console/aml',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedConsoleApiKeysRoute =
   AuthenticatedConsoleApiKeysRouteImport.update({
     id: '/console/api-keys',
@@ -318,6 +328,12 @@ const AuthenticatedConsoleDevelopersRoute =
     path: '/console/developers',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedConsoleEmployeesRoute =
+  AuthenticatedConsoleEmployeesRouteImport.update({
+    id: '/console/employees',
+    path: '/console/employees',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedConsoleEnvironmentsRoute =
   AuthenticatedConsoleEnvironmentsRouteImport.update({
     id: '/console/environments',
@@ -330,6 +346,22 @@ const AuthenticatedConsoleGoLiveRoute =
     path: '/console/go-live',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedConsoleInquiriesRoute =
+  AuthenticatedConsoleInquiriesRouteImport.update({
+    id: '/console/inquiries',
+    path: '/console/inquiries',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedConsoleKybRoute = AuthenticatedConsoleKybRouteImport.update({
+  id: '/console/kyb',
+  path: '/console/kyb',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedConsoleKycRoute = AuthenticatedConsoleKycRouteImport.update({
+  id: '/console/kyc',
+  path: '/console/kyc',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedConsoleLiveAccessRoute =
   AuthenticatedConsoleLiveAccessRouteImport.update({
     id: '/console/live-access',
@@ -628,14 +660,19 @@ export interface FileRoutesByFullPath {
   '/admin/plans': typeof AuthenticatedAdminPlansRoute
   '/admin/team': typeof AuthenticatedAdminTeamRoute
   '/console/alerts': typeof AuthenticatedConsoleAlertsRoute
+  '/console/aml': typeof AuthenticatedConsoleAmlRoute
   '/console/api-keys': typeof AuthenticatedConsoleApiKeysRoute
   '/console/api-logs': typeof AuthenticatedConsoleApiLogsRoute
   '/console/audit': typeof AuthenticatedConsoleAuditRoute
   '/console/billing': typeof AuthenticatedConsoleBillingRoute
   '/console/compliance': typeof AuthenticatedConsoleComplianceRoute
   '/console/developers': typeof AuthenticatedConsoleDevelopersRoute
+  '/console/employees': typeof AuthenticatedConsoleEmployeesRoute
   '/console/environments': typeof AuthenticatedConsoleEnvironmentsRoute
   '/console/go-live': typeof AuthenticatedConsoleGoLiveRoute
+  '/console/inquiries': typeof AuthenticatedConsoleInquiriesRoute
+  '/console/kyb': typeof AuthenticatedConsoleKybRoute
+  '/console/kyc': typeof AuthenticatedConsoleKycRoute
   '/console/live-access': typeof AuthenticatedConsoleLiveAccessRoute
   '/console/organization': typeof AuthenticatedConsoleOrganizationRoute
   '/console/reports': typeof AuthenticatedConsoleReportsRoute
@@ -717,14 +754,19 @@ export interface FileRoutesByTo {
   '/admin/plans': typeof AuthenticatedAdminPlansRoute
   '/admin/team': typeof AuthenticatedAdminTeamRoute
   '/console/alerts': typeof AuthenticatedConsoleAlertsRoute
+  '/console/aml': typeof AuthenticatedConsoleAmlRoute
   '/console/api-keys': typeof AuthenticatedConsoleApiKeysRoute
   '/console/api-logs': typeof AuthenticatedConsoleApiLogsRoute
   '/console/audit': typeof AuthenticatedConsoleAuditRoute
   '/console/billing': typeof AuthenticatedConsoleBillingRoute
   '/console/compliance': typeof AuthenticatedConsoleComplianceRoute
   '/console/developers': typeof AuthenticatedConsoleDevelopersRoute
+  '/console/employees': typeof AuthenticatedConsoleEmployeesRoute
   '/console/environments': typeof AuthenticatedConsoleEnvironmentsRoute
   '/console/go-live': typeof AuthenticatedConsoleGoLiveRoute
+  '/console/inquiries': typeof AuthenticatedConsoleInquiriesRoute
+  '/console/kyb': typeof AuthenticatedConsoleKybRoute
+  '/console/kyc': typeof AuthenticatedConsoleKycRoute
   '/console/live-access': typeof AuthenticatedConsoleLiveAccessRoute
   '/console/organization': typeof AuthenticatedConsoleOrganizationRoute
   '/console/reports': typeof AuthenticatedConsoleReportsRoute
@@ -808,14 +850,19 @@ export interface FileRoutesById {
   '/_authenticated/admin/plans': typeof AuthenticatedAdminPlansRoute
   '/_authenticated/admin/team': typeof AuthenticatedAdminTeamRoute
   '/_authenticated/console/alerts': typeof AuthenticatedConsoleAlertsRoute
+  '/_authenticated/console/aml': typeof AuthenticatedConsoleAmlRoute
   '/_authenticated/console/api-keys': typeof AuthenticatedConsoleApiKeysRoute
   '/_authenticated/console/api-logs': typeof AuthenticatedConsoleApiLogsRoute
   '/_authenticated/console/audit': typeof AuthenticatedConsoleAuditRoute
   '/_authenticated/console/billing': typeof AuthenticatedConsoleBillingRoute
   '/_authenticated/console/compliance': typeof AuthenticatedConsoleComplianceRoute
   '/_authenticated/console/developers': typeof AuthenticatedConsoleDevelopersRoute
+  '/_authenticated/console/employees': typeof AuthenticatedConsoleEmployeesRoute
   '/_authenticated/console/environments': typeof AuthenticatedConsoleEnvironmentsRoute
   '/_authenticated/console/go-live': typeof AuthenticatedConsoleGoLiveRoute
+  '/_authenticated/console/inquiries': typeof AuthenticatedConsoleInquiriesRoute
+  '/_authenticated/console/kyb': typeof AuthenticatedConsoleKybRoute
+  '/_authenticated/console/kyc': typeof AuthenticatedConsoleKycRoute
   '/_authenticated/console/live-access': typeof AuthenticatedConsoleLiveAccessRoute
   '/_authenticated/console/organization': typeof AuthenticatedConsoleOrganizationRoute
   '/_authenticated/console/reports': typeof AuthenticatedConsoleReportsRoute
@@ -900,14 +947,19 @@ export interface FileRouteTypes {
     | '/admin/plans'
     | '/admin/team'
     | '/console/alerts'
+    | '/console/aml'
     | '/console/api-keys'
     | '/console/api-logs'
     | '/console/audit'
     | '/console/billing'
     | '/console/compliance'
     | '/console/developers'
+    | '/console/employees'
     | '/console/environments'
     | '/console/go-live'
+    | '/console/inquiries'
+    | '/console/kyb'
+    | '/console/kyc'
     | '/console/live-access'
     | '/console/organization'
     | '/console/reports'
@@ -989,14 +1041,19 @@ export interface FileRouteTypes {
     | '/admin/plans'
     | '/admin/team'
     | '/console/alerts'
+    | '/console/aml'
     | '/console/api-keys'
     | '/console/api-logs'
     | '/console/audit'
     | '/console/billing'
     | '/console/compliance'
     | '/console/developers'
+    | '/console/employees'
     | '/console/environments'
     | '/console/go-live'
+    | '/console/inquiries'
+    | '/console/kyb'
+    | '/console/kyc'
     | '/console/live-access'
     | '/console/organization'
     | '/console/reports'
@@ -1079,14 +1136,19 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/plans'
     | '/_authenticated/admin/team'
     | '/_authenticated/console/alerts'
+    | '/_authenticated/console/aml'
     | '/_authenticated/console/api-keys'
     | '/_authenticated/console/api-logs'
     | '/_authenticated/console/audit'
     | '/_authenticated/console/billing'
     | '/_authenticated/console/compliance'
     | '/_authenticated/console/developers'
+    | '/_authenticated/console/employees'
     | '/_authenticated/console/environments'
     | '/_authenticated/console/go-live'
+    | '/_authenticated/console/inquiries'
+    | '/_authenticated/console/kyb'
+    | '/_authenticated/console/kyc'
     | '/_authenticated/console/live-access'
     | '/_authenticated/console/organization'
     | '/_authenticated/console/reports'
@@ -1420,6 +1482,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedConsoleAlertsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/console/aml': {
+      id: '/_authenticated/console/aml'
+      path: '/console/aml'
+      fullPath: '/console/aml'
+      preLoaderRoute: typeof AuthenticatedConsoleAmlRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/console/api-keys': {
       id: '/_authenticated/console/api-keys'
       path: '/console/api-keys'
@@ -1462,6 +1531,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedConsoleDevelopersRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/console/employees': {
+      id: '/_authenticated/console/employees'
+      path: '/console/employees'
+      fullPath: '/console/employees'
+      preLoaderRoute: typeof AuthenticatedConsoleEmployeesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/console/environments': {
       id: '/_authenticated/console/environments'
       path: '/console/environments'
@@ -1474,6 +1550,27 @@ declare module '@tanstack/react-router' {
       path: '/console/go-live'
       fullPath: '/console/go-live'
       preLoaderRoute: typeof AuthenticatedConsoleGoLiveRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/console/inquiries': {
+      id: '/_authenticated/console/inquiries'
+      path: '/console/inquiries'
+      fullPath: '/console/inquiries'
+      preLoaderRoute: typeof AuthenticatedConsoleInquiriesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/console/kyb': {
+      id: '/_authenticated/console/kyb'
+      path: '/console/kyb'
+      fullPath: '/console/kyb'
+      preLoaderRoute: typeof AuthenticatedConsoleKybRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/console/kyc': {
+      id: '/_authenticated/console/kyc'
+      path: '/console/kyc'
+      fullPath: '/console/kyc'
+      preLoaderRoute: typeof AuthenticatedConsoleKycRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/console/live-access': {
@@ -1828,14 +1925,19 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminPlansRoute: typeof AuthenticatedAdminPlansRoute
   AuthenticatedAdminTeamRoute: typeof AuthenticatedAdminTeamRoute
   AuthenticatedConsoleAlertsRoute: typeof AuthenticatedConsoleAlertsRoute
+  AuthenticatedConsoleAmlRoute: typeof AuthenticatedConsoleAmlRoute
   AuthenticatedConsoleApiKeysRoute: typeof AuthenticatedConsoleApiKeysRoute
   AuthenticatedConsoleApiLogsRoute: typeof AuthenticatedConsoleApiLogsRoute
   AuthenticatedConsoleAuditRoute: typeof AuthenticatedConsoleAuditRoute
   AuthenticatedConsoleBillingRoute: typeof AuthenticatedConsoleBillingRoute
   AuthenticatedConsoleComplianceRoute: typeof AuthenticatedConsoleComplianceRoute
   AuthenticatedConsoleDevelopersRoute: typeof AuthenticatedConsoleDevelopersRoute
+  AuthenticatedConsoleEmployeesRoute: typeof AuthenticatedConsoleEmployeesRoute
   AuthenticatedConsoleEnvironmentsRoute: typeof AuthenticatedConsoleEnvironmentsRoute
   AuthenticatedConsoleGoLiveRoute: typeof AuthenticatedConsoleGoLiveRoute
+  AuthenticatedConsoleInquiriesRoute: typeof AuthenticatedConsoleInquiriesRoute
+  AuthenticatedConsoleKybRoute: typeof AuthenticatedConsoleKybRoute
+  AuthenticatedConsoleKycRoute: typeof AuthenticatedConsoleKycRoute
   AuthenticatedConsoleLiveAccessRoute: typeof AuthenticatedConsoleLiveAccessRoute
   AuthenticatedConsoleOrganizationRoute: typeof AuthenticatedConsoleOrganizationRoute
   AuthenticatedConsoleReportsRoute: typeof AuthenticatedConsoleReportsRoute
@@ -1867,14 +1969,19 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminPlansRoute: AuthenticatedAdminPlansRoute,
   AuthenticatedAdminTeamRoute: AuthenticatedAdminTeamRoute,
   AuthenticatedConsoleAlertsRoute: AuthenticatedConsoleAlertsRoute,
+  AuthenticatedConsoleAmlRoute: AuthenticatedConsoleAmlRoute,
   AuthenticatedConsoleApiKeysRoute: AuthenticatedConsoleApiKeysRoute,
   AuthenticatedConsoleApiLogsRoute: AuthenticatedConsoleApiLogsRoute,
   AuthenticatedConsoleAuditRoute: AuthenticatedConsoleAuditRoute,
   AuthenticatedConsoleBillingRoute: AuthenticatedConsoleBillingRoute,
   AuthenticatedConsoleComplianceRoute: AuthenticatedConsoleComplianceRoute,
   AuthenticatedConsoleDevelopersRoute: AuthenticatedConsoleDevelopersRoute,
+  AuthenticatedConsoleEmployeesRoute: AuthenticatedConsoleEmployeesRoute,
   AuthenticatedConsoleEnvironmentsRoute: AuthenticatedConsoleEnvironmentsRoute,
   AuthenticatedConsoleGoLiveRoute: AuthenticatedConsoleGoLiveRoute,
+  AuthenticatedConsoleInquiriesRoute: AuthenticatedConsoleInquiriesRoute,
+  AuthenticatedConsoleKybRoute: AuthenticatedConsoleKybRoute,
+  AuthenticatedConsoleKycRoute: AuthenticatedConsoleKycRoute,
   AuthenticatedConsoleLiveAccessRoute: AuthenticatedConsoleLiveAccessRoute,
   AuthenticatedConsoleOrganizationRoute: AuthenticatedConsoleOrganizationRoute,
   AuthenticatedConsoleReportsRoute: AuthenticatedConsoleReportsRoute,

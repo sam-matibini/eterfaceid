@@ -2,11 +2,12 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { CTASection, PageHero, Section } from "@/components/site/primitives";
 import { API_BASE_PATH, API_GROUPS, ERROR_CODES, SANDBOX_TEST_VALUES, WEBHOOK_EVENTS } from "@/lib/api-spec";
+import { efinMoneyRecipes } from "@/lib/api-recipes";
 
 export const Route = createFileRoute("/developers")({
   head: () => ({
     meta: [
-      { title: "API reference for KYC, KYB and AML — eterfaceID" },
+      { title: "API reference for KYC, KYB, AML and employee onboarding — eterfaceID" },
       {
         name: "description",
         content:
@@ -25,11 +26,13 @@ export const Route = createFileRoute("/developers")({
 });
 
 const quickStart = `curl https://eterfaceid.com${API_BASE_PATH}/cases \\
-  -H "Authorization: Bearer eid_live_xxxxxxxxxxxx" \\
+  -H "Authorization: Bearer ef_test_secret_xxxxxxxxxxxx" \\
   -H "Content-Type: application/json" \\
   -H "Idempotency-Key: efin-10231" \\
   -d '{
-    "case_type": "person",
+    "purpose": "kyc",
+    "product": "customer_kyc",
+    "industry": "fintech",
     "subject_name": "Amelia Okonkwo",
     "country": "CA",
     "reference": "customer_8842"
@@ -73,13 +76,15 @@ function Developers() {
         <div className="grid gap-6 lg:grid-cols-2">
           <ol className="space-y-3 text-sm text-muted-foreground">
             <li>
-              <strong className="text-foreground">1.</strong> In the console, open Settings and create an API key. Test
-              keys start <code className="font-mono">eid_test_</code>, live keys{" "}
-              <code className="font-mono">eid_live_</code>. The secret is shown once.
+              <strong className="text-foreground">1.</strong> In the console, open API and generate a secret. Sandbox
+              secrets start <code className="font-mono">ef_test_secret_</code>, live secrets{" "}
+              <code className="font-mono">ef_live_secret_</code>. The value is shown once. Publishable keys start{" "}
+              <code className="font-mono">ef_test_</code> / <code className="font-mono">ef_live_</code> and cannot call
+              the secret API.
             </li>
             <li>
               <strong className="text-foreground">2.</strong> Send it on every request as{" "}
-              <code className="font-mono">Authorization: Bearer eid_…</code>.
+              <code className="font-mono">Authorization: Bearer ef_test_secret_…</code>.
             </li>
             <li>
               <strong className="text-foreground">3.</strong> Check it works with{" "}
@@ -91,6 +96,23 @@ function Developers() {
             </li>
           </ol>
           <Code>{quickStart}</Code>
+        </div>
+      </Section>
+
+      <Section
+        title="eFinMoney and partner integrations"
+        intro="Copy-ready calls for customer KYC, business KYB and employee onboarding. Set ETERFACEID_SECRET_KEY to a secret generated in the console."
+      >
+        <div className="space-y-4">
+          {efinMoneyRecipes({ environment: "sandbox" }).map((recipe) => (
+            <div key={recipe.id} className="rounded-lg border border-border bg-card p-5">
+              <h3 className="text-sm font-semibold">{recipe.title}</h3>
+              <p className="mt-1 text-sm text-muted-foreground">{recipe.description}</p>
+              <div className="mt-3">
+                <Code>{recipe.code}</Code>
+              </div>
+            </div>
+          ))}
         </div>
       </Section>
 
@@ -131,7 +153,7 @@ function Developers() {
       >
         <div className="grid gap-4 lg:grid-cols-2">
           <div className="rounded-lg border border-border bg-card p-5">
-            <h3 className="text-sm font-semibold">Sandbox — eid_test_…</h3>
+            <h3 className="text-sm font-semibold">Sandbox — ef_test_secret_…</h3>
             <p className="mt-2 text-sm text-muted-foreground">
               Available the moment you create an account, unlimited and never billed. Sandbox keys never
               query the real sanctions and watchlists and never open a real bank connection: results are
@@ -147,7 +169,7 @@ function Developers() {
             </ul>
           </div>
           <div className="rounded-lg border border-border bg-card p-5">
-            <h3 className="text-sm font-semibold">Live — eid_live_…</h3>
+            <h3 className="text-sm font-semibold">Live — ef_live_secret_…</h3>
             <p className="mt-2 text-sm text-muted-foreground">
               Live keys reach the real lists, real bank connections and your billable usage. Before they can
               be created, an administrator completes <strong>Go live</strong> in the console: business
