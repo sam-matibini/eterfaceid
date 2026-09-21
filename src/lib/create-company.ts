@@ -131,7 +131,19 @@ export function isCreatorDeniedError(message: string) {
   return /not the company creator/i.test(message);
 }
 
-/** Prefer a readable membership; otherwise the creator of this org is admin. */
+export function creatorJoinTargets(input: {
+  membershipOrgIds: string[];
+  ownedOrgIds?: string[];
+  persistedOrgId?: string | null;
+}) {
+  const seen = new Set(input.membershipOrgIds.filter(Boolean));
+  const targets: string[] = [];
+  for (const id of [...(input.ownedOrgIds ?? []), input.persistedOrgId ?? ""]) {
+    if (!id || seen.has(id) || targets.includes(id)) continue;
+    targets.push(id);
+  }
+  return targets;
+}
 export function resolveCreatorAdminOrgId(input: {
   membershipOrgId?: string | null;
   membershipIsAdmin?: boolean;

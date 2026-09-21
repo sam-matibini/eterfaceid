@@ -4,6 +4,7 @@ import type { Session } from "@supabase/supabase-js";
 
 import { supabase } from "@/integrations/supabase/client";
 import { hasPermission, mfaRequiredFor, type PermissionCode } from "@/lib/access";
+import { creatorJoinTargets, creatorRpcAccepted, isCreatorDeniedError, joinCreatedCompanyArgs, liveMemberInsert } from "@/lib/create-company";
 import {
   fetchMembershipRows,
   mapMembershipRows,
@@ -63,6 +64,7 @@ export function useOrganization() {
       });
       if (result.error) throw new Error(result.error.message);
       let memberships = mapMembershipRows(result.data);
+      const realMemberIds = memberships.map((row) => row.orgId);
       const owned = await supabase.from("organizations").select("id, name").eq("created_by", user!.id);
       if (!owned.error && owned.data?.length) {
         memberships = mergeOwnedOrganizations(memberships, owned.data);
@@ -70,6 +72,32 @@ export function useOrganization() {
       const persisted = readPersistedWorkspace();
       if (persisted) {
         memberships = mergeOwnedOrganizations(memberships, [{ id: persisted.orgId, name: persisted.name }]);
+      }
+      const joinTargets = creatorJoinTargets({
+        membershipOrgIds: realMemberIds,
+        ownedOrgIds: !owned.error ? (owned.data ?? []).map((row) => String(row.id)) : [],
+        persistedOrgId: persisted?.orgId,
+      });
+      for (const orgId of joinTargets) {
+        const rpc = await supabase.rpc("join_created_company" as never, joinCreatedCompanyArgs(orgId) as never);
+        const rpcError = (rpc as { error?: { message?: string } | null }).error?.message ?? null;
+        if (isCreatorDeniedError(rpcError ?? "")) continue;
+        if (!creatorRpcAccepted(rpcError)) {
+          await supabase.from("organization_members").insert(liveMemberInsert({ orgId, userId: user!.id }) as never);
+        }
+      }
+      if (joinTargets.length) {
+        const refreshed = await fetchMembershipRows(async (select, orderByCreatedAt) => {
+          let request = supabase.from("organization_members").select(select).eq("user_id", user!.id);
+          if (orderByCreatedAt) request = request.order("created_at");
+          return request;
+        });
+        if (!refreshed.error) {
+          memberships = mergeOwnedOrganizations(mapMembershipRows(refreshed.data), [
+            ...(!owned.error ? owned.data ?? [] : []),
+            ...(persisted ? [{ id: persisted.orgId, name: persisted.name }] : []),
+          ]);
+        }
       }
       if (!memberships.length) return { memberships: [], current: null as OrganizationMembership | null };
       const stored = readStoredOrg();

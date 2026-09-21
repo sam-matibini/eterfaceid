@@ -1,6 +1,7 @@
 import {
   addCreatedCompanyMemberArgs,
   companyCreateErrorMessage,
+  creatorJoinTargets,
   creatorRpcAccepted,
   creatorRpcMissing,
   dashboardFromCreatedCompany,
@@ -131,5 +132,19 @@ assert(!creatorRpcAccepted('new row violates row-level security policy'), "rls i
 assert(isCreatorDeniedError("Not the company creator"), "creator check is recognized");
 assert(creatorRpcMissing("Could not find the function public.update_created_company(_org_id, _name) in the schema cache"), "missing update rpc");
 assert(creatorRpcMissing("HTTP 404"), "empty 404 is a missing rpc");
+assert(
+  JSON.stringify(
+    creatorJoinTargets({
+      membershipOrgIds: [],
+      ownedOrgIds: [],
+      persistedOrgId: "org-open",
+    }),
+  ) === JSON.stringify(["org-open"]),
+  "persisted workspace is joined when membership select is empty",
+);
+assert(
+  creatorJoinTargets({ membershipOrgIds: ["org-open"], persistedOrgId: "org-open" }).length === 0,
+  "already a member is not joined again",
+);
 
 console.log("create-company.test.ts passed");
