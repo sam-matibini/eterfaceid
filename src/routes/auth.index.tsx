@@ -5,10 +5,11 @@ import { z } from "zod";
 
 import { AuthFrame, authButtonClass, authInputClass } from "@/components/auth/AuthFrame";
 import { supabase } from "@/integrations/supabase/client";
-import { useSession } from "@/hooks/useSession";
+import { setActiveOrganization, useSession } from "@/hooks/useSession";
 import { sendPasswordResetEmail, sendSignupVerificationEmail } from "@/lib/auth-email.functions";
-import { authCallbackUrl, continueSignedIn, isAuthCallbackLocation } from "@/lib/after-auth";
+import { authCallbackUrl, isAuthCallbackLocation, mfaChallengeRequired, pathAfterSignIn } from "@/lib/after-auth";
 import { publicEmailFailureMessage } from "@/lib/email-copy";
+import { loadMyWorkspace } from "@/lib/teams.functions";
 import { enterStaffBypass } from "@/lib/staff-bypass.functions";
 import {
   STAFF_BYPASS_FLAG,
@@ -44,6 +45,7 @@ function AuthPage() {
   const sendVerify = useServerFn(sendSignupVerificationEmail);
   const sendReset = useServerFn(sendPasswordResetEmail);
   const staffBypass = useServerFn(enterStaffBypass);
+  const loadWorkspace = useServerFn(loadMyWorkspace);
   const [mode, setMode] = useState<"signin" | "signup" | "reset" | "staff">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -80,10 +82,22 @@ function AuthPage() {
     }
     if (!resumeAfterAuth) return;
     void (async () => {
-      const next = await continueSignedIn();
-      void navigate({ to: next, replace: true });
+      if (await mfaChallengeRequired()) {
+        void navigate({ to: "/auth/mfa", replace: true });
+        return;
+      }
+      const space = await loadWorkspace();
+      if (space.orgId) setActiveOrganization(space.orgId);
+      void navigate({
+        to: pathAfterSignIn({
+          signedIn: true,
+          mfaNeeded: false,
+          hasOrganization: space.hasOrganization,
+        }),
+        replace: true,
+      });
     })();
-  }, [ready, session, resumeAfterAuth, navigate]);
+  }, [ready, session, resumeAfterAuth, navigate, loadWorkspace]);
 
   async function useDifferentAccount() {
     setResumeAfterAuth(false);

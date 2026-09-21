@@ -1,17 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 
 import { supabase } from "@/integrations/supabase/client";
-import {
-  hasPermission,
-  inferAccessRole,
-  mfaRequiredFor,
-  type AccessRole,
-  type AppRole,
-  type PermissionCode,
-} from "@/lib/access";
-import { isMissingColumnError, liveMemberInsert } from "@/lib/schema-fallback";
+import { hasPermission, mfaRequiredFor, type PermissionCode } from "@/lib/access";
+import { loadMyWorkspace, type WorkspaceMembership } from "@/lib/teams.functions";
 
 const ACTIVE_ORG_KEY = "eid_active_org";
 
@@ -39,21 +33,7 @@ export function useSession() {
   return { session, ready, user: session?.user ?? null };
 }
 
-export type OrganizationMembership = {
-  orgId: string;
-  role: AppRole;
-  accessRole: AccessRole;
-  isOwner: boolean;
-  name: string;
-  legalName: string;
-  orgLiveAccess: string;
-  sandboxAccess: boolean;
-  liveAccess: boolean;
-  permissions: string[];
-  mfaRequired: boolean;
-  jobTitle: string | null;
-  userType: string;
-};
+export type OrganizationMembership = WorkspaceMembership;
 
 function readStoredOrg() {
   if (typeof window === "undefined") return null;
@@ -67,94 +47,18 @@ export function setActiveOrganization(orgId: string) {
 
 export function useOrganization() {
   const { user, ready } = useSession();
+  const loadWorkspace = useServerFn(loadMyWorkspace);
   const query = useQuery({
     queryKey: ["my-org", user?.id],
     enabled: Boolean(user?.id),
+    retry: 2,
     queryFn: async () => {
-      const full = await supabase
-        .from("organization_members")
-        .select(
-          "org_id, role, access_role, is_owner, sandbox_access, live_access, permissions, mfa_required, job_title, user_type, status, organizations(id, name, slug, legal_name, live_access)",
-        )
-        .eq("user_id", user!.id)
-        .order("created_at");
-      const { data, error } =
-        full.error && isMissingColumnError(full.error.message)
-          ? await supabase
-              .from("organization_members")
-              .select("org_id, role, organizations(id, name, slug, live_access)")
-              .eq("user_id", user!.id)
-              .order("created_at")
-          : full;
-      if (error) throw error;
-      const rows = (data ?? []).filter((row) => (row as { status?: string }).status !== "disabled");
-      const memberships: OrganizationMembership[] = rows.map((raw) => {
-        const row = raw as {
-          org_id: string;
-          role: AppRole;
-          access_role?: AccessRole | null;
-          is_owner?: boolean | null;
-          sandbox_access?: boolean | null;
-          live_access?: boolean | null;
-          permissions?: string[] | null;
-          mfa_required?: boolean | null;
-          job_title?: string | null;
-          user_type?: string | null;
-          organizations?: {
-            name?: string;
-            legal_name?: string | null;
-            live_access?: string;
-          } | null;
-        };
-        const org = row.organizations ?? null;
-        return {
-          orgId: row.org_id,
-          role: row.role,
-          accessRole: row.access_role ?? inferAccessRole(row.role),
-          isOwner: Boolean(row.is_owner) || row.role === "admin",
-          name: org?.name ?? "Your team",
-          legalName: org?.legal_name ?? org?.name ?? "Your team",
-          orgLiveAccess: org?.live_access ?? "locked",
-          sandboxAccess: row.sandbox_access !== false,
-          liveAccess: Boolean(row.live_access) || row.role === "admin",
-          permissions: row.permissions ?? [],
-          mfaRequired: Boolean(row.mfa_required) || row.role === "admin",
-          jobTitle: row.job_title ?? null,
-          userType: row.user_type ?? "employee",
-        };
-      });
-      const seen = new Set(memberships.map((row) => row.orgId));
-      const owned = await supabase.from("organizations").select("id, name, legal_name").eq("created_by", user!.id);
-      if (!owned.error) {
-        for (const org of owned.data ?? []) {
-          if (seen.has(org.id)) continue;
-          const join = await supabase.rpc("join_created_company" as never, { _org_id: org.id } as never);
-          if (join.error) {
-            await supabase.from("organization_members").insert(
-              liveMemberInsert({ orgId: org.id, userId: user!.id, role: "admin" }) as never,
-            );
-          }
-          memberships.push({
-            orgId: org.id,
-            role: "admin",
-            accessRole: "owner",
-            isOwner: true,
-            name: org.name ?? "Your team",
-            legalName: org.legal_name ?? org.name ?? "Your team",
-            orgLiveAccess: "locked",
-            sandboxAccess: true,
-            liveAccess: true,
-            permissions: [],
-            mfaRequired: true,
-            jobTitle: null,
-            userType: "employee",
-          });
-          seen.add(org.id);
-        }
-      }
+      const result = await loadWorkspace();
+      const memberships = result.memberships as OrganizationMembership[];
       if (!memberships.length) return { memberships: [], current: null as OrganizationMembership | null };
       const stored = readStoredOrg();
-      const current = memberships.find((m) => m.orgId === stored) ?? memberships[0];
+      const current = memberships.find((m) => m.orgId === stored) ?? memberships[0] ?? null;
+      if (current) setActiveOrganization(current.orgId);
       return { memberships, current };
     },
   });
@@ -162,8 +66,8 @@ export function useOrganization() {
   return {
     organization: current,
     memberships: query.data?.memberships ?? [],
-    loading: !ready || query.isLoading,
-    ready: ready && !query.isLoading,
+    loading: !ready || Boolean(user?.id && query.isLoading),
+    ready: ready && (!user?.id || !query.isLoading),
     setActive: (orgId: string) => {
       setActiveOrganization(orgId);
       void query.refetch();

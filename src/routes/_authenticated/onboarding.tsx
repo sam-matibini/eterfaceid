@@ -76,6 +76,22 @@ function OnboardingPage() {
 
   const legalName = form.legalName.trim() || form.name.trim();
 
+  if (!ready) {
+    return (
+      <AuthFrame title="Opening your workspace" subtitle="Checking whether this account already has a company.">
+        <p className="text-sm text-muted-foreground">Just a moment…</p>
+      </AuthFrame>
+    );
+  }
+
+  if (organization) {
+    return (
+      <AuthFrame title="Opening your dashboard" subtitle="This account already has a company workspace.">
+        <p className="text-sm text-muted-foreground">Taking you to the console…</p>
+      </AuthFrame>
+    );
+  }
+
   return (
     <AuthFrame
       title={token ? "Accept your invitation" : "Set up your company"}

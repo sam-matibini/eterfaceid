@@ -25,26 +25,8 @@ export function pathAfterSignIn(input: {
   return input.hasOrganization ? "/console" : "/onboarding";
 }
 
-export async function resolveHasOrganization(userId: string) {
+export async function mfaChallengeRequired() {
   const { supabase } = await import("@/integrations/supabase/client");
-  const members = await supabase.from("organization_members").select("org_id").eq("user_id", userId).limit(1);
-  if (members.data?.length) return true;
-  const owned = await supabase.from("organizations").select("id").eq("created_by", userId).limit(1);
-  return Boolean(owned.data?.length);
-}
-
-export async function continueSignedIn(options?: { skipMfa?: boolean }): Promise<AfterSignInPath> {
-  const { supabase } = await import("@/integrations/supabase/client");
-  const { data } = await supabase.auth.getUser();
-  const userId = data.user?.id;
-  if (!userId) return "/auth";
-  if (!options?.skipMfa) {
-    const aal = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-    if (aal.data?.nextLevel === "aal2" && aal.data.currentLevel !== "aal2") return "/auth/mfa";
-  }
-  return pathAfterSignIn({
-    signedIn: true,
-    mfaNeeded: false,
-    hasOrganization: await resolveHasOrganization(userId),
-  });
+  const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  return data?.nextLevel === "aal2" && data.currentLevel !== "aal2";
 }
