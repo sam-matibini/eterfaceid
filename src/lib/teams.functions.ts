@@ -24,6 +24,7 @@ import {
   isUniqueConflict,
   liveInviteInsert,
   liveMemberInsert,
+  liveOrganizationInsert,
   liveOrganizationProfileUpdate,
   writeWithFallback,
 } from "@/lib/schema-fallback";
@@ -325,78 +326,86 @@ export const createOrganization = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const admin = await loadAdmin();
+    const db = admin ?? context.supabase;
     const legalName = data.legalName?.trim() || data.name;
-    const { data: org, error } = await supabaseAdmin
-      .from("organizations")
-      .insert({
+    const country = data.country ? normalizeCountry(data.country) : null;
+
+    const already = await createdOrgId(db, context.userId, null);
+    if (already) {
+      await joinCreatorIfNeeded(db, context.userId, already);
+      return { orgId: already, existing: true };
+    }
+
+    const slug = slugify(data.name);
+    const inserted = await writeWithFallback(
+      async (payload) => {
+        const result = await db
+          .from("organizations")
+          .insert(payload as never)
+          .select("id, name")
+          .maybeSingle();
+        return { data: result.data as { id: string; name: string } | null, error: result.error };
+      },
+      {
         name: data.name,
         legal_name: legalName,
-        slug: slugify(data.name),
+        slug,
         created_by: context.userId,
         primary_admin_user_id: context.userId,
         registration_number: data.registrationNumber || null,
-        country: data.country ? normalizeCountry(data.country) : null,
+        country,
         address_line1: data.addressLine1 || null,
         city: data.city || null,
         region: data.region || null,
         postal_code: data.postalCode || null,
         website: data.website || null,
-      })
-      .select("id, name")
-      .single();
-    if (error) throw new Error(error.message);
+      },
+      liveOrganizationInsert({ name: data.name, slug, createdBy: context.userId }),
+    );
+    if (inserted.error || !inserted.data?.id) {
+      throw new Error(inserted.error?.message ?? "The company could not be created");
+    }
+    const org = inserted.data;
 
-    const { error: memberError } = await (async () => {
-      try {
-        await insertMembership(
-          supabaseAdmin,
-          {
-            org_id: org.id,
-            user_id: context.userId,
-            role: "admin",
-            access_role: "owner",
-            is_owner: true,
-            user_type: "employee",
-            sandbox_access: true,
-            live_access: true,
-            permissions: defaultPermissions("owner"),
-            mfa_required: true,
-            status: "active",
-          },
-          liveMemberInsert({ orgId: org.id as string, userId: context.userId, role: "admin" }),
-        );
-        return { error: null };
-      } catch (err) {
-        return { error: err instanceof Error ? err : new Error("Could not open the company dashboard") };
-      }
-    })();
-    if (memberError) throw new Error(memberError.message);
+    try {
+      await joinCreatorIfNeeded(db, context.userId, org.id);
+    } catch (err) {
+      throw new Error(err instanceof Error ? err.message : "Could not open the company dashboard");
+    }
 
-    await supabaseAdmin.from("org_environments").insert([
-      { org_id: org.id, code: "sandbox", label: "Sandbox", publishable_prefix: "ef_test_" },
-      { org_id: org.id, code: "live", label: "Live", publishable_prefix: "ef_live_" },
-    ]);
+    try {
+      await db.from("org_environments").insert([
+        { org_id: org.id, code: "sandbox", label: "Sandbox", publishable_prefix: "ef_test_" },
+        { org_id: org.id, code: "live", label: "Live", publishable_prefix: "ef_live_" },
+      ]);
+    } catch {
+      /* environments are optional on older schemas */
+    }
 
-    await supabaseAdmin.from("audit_events").insert({
-      org_id: org.id,
-      actor_id: context.userId,
-      action: "team.created",
-      entity_type: "organization",
-      entity_id: org.id,
-      detail: { name: data.name, legalName } as never,
-    });
+    try {
+      await db.from("audit_events").insert({
+        org_id: org.id,
+        actor_id: context.userId,
+        action: "team.created",
+        entity_type: "organization",
+        entity_id: org.id,
+        detail: { name: data.name, legalName } as never,
+      });
+    } catch {
+      /* audit must not block creating the company */
+    }
 
     try {
       const email = context.claims?.email as string | undefined;
-      if (email) {
+      if (email && admin) {
         const { sendNotification } = await import("@/lib/email.server");
-        await sendNotification(supabaseAdmin, {
+        await sendNotification(admin, {
           event: "team.welcome",
           to: [email],
-          orgId: org.id as string,
+          orgId: org.id,
           data: {
-            org: org.name as string,
+            org: org.name,
             name: (context.claims?.user_metadata as { full_name?: string } | undefined)?.full_name ?? email,
             role: "Organization Owner",
             access: "Sandbox, company administration, API documentation",
@@ -408,7 +417,7 @@ export const createOrganization = createServerFn({ method: "POST" })
       /* the welcome email must never block sign-up */
     }
 
-    return { orgId: org.id as string, existing: false };
+    return { orgId: org.id, existing: false };
   });
 
 export const updateOrganizationProfile = createServerFn({ method: "POST" })

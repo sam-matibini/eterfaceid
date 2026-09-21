@@ -67,6 +67,14 @@ export function liveOrganizationProfileUpdate(input: { name: string }) {
   return { name: input.name.trim() };
 }
 
+export function liveOrganizationInsert(input: { name: string; slug: string; createdBy: string }) {
+  return {
+    name: input.name.trim(),
+    slug: input.slug,
+    created_by: input.createdBy,
+  };
+}
+
 export function dedupeByUserId<T extends { userId: string }>(rows: T[]) {
   const seen = new Set<string>();
   return rows.filter((row) => {

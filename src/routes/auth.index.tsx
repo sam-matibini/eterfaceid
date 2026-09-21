@@ -49,6 +49,7 @@ function AuthPage() {
   const [staffPin, setStaffPin] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [companyName, setCompanyName] = useState("");
   const [hasInvite, setHasInvite] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -135,6 +136,7 @@ function AuthPage() {
     setBusy(true);
     try {
       if (mode === "signup") {
+        if (companyName.trim()) window.sessionStorage.setItem("eid_company", companyName.trim());
         window.sessionStorage.setItem("eid_admin_name", `${firstName.trim()} ${lastName.trim()}`.trim());
         const { data, error: signUpError } = await supabase.auth.signUp({
           email: parsed.data.email,
@@ -223,6 +225,20 @@ function AuthPage() {
                 className={authInputClass}
               />
             </div>
+          </div>
+        ) : null}
+        {mode === "signup" && !hasInvite ? (
+          <div>
+            <label htmlFor="companyName" className="text-sm font-medium">
+              Company name
+            </label>
+            <input
+              id="companyName"
+              value={companyName}
+              onChange={(e) => setCompanyName(e.target.value)}
+              className={authInputClass}
+              placeholder="Used on your KYB profile"
+            />
           </div>
         ) : null}
         {mode === "staff" ? (

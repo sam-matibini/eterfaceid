@@ -2,12 +2,12 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Container, CTASection, Section } from "@/components/site/primitives";
 import { solutionsGroup } from "@/components/site/nav-data";
 import { ProductFilm } from "@/components/site/ProductFilm";
-import screeningFilm from "@/assets/screening-workflow.mp4.asset.json";
-import screeningPoster from "@/assets/screening-workflow-poster.png.asset.json";
-import transactionFilm from "@/assets/transaction-monitoring.mp4.asset.json";
-import transactionPoster from "@/assets/transaction-monitoring-poster.png.asset.json";
-import fintechFilm from "@/assets/fintech-real-time-monitoring.mp4.asset.json";
-import fintechPoster from "@/assets/fintech-real-time-monitoring-poster.png.asset.json";
+import screeningFilm from "@/assets/screening-workflow.mp4";
+import screeningPoster from "@/assets/screening-workflow-poster.png";
+import transactionFilm from "@/assets/transaction-monitoring.mp4";
+import transactionPoster from "@/assets/transaction-monitoring-poster.png";
+import fintechFilm from "@/assets/fintech-real-time-monitoring.mp4";
+import fintechPoster from "@/assets/fintech-real-time-monitoring-poster.png";
 import verifyPeopleImage from "@/assets/verify-people-workflow.jpg";
 import verifyBusinessImage from "@/assets/verify-business-workflow.jpg";
 import continuousScreeningImage from "@/assets/continuous-screening-workflow.jpg";
@@ -102,14 +102,14 @@ function Home() {
 
           <div className="space-y-4">
             <ProductFilm
-              src={screeningFilm.url}
-              poster={screeningPoster.url}
+              src={screeningFilm}
+              poster={screeningPoster}
               title="Screening in motion"
               description="Lists resolve and a reviewable match is explained."
             />
             <ProductFilm
-              src={transactionFilm.url}
-              poster={transactionPoster.url}
+              src={transactionFilm}
+              poster={transactionPoster}
               title="Monitoring in motion"
               description="A suspicious pattern becomes an analyst alert."
             />
@@ -186,8 +186,8 @@ function Home() {
             </Link>
           </div>
           <ProductFilm
-            src={fintechFilm.url}
-            poster={fintechPoster.url}
+            src={fintechFilm}
+            poster={fintechPoster}
             title="Fintech monitoring in real time"
             description="Live payment and counterparty signals become a focused analyst review."
           />
