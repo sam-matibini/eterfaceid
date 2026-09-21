@@ -14,6 +14,10 @@ export function isMissingSchemaError(message: string) {
   return Boolean(missingSchemaPart(message));
 }
 
+export function isMissingRpcError(message: string) {
+  return /Could not find the function /i.test(message) || /PGRST202/i.test(message);
+}
+
 export function omitField<T extends Record<string, unknown>>(row: T, key: string) {
   const next = { ...row };
   delete next[key];

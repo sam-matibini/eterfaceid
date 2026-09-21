@@ -1,4 +1,10 @@
-import { isMissingSchemaError, missingSchemaPart, omitField, writeIgnoringUnknownColumns } from "./schema-compat";
+import {
+  isMissingRpcError,
+  isMissingSchemaError,
+  missingSchemaPart,
+  omitField,
+  writeIgnoringUnknownColumns,
+} from "./schema-compat";
 
 function assert(condition: unknown, message: string) {
   if (!condition) throw new Error(message);
@@ -12,6 +18,11 @@ assert(
 assert(missingSchemaPart("column organizations.legal_name does not exist")?.name === "legal_name", "postgres column");
 assert(missingSchemaPart("Could not find the table 'public.org_environments' in the schema cache")?.kind === "table", "missing table");
 assert(isMissingSchemaError("Could not find the 'access_role' column of 'organization_members'"), "members extra cols");
+assert(
+  isMissingRpcError("Could not find the function public.create_company_workspace(_name, _slug) in the schema cache"),
+  "missing rpc",
+);
+assert(!isMissingRpcError("new row violates row-level security policy for table \"organizations\""), "rls is not missing rpc");
 assert(omitField({ a: 1, b: 2 }, "a").b === 2 && !("a" in omitField({ a: 1, b: 2 }, "a")), "omit field");
 
 const attempts: Array<Record<string, unknown>> = [];

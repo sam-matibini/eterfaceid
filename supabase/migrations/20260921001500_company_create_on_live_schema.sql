@@ -16,6 +16,31 @@ CREATE POLICY "creator joins as first admin"
     )
   );
 
+CREATE OR REPLACE FUNCTION public.create_company_workspace(_name text, _slug text)
+RETURNS uuid
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  uid uuid := auth.uid();
+  oid uuid;
+BEGIN
+  IF uid IS NULL THEN
+    RAISE EXCEPTION 'Not signed in';
+  END IF;
+  INSERT INTO public.organizations (name, slug, created_by)
+  VALUES (_name, _slug, uid)
+  RETURNING id INTO oid;
+  INSERT INTO public.organization_members (org_id, user_id, role)
+  VALUES (oid, uid, 'admin');
+  RETURN oid;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.create_company_workspace(text, text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.create_company_workspace(text, text) TO authenticated;
+
 -- Optional profile columns. Safe if they already exist.
 ALTER TABLE public.organizations
   ADD COLUMN IF NOT EXISTS legal_name text,

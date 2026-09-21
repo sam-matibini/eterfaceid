@@ -14,7 +14,8 @@ import {
   type UserType,
 } from "@/lib/access";
 import { randomToken, sha256Hex } from "@/lib/crypto-hash";
-import { isMissingSchemaError, writeIgnoringUnknownColumns } from "@/lib/schema-compat";
+import { isMissingRpcError, isMissingSchemaError, writeIgnoringUnknownColumns } from "@/lib/schema-compat";
+import { callerAccessToken, firstRow, userRest, userRpc } from "@/lib/user-rest.server";
 
 const accessRoleSchema = z.enum(["administrator", "developer", "compliance", "analyst", "viewer"]);
 const userTypeSchema = z.enum(["employee", "contractor", "consultant"]);
@@ -131,38 +132,68 @@ export const createOrganization = createServerFn({ method: "POST" })
       postal_code: data.postalCode || null,
       website: data.website || null,
     };
-    const created = await writeIgnoringUnknownColumns(async (payload) => {
-      const result = await db.from("organizations").insert(payload as never).select("id, name").single();
-      return { data: result.data, error: result.error };
-    }, {
-      name: data.name,
-      slug: slugify(data.name),
-      created_by: context.userId,
-      primary_admin_user_id: context.userId,
-      ...profile,
-    });
-    if (created.error || !created.data) throw new Error(created.error?.message ?? "The company could not be created");
-    const org = created.data as { id: string; name: string };
+    const slug = slugify(data.name);
+    const userToken = await callerAccessToken();
+    const rpc = await userRpc<string>("create_company_workspace", { _name: data.name, _slug: slug }, userToken);
+    const rpcId = firstRow(rpc.data);
+    let org: { id: string; name: string } | null =
+      rpcId && !rpc.error ? { id: String(rpcId), name: data.name } : null;
 
-    const member = await writeIgnoringUnknownColumns(async (payload) => {
-      const viaUser = await db.from("organization_members").insert(payload as never);
-      if (!viaUser.error) return { data: { ok: true }, error: null };
-      const viaAdmin = await supabaseAdmin.from("organization_members").insert(payload as never);
-      return { data: viaAdmin.error ? null : { ok: true }, error: viaAdmin.error ?? viaUser.error };
-    }, {
-      org_id: org.id,
-      user_id: context.userId,
-      role: "admin",
-      access_role: "owner",
-      is_owner: true,
-      user_type: "employee",
-      sandbox_access: true,
-      live_access: true,
-      permissions: defaultPermissions("owner"),
-      mfa_required: true,
-      status: "active",
-    });
-    if (member.error) throw new Error(member.error.message);
+    if (!org) {
+      const created = await writeIgnoringUnknownColumns(async (payload) => {
+        const result = await userRest<Array<{ id: string; name: string }>>("organizations", {
+          method: "POST",
+          query: "select=id,name",
+          prefer: "return=representation",
+          body: payload,
+          token: userToken,
+        });
+        if (!result.error) return { data: firstRow(result.data), error: null };
+        const viaClient = await db.from("organizations").insert(payload as never).select("id, name").maybeSingle();
+        if (!viaClient.error) return { data: viaClient.data, error: null };
+        const viaAdmin = await supabaseAdmin.from("organizations").insert(payload as never).select("id, name").maybeSingle();
+        return { data: viaAdmin.data, error: viaAdmin.error ?? viaClient.error ?? { message: result.error } };
+      }, {
+        name: data.name,
+        slug,
+        created_by: context.userId,
+        primary_admin_user_id: context.userId,
+        ...profile,
+      });
+      if (created.error || !created.data) {
+        throw new Error(created.error?.message ?? "The company could not be created");
+      }
+      org = created.data as { id: string; name: string };
+    }
+
+    if (!rpcId || rpc.error || isMissingRpcError(String(rpc.error ?? ""))) {
+      const member = await writeIgnoringUnknownColumns(async (payload) => {
+        const viaUser = await userRest("organization_members", {
+          method: "POST",
+          prefer: "return=minimal",
+          body: payload,
+          token: userToken,
+        });
+        if (!viaUser.error) return { data: { ok: true }, error: null };
+        const viaClient = await db.from("organization_members").insert(payload as never);
+        if (!viaClient.error) return { data: { ok: true }, error: null };
+        const viaAdmin = await supabaseAdmin.from("organization_members").insert(payload as never);
+        return { data: viaAdmin.error ? null : { ok: true }, error: viaAdmin.error ?? { message: viaUser.error } };
+      }, {
+        org_id: org.id,
+        user_id: context.userId,
+        role: "admin",
+        access_role: "owner",
+        is_owner: true,
+        user_type: "employee",
+        sandbox_access: true,
+        live_access: true,
+        permissions: defaultPermissions("owner"),
+        mfa_required: true,
+        status: "active",
+      });
+      if (member.error) throw new Error(member.error.message);
+    }
 
     const environments = await writeIgnoringUnknownColumns(async (payload) => {
       const result = await supabaseAdmin.from("org_environments").insert(payload["rows"] as never);
@@ -178,8 +209,13 @@ export const createOrganization = createServerFn({ method: "POST" })
     }
 
     await writeIgnoringUnknownColumns(async (payload) => {
-      const result = await db.from("org_applications").insert(payload as never);
-      return { data: result.error ? null : { ok: true }, error: result.error };
+      const result = await userRest("org_applications", {
+        method: "POST",
+        prefer: "return=minimal",
+        body: payload,
+        token: userToken,
+      });
+      return { data: result.error ? null : { ok: true }, error: result.error ? { message: result.error } : null };
     }, {
       org_id: org.id,
       legal_name: legalName,
