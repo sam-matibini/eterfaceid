@@ -99,8 +99,8 @@ function OrganizationPage() {
               ["country", "Country"],
               ["addressLine1", "Business Address"],
               ["city", "City"],
-              ["region", "Region"],
-              ["postalCode", "Postal code"],
+              ["region", "Prov/state"],
+              ["postalCode", "Zip/Postal code"],
               ["website", "Website"],
             ].map(([key, label]) => (
               <label key={key} className="text-xs uppercase tracking-widest text-muted-foreground">

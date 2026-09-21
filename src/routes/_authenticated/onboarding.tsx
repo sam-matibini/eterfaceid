@@ -105,8 +105,8 @@ function OnboardingPage() {
           <Field label="Business Address" value={form.addressLine1} onChange={(v) => setForm({ ...form, addressLine1: v })} />
           <div className="grid gap-3 sm:grid-cols-3">
             <Field label="City" value={form.city} onChange={(v) => setForm({ ...form, city: v })} />
-            <Field label="Region" value={form.region} onChange={(v) => setForm({ ...form, region: v })} />
-            <Field label="Postal code" value={form.postalCode} onChange={(v) => setForm({ ...form, postalCode: v })} />
+            <Field label="Prov/state" value={form.region} onChange={(v) => setForm({ ...form, region: v })} />
+            <Field label="Zip/Postal code" value={form.postalCode} onChange={(v) => setForm({ ...form, postalCode: v })} />
           </div>
           <Field label="Website" value={form.website} onChange={(v) => setForm({ ...form, website: v })} />
           <button type="submit" disabled={busy} className={authButtonClass}>
