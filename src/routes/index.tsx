@@ -1,6 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Container, CTASection, Section } from "@/components/site/primitives";
-import { useOrganization, useSession } from "@/hooks/useSession";
 import { solutionsGroup } from "@/components/site/nav-data";
 import { ProductFilm } from "@/components/site/ProductFilm";
 import screeningFilm from "@/assets/screening-workflow.mp4";
@@ -69,10 +68,6 @@ const coverage = [
 ];
 
 function Home() {
-  const { session } = useSession();
-  const { organization, ready } = useOrganization();
-  const consoleTo = session && ready && !organization ? "/onboarding" : "/console";
-
   return (
     <>
       <section className="border-b border-rule">
@@ -90,21 +85,18 @@ function Home() {
               account is open — through one API and one review console.
             </p>
             <div className="mt-9 flex flex-wrap gap-3">
-              {session ? (
-                <Link
-                  to={consoleTo}
-                  className="rounded-sm bg-primary px-5 py-3 text-[0.88rem] font-medium text-primary-foreground transition-colors hover:bg-ink"
-                >
-                  {organization ? "Open console" : "Continue to console"}
-                </Link>
-              ) : (
-                <Link
-                  to="/contact"
-                  className="rounded-sm bg-primary px-5 py-3 text-[0.88rem] font-medium text-primary-foreground transition-colors hover:bg-ink"
-                >
-                  Book a walkthrough
-                </Link>
-              )}
+              <Link
+                to="/contact"
+                className="rounded-sm bg-primary px-5 py-3 text-[0.88rem] font-medium text-primary-foreground transition-colors hover:bg-ink"
+              >
+                Book a walkthrough
+              </Link>
+              <Link
+                to="/auth"
+                className="rounded-sm border border-ink/25 px-5 py-3 text-[0.88rem] font-medium text-ink transition-colors hover:border-ink"
+              >
+                Sign in
+              </Link>
               <Link
                 to="/developers"
                 className="rounded-sm border border-ink/25 px-5 py-3 text-[0.88rem] font-medium text-ink transition-colors hover:border-ink"

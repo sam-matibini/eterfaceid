@@ -80,11 +80,19 @@ export function Header() {
             >
               Company
             </Link>
+            {session ? (
+              <Link
+                to={consoleTo}
+                className="text-[0.875rem] text-ink-soft transition-colors hover:text-ink"
+              >
+                Console
+              </Link>
+            ) : null}
             <Link
-              to={session ? consoleTo : "/auth"}
+              to="/auth"
               className="text-[0.875rem] text-ink-soft transition-colors hover:text-ink"
             >
-              {session ? "Console" : "Sign in"}
+              Sign in
             </Link>
             <Link
               to="/contact"
@@ -163,7 +171,8 @@ export function Header() {
               { label: "About us", to: "/about" },
               { label: "Careers", to: "/careers" },
               { label: "Contact us", to: "/contact" },
-              { label: session ? "Console" : "Sign in", to: session ? consoleTo : "/auth" },
+              ...(session ? [{ label: "Console", to: consoleTo }] : []),
+              { label: "Sign in", to: "/auth" },
             ].map((l) => (
               <li key={l.to}>
                 <Link

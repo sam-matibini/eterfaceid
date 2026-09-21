@@ -75,24 +75,42 @@ function AuthPage() {
   }, [restoreApis]);
 
   useEffect(() => {
-    if (!ready || !session) return;
     if (window.sessionStorage.getItem(STAFF_BYPASS_FLAG) === "1") {
       window.sessionStorage.removeItem(STAFF_BYPASS_FLAG);
       void navigate({ to: STAFF_BYPASS_PATH, hash: STAFF_BYPASS_HASH, replace: true });
-      return;
     }
-    void (async () => {
-      const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-      if (data?.nextLevel === "aal2" && data.currentLevel !== "aal2") {
-        void navigate({ to: "/auth/mfa", replace: true });
-        return;
-      }
-      void navigate({ to: "/console", replace: true });
-    })();
-  }, [ready, session, navigate]);
+  }, [navigate]);
 
   function savedResendKey() {
     return rememberedResendKey(readStaffBypassPin(), DEFAULT_STAFF_BYPASS_PIN);
+  }
+
+  async function continueAsUser() {
+    const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (data?.nextLevel === "aal2" && data.currentLevel !== "aal2") {
+      void navigate({ to: "/auth/mfa", replace: true });
+      return;
+    }
+    void navigate({ to: "/console", replace: true });
+  }
+
+  async function continueAsAdmin() {
+    setMode("staff");
+    setError(null);
+    setNotice(null);
+  }
+
+  async function useDifferentAccount() {
+    setBusy(true);
+    setError(null);
+    try {
+      await supabase.auth.signOut();
+      setMode("signin");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not sign out");
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function requestVerificationEmail(address: string, origin: string) {
@@ -207,6 +225,7 @@ function AuthPage() {
           password: parsed.data.password,
         });
         if (signInError) throw signInError;
+        await continueAsUser();
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -241,6 +260,35 @@ function AuthPage() {
                 : "Sign in with your work email, then complete MFA if your role requires it."
       }
     >
+      {ready && session && mode === "signin" ? (
+        <div className="space-y-3">
+          <p className="text-sm text-foreground">
+            Signed in as <span className="font-medium">{session.user.email}</span>
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Continue as a company user, or open App admin with the staff access code.
+          </p>
+          <button type="button" className={authButtonClass} disabled={busy} onClick={() => void continueAsUser()}>
+            Continue as company user
+          </button>
+          <button
+            type="button"
+            className={`${authButtonClass} bg-background text-foreground border border-[var(--rule)]`}
+            disabled={busy}
+            onClick={() => void continueAsAdmin()}
+          >
+            App admin login
+          </button>
+          <button
+            type="button"
+            className="block pt-2 text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
+            disabled={busy}
+            onClick={() => void useDifferentAccount()}
+          >
+            Sign in with a different account
+          </button>
+        </div>
+      ) : (
       <form onSubmit={submit} className="space-y-4">
         {mode === "signup" ? (
           <div className="grid gap-4 sm:grid-cols-2">
@@ -344,8 +392,9 @@ function AuthPage() {
                   : "Create Account"}
         </button>
       </form>
+      )}
 
-      {mode === "signin" ? (
+      {mode === "signin" && !(ready && session) ? (
         <button
           type="button"
           onClick={() => {
@@ -359,7 +408,7 @@ function AuthPage() {
         </button>
       ) : null}
 
-      {mode === "signin" ? (
+      {mode === "signin" && !(ready && session) ? (
         <button
           type="button"
           onClick={() => {
@@ -385,7 +434,7 @@ function AuthPage() {
         >
           Back to sign in
         </button>
-      ) : (
+      ) : ready && session && mode === "signin" ? null : (
         <button
           type="button"
           onClick={() => {
