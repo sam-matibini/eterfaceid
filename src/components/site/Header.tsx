@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Menu, X } from "lucide-react";
-import { useSession } from "@/hooks/useSession";
+import { useOrganization, useSession } from "@/hooks/useSession";
 import { megaMenu, solutionsGroup } from "./nav-data";
 import { BrandLogo } from "./BrandLogo";
 
@@ -19,6 +19,8 @@ export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
   const { session } = useSession();
+  const { organization, ready } = useOrganization();
+  const consoleTo = session && ready && !organization ? "/onboarding" : "/console";
 
 
   useEffect(() => {
@@ -79,7 +81,7 @@ export function Header() {
               Company
             </Link>
             <Link
-              to={session ? "/console" : "/auth"}
+              to={session ? consoleTo : "/auth"}
               className="text-[0.875rem] text-ink-soft transition-colors hover:text-ink"
             >
               {session ? "Console" : "Sign in"}
@@ -161,7 +163,7 @@ export function Header() {
               { label: "About us", to: "/about" },
               { label: "Careers", to: "/careers" },
               { label: "Contact us", to: "/contact" },
-              { label: session ? "Console" : "Sign in", to: session ? "/console" : "/auth" },
+              { label: session ? "Console" : "Sign in", to: session ? consoleTo : "/auth" },
             ].map((l) => (
               <li key={l.to}>
                 <Link

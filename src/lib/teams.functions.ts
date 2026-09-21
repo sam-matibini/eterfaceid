@@ -50,11 +50,10 @@ async function membershipsFor(supabase: any, userId: string) {
     .select(
       "org_id, role, access_role, is_owner, sandbox_access, live_access, permissions, mfa_required, user_type, job_title, status",
     )
-    .eq("user_id", userId)
-    .order("created_at");
+    .eq("user_id", userId);
   const result =
     full.error && isMissingSchemaError(full.error.message)
-      ? await supabase.from("organization_members").select("org_id, role").eq("user_id", userId).order("created_at")
+      ? await supabase.from("organization_members").select("org_id, role").eq("user_id", userId)
       : full;
   if (result.error) throw new Error(result.error.message);
   return ((result.data ?? []) as Array<Partial<MembershipRow> & { org_id: string; role: MembershipRow["role"] }>)
