@@ -307,7 +307,11 @@ export const createOrganization = createServerFn({ method: "POST" })
     const country = data.country ? normalizeCountry(data.country) : null;
 
     const existingSpace = await fetchWorkspaceForUser(context.supabase, context.userId);
-    const already = existingSpace.orgId ?? (await createdOrgId(db, context.userId, null));
+    let already = existingSpace.orgId ?? (await createdOrgId(db, context.userId, null));
+    if (!already) {
+      const opened = await context.supabase.rpc("open_my_company", { _name: data.name });
+      if (!opened.error && opened.data) already = String(opened.data);
+    }
     if (already) {
       await joinCreatorIfNeeded(db, context.userId, already);
       try {

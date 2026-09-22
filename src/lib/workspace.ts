@@ -156,6 +156,12 @@ export async function orgIdsFromRpc(db: any): Promise<string[]> {
   } catch {
     /* optional on older schemas */
   }
+  try {
+    const found = await db.rpc("find_my_company");
+    if (!found.error && found.data) ids.add(String(found.data));
+  } catch {
+    /* optional until the creator migration is applied */
+  }
   return [...ids];
 }
 

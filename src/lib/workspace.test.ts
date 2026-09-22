@@ -51,6 +51,7 @@ function makeDb(input: {
       if (name === "current_org_ids") return tableResult(input.rpcIds ?? []);
       if (name === "caller_org_id") return tableResult(input.callerId ?? null);
       if (name === "join_created_company") return tableResult(input.callerId ?? input.rpcIds?.[0] ?? null);
+      if (name === "find_my_company") return tableResult(input.callerId ?? input.rpcIds?.[0] ?? null);
       return tableResult(null, { message: "unknown rpc" });
     },
   };
