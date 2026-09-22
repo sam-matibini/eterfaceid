@@ -39,5 +39,9 @@ assert(
   pathAfterSignIn({ signedIn: true, mfaNeeded: false, hasOrganization: true }) === "/console",
   "existing company goes to console",
 );
+assert(
+  pathAfterSignIn({ signedIn: true, mfaNeeded: false, hasOrganization: false, lookupFailed: true }) === "/console",
+  "a failed workspace lookup does not open company setup",
+);
 
 console.log("after-auth.test.ts passed");

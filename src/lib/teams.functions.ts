@@ -5,13 +5,11 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import {
   defaultPermissions,
   displayRole,
-  inferAccessRole,
   invitationExpiryIso,
   invitationExpired,
   mapAccessRoleToAppRole,
   mfaRequiredFor,
   type AccessRole,
-  type AppRole,
   type PermissionCode,
   type UserType,
 } from "@/lib/access";
@@ -31,6 +29,16 @@ import {
   writeWithFallback,
 } from "@/lib/schema-fallback";
 import { toTeamMemberView, withCreatorOnTeam, type TeamInviteView, type TeamMemberView } from "@/lib/team-view";
+import {
+  asAdminMembership,
+  membershipsFor,
+  resolveWorkspace,
+  workspaceFromMemberships,
+  type MembershipRow,
+  type WorkspaceMembership,
+} from "@/lib/workspace";
+
+export type { MembershipRow, WorkspaceMembership };
 
 const accessRoleSchema = z.enum(["administrator", "developer", "compliance", "analyst", "viewer"]);
 const userTypeSchema = z.enum(["employee", "contractor", "consultant"]);
@@ -45,71 +53,8 @@ function slugify(name: string) {
   return `${base || "team"}-${Math.random().toString(36).slice(2, 7)}`;
 }
 
-export type MembershipRow = {
-  org_id: string;
-  role: "admin" | "analyst" | "viewer";
-  access_role: AccessRole;
-  is_owner: boolean;
-  sandbox_access: boolean;
-  live_access: boolean;
-  permissions: string[];
-  mfa_required: boolean;
-  user_type: UserType;
-  job_title: string | null;
-  status: string;
-};
-
 function isCompanyAdmin(row: Pick<MembershipRow, "role" | "is_owner" | "access_role">) {
   return row.is_owner || row.role === "admin" || row.access_role === "owner" || row.access_role === "administrator";
-}
-
-function asAdminMembership(orgId: string): MembershipRow {
-  return {
-    org_id: orgId,
-    role: "admin",
-    access_role: "owner",
-    is_owner: true,
-    sandbox_access: true,
-    live_access: true,
-    permissions: defaultPermissions("owner"),
-    mfa_required: true,
-    user_type: "employee",
-    job_title: null,
-    status: "active",
-  };
-}
-
-async function membershipsFor(supabase: any, userId: string) {
-  const full = await supabase
-    .from("organization_members")
-    .select(
-      "org_id, role, access_role, is_owner, sandbox_access, live_access, permissions, mfa_required, user_type, job_title, status",
-    )
-    .eq("user_id", userId)
-    .order("created_at");
-  if (!full.error) {
-    return ((full.data ?? []) as MembershipRow[]).filter((row) => row.status !== "disabled");
-  }
-  if (isRlsError(full.error.message)) return [];
-  if (!isMissingColumnError(full.error.message)) throw new Error(full.error.message);
-  const legacy = await supabase
-    .from("organization_members")
-    .select("org_id, role")
-    .eq("user_id", userId);
-  if (legacy.error) throw new Error(legacy.error.message);
-  return ((legacy.data ?? []) as Array<{ org_id: string; role: MembershipRow["role"] }>).map((row) => ({
-    org_id: row.org_id,
-    role: row.role,
-    access_role: row.role === "admin" ? "administrator" : row.role === "analyst" ? "analyst" : "viewer",
-    is_owner: row.role === "admin",
-    sandbox_access: true,
-    live_access: row.role === "admin",
-    permissions: defaultPermissions(row.role === "admin" ? "administrator" : row.role === "analyst" ? "analyst" : "viewer"),
-    mfa_required: row.role === "admin",
-    user_type: "employee" as const,
-    job_title: null,
-    status: "active",
-  })) as MembershipRow[];
 }
 
 async function insertMembership(
@@ -194,112 +139,32 @@ async function createdOrgId(db: any, userId: string, orgId?: string | null) {
   return (created.data as { id?: string } | null)?.id ?? null;
 }
 
-export type WorkspaceMembership = {
-  orgId: string;
-  role: AppRole;
-  accessRole: AccessRole;
-  isOwner: boolean;
-  name: string;
-  legalName: string;
-  orgLiveAccess: string;
-  sandboxAccess: boolean;
-  liveAccess: boolean;
-  permissions: string[];
-  mfaRequired: boolean;
-  jobTitle: string | null;
-  userType: string;
-};
-
-async function orgDirectory(db: any, ids: string[]) {
-  const unique = [...new Set(ids.filter(Boolean))];
-  const names = new Map<string, { id: string; name?: string; legal_name?: string | null; live_access?: string }>();
-  if (!unique.length) return names;
-  const full = await db.from("organizations").select("id, name, legal_name, live_access").in("id", unique);
-  const list =
-    full.error && isMissingColumnError(full.error.message)
-      ? await db.from("organizations").select("id, name").in("id", unique)
-      : full;
-  for (const org of (list.data ?? []) as Array<{ id: string; name?: string; legal_name?: string | null; live_access?: string }>) {
-    names.set(org.id, org);
-  }
-  return names;
-}
-
-function toWorkspaceMembership(
-  row: MembershipRow,
-  org?: { name?: string; legal_name?: string | null; live_access?: string },
-): WorkspaceMembership {
-  return {
-    orgId: row.org_id,
-    role: row.role,
-    accessRole: row.access_role ?? inferAccessRole(row.role),
-    isOwner: Boolean(row.is_owner) || row.role === "admin",
-    name: org?.name ?? "Your team",
-    legalName: org?.legal_name ?? org?.name ?? "Your team",
-    orgLiveAccess: org?.live_access ?? "locked",
-    sandboxAccess: row.sandbox_access !== false,
-    liveAccess: Boolean(row.live_access) || row.role === "admin",
-    permissions: row.permissions ?? [],
-    mfaRequired: Boolean(row.mfa_required) || row.role === "admin",
-    jobTitle: row.job_title ?? null,
-    userType: row.user_type ?? "employee",
-  };
-}
-
 async function fetchWorkspaceForUser(userClient: any, userId: string) {
   const admin = await loadAdmin();
   const readers = admin ? [admin, userClient] : [userClient];
+  const writer = admin ?? userClient;
 
-  let rows: MembershipRow[] = [];
   for (const db of readers) {
     try {
-      const found = await membershipsFor(db, userId);
-      if (found.length) {
-        rows = found;
-        break;
-      }
+      const found = await resolveWorkspace(db, userId, writer);
+      if (found.hasOrganization) return found;
     } catch {
       /* try the service-role client if the user JWT cannot see memberships */
     }
   }
 
-  const seen = new Set(rows.map((row) => row.org_id));
-  const created: Array<{ id: string; name?: string; legal_name?: string | null; live_access?: string }> = [];
-  for (const db of readers) {
-    const full = await db.from("organizations").select("id, name, legal_name, live_access").eq("created_by", userId);
-    const list =
-      full.error && isMissingColumnError(full.error.message)
-        ? await db.from("organizations").select("id, name").eq("created_by", userId)
-        : full;
-    if (list.error) continue;
-    for (const org of (list.data ?? []) as Array<{ id: string; name?: string; legal_name?: string | null; live_access?: string }>) {
-      if (seen.has(org.id)) continue;
-      created.push(org);
-      seen.add(org.id);
-    }
-    if (created.length) break;
-  }
-
-  const writer = admin ?? userClient;
-  for (const org of created) {
-    await joinCreatorIfNeeded(writer, userId, org.id);
-    rows.push(asAdminMembership(org.id));
-  }
-
-  const directory = await orgDirectory(writer, rows.map((row) => row.org_id));
-  for (const org of created) {
-    if (!directory.has(org.id)) directory.set(org.id, org);
-  }
-
-  return rows.map((row) => toWorkspaceMembership(row, directory.get(row.org_id)));
+  return workspaceFromMemberships([]);
 }
 
-export const loadMyWorkspace = createServerFn({ method: "GET" })
+export const loadMyWorkspace = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const memberships = await fetchWorkspaceForUser(context.supabase, context.userId);
-    const orgId = memberships[0]?.orgId ?? null;
-    return { memberships, orgId, hasOrganization: Boolean(orgId) };
+    const space = await fetchWorkspaceForUser(context.supabase, context.userId);
+    return {
+      memberships: space.memberships,
+      orgId: space.orgId,
+      hasOrganization: space.hasOrganization,
+    };
   });
 
 async function requireAdmin(supabase: any, userId: string, orgId?: string | null) {
@@ -441,7 +306,8 @@ export const createOrganization = createServerFn({ method: "POST" })
     const legalName = data.legalName?.trim() || data.name;
     const country = data.country ? normalizeCountry(data.country) : null;
 
-    const already = await createdOrgId(db, context.userId, null);
+    const existingSpace = await fetchWorkspaceForUser(context.supabase, context.userId);
+    const already = existingSpace.orgId ?? (await createdOrgId(db, context.userId, null));
     if (already) {
       await joinCreatorIfNeeded(db, context.userId, already);
       try {

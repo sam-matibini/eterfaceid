@@ -5,7 +5,8 @@ import type { Session } from "@supabase/supabase-js";
 
 import { supabase } from "@/integrations/supabase/client";
 import { hasPermission, mfaRequiredFor, type PermissionCode } from "@/lib/access";
-import { loadMyWorkspace, type WorkspaceMembership } from "@/lib/teams.functions";
+import { loadMyWorkspace } from "@/lib/teams.functions";
+import { resolveWorkspaceAfterAuth, type WorkspaceMembership } from "@/lib/workspace";
 
 const ACTIVE_ORG_KEY = "eid_active_org";
 
@@ -53,8 +54,9 @@ export function useOrganization() {
     enabled: Boolean(user?.id),
     retry: 2,
     queryFn: async () => {
-      const result = await loadWorkspace();
-      const memberships = result.memberships as OrganizationMembership[];
+      const space = await resolveWorkspaceAfterAuth(() => loadWorkspace(), user?.id);
+      if (space.lookupFailed) throw new Error("Could not load your company workspace");
+      const memberships = space.memberships as OrganizationMembership[];
       if (!memberships.length) return { memberships: [], current: null as OrganizationMembership | null };
       const stored = readStoredOrg();
       const current = memberships.find((m) => m.orgId === stored) ?? memberships[0] ?? null;
@@ -63,11 +65,15 @@ export function useOrganization() {
     },
   });
   const current = query.data?.current ?? null;
+  const lookupFailed = Boolean(user?.id && query.isError);
   return {
     organization: current,
     memberships: query.data?.memberships ?? [],
     loading: !ready || Boolean(user?.id && query.isLoading),
     ready: ready && (!user?.id || !query.isLoading),
+    lookupFailed,
+    error: query.error instanceof Error ? query.error.message : null,
+    refetch: () => query.refetch(),
     setActive: (orgId: string) => {
       setActiveOrganization(orgId);
       void query.refetch();

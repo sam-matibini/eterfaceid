@@ -23,7 +23,7 @@ function OnboardingPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { session } = useSession();
-  const { organization, memberships, ready } = useOrganization();
+  const { organization, memberships, ready, lookupFailed, error: lookupError, refetch } = useOrganization();
   const create = useServerFn(createOrganization);
   const join = useServerFn(acceptInvite);
 
@@ -45,6 +45,10 @@ function OnboardingPage() {
   useEffect(() => {
     if (ready && organization) void navigate({ to: "/console", replace: true });
   }, [ready, organization, navigate]);
+
+  useEffect(() => {
+    if (ready && lookupFailed) void navigate({ to: "/console", replace: true });
+  }, [ready, lookupFailed, navigate]);
 
   useEffect(() => {
     const stored = window.sessionStorage.getItem("eid_invite_token");
@@ -80,6 +84,17 @@ function OnboardingPage() {
     return (
       <AuthFrame title="Opening your workspace" subtitle="Checking whether this account already has a company.">
         <p className="text-sm text-muted-foreground">Just a moment…</p>
+      </AuthFrame>
+    );
+  }
+
+  if (lookupFailed) {
+    return (
+      <AuthFrame title="Opening your workspace" subtitle="This account may already have a company. We could not confirm it yet.">
+        <p className="text-sm text-muted-foreground">{lookupError ?? "Try again before creating another company."}</p>
+        <button type="button" className={`${authButtonClass} mt-4`} onClick={() => void refetch()}>
+          Try again
+        </button>
       </AuthFrame>
     );
   }

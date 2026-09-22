@@ -19,10 +19,12 @@ export function pathAfterSignIn(input: {
   signedIn: boolean;
   mfaNeeded: boolean;
   hasOrganization: boolean;
+  lookupFailed?: boolean;
 }): AfterSignInPath {
   if (!input.signedIn) return "/auth";
   if (input.mfaNeeded) return "/auth/mfa";
-  return input.hasOrganization ? "/console" : "/onboarding";
+  if (input.hasOrganization || input.lookupFailed) return "/console";
+  return "/onboarding";
 }
 
 export async function mfaChallengeRequired() {

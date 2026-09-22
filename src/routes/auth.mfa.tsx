@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { setActiveOrganization, useSession } from "@/hooks/useSession";
 import { pathAfterSignIn } from "@/lib/after-auth";
 import { loadMyWorkspace } from "@/lib/teams.functions";
+import { resolveWorkspaceAfterAuth } from "@/lib/workspace";
 
 export const Route = createFileRoute("/auth/mfa")({
   ssr: false,
@@ -51,13 +52,14 @@ function MfaChallengePage() {
         code: code.trim(),
       });
       if (verifyError) throw verifyError;
-      const space = await loadWorkspace();
+      const space = await resolveWorkspaceAfterAuth(() => loadWorkspace(), session?.user.id);
       if (space.orgId) setActiveOrganization(space.orgId);
       void navigate({
         to: pathAfterSignIn({
           signedIn: true,
           mfaNeeded: false,
           hasOrganization: space.hasOrganization,
+          lookupFailed: space.lookupFailed,
         }),
         replace: true,
       });

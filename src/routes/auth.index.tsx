@@ -10,6 +10,7 @@ import { sendPasswordResetEmail, sendSignupVerificationEmail } from "@/lib/auth-
 import { authCallbackUrl, isAuthCallbackLocation, mfaChallengeRequired, pathAfterSignIn } from "@/lib/after-auth";
 import { publicEmailFailureMessage } from "@/lib/email-copy";
 import { loadMyWorkspace } from "@/lib/teams.functions";
+import { resolveWorkspaceAfterAuth } from "@/lib/workspace";
 import { enterStaffBypass } from "@/lib/staff-bypass.functions";
 import {
   STAFF_BYPASS_FLAG,
@@ -82,20 +83,26 @@ function AuthPage() {
     }
     if (!resumeAfterAuth) return;
     void (async () => {
-      if (await mfaChallengeRequired()) {
-        void navigate({ to: "/auth/mfa", replace: true });
-        return;
+      try {
+        if (await mfaChallengeRequired()) {
+          void navigate({ to: "/auth/mfa", replace: true });
+          return;
+        }
+        const space = await resolveWorkspaceAfterAuth(() => loadWorkspace(), session.user.id);
+        if (space.orgId) setActiveOrganization(space.orgId);
+        void navigate({
+          to: pathAfterSignIn({
+            signedIn: true,
+            mfaNeeded: false,
+            hasOrganization: space.hasOrganization,
+            lookupFailed: space.lookupFailed,
+          }),
+          replace: true,
+        });
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Could not open your workspace");
+        setResumeAfterAuth(false);
       }
-      const space = await loadWorkspace();
-      if (space.orgId) setActiveOrganization(space.orgId);
-      void navigate({
-        to: pathAfterSignIn({
-          signedIn: true,
-          mfaNeeded: false,
-          hasOrganization: space.hasOrganization,
-        }),
-        replace: true,
-      });
     })();
   }, [ready, session, resumeAfterAuth, navigate, loadWorkspace]);
 

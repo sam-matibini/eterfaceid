@@ -79,13 +79,13 @@ export function ConsoleShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { user } = useSession();
   const { roles, has, isAdmin } = useRoles();
-  const { organization, memberships, ready, setActive } = useOrganization();
+  const { organization, memberships, ready, lookupFailed, error, refetch, setActive } = useOrganization();
   const { isStaff } = usePlatformStaff();
   const { environment, setEnvironment, canUseLive } = useEnvironment();
 
   useEffect(() => {
-    if (ready && !organization) void navigate({ to: "/onboarding", replace: true });
-  }, [ready, organization, navigate]);
+    if (ready && !organization && !lookupFailed) void navigate({ to: "/onboarding", replace: true });
+  }, [ready, organization, lookupFailed, navigate]);
 
   async function signOut() {
     await queryClient.cancelQueries();
@@ -200,6 +200,15 @@ export function ConsoleShell({ children }: { children: ReactNode }) {
           </div>
         </header>
         <EnvironmentBanner environment={environment} />
+        {lookupFailed ? (
+          <div className="border-b border-[var(--signal)]/40 bg-[var(--signal)]/10 px-6 py-3 text-sm text-[var(--signal)]">
+            We could not confirm your company workspace.{" "}
+            <button type="button" className="underline underline-offset-4" onClick={() => void refetch()}>
+              Try again
+            </button>
+            {error ? <span className="ml-2 text-xs text-muted-foreground">{error}</span> : null}
+          </div>
+        ) : null}
         <main className="mx-auto w-full max-w-7xl flex-1 px-6 py-10">{children}</main>
       </div>
     </div>
