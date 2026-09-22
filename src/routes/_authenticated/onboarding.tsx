@@ -89,7 +89,22 @@ function OnboardingPage() {
   const legalName = form.legalName.trim() || form.name.trim();
   const displayName = form.name.trim().length >= 2 ? form.name.trim() : legalName;
 
-  if (!ready || (returning && !isNewSignupSession() && !token)) {
+  if (!ready) {
+    return (
+      <AuthFrame
+        title={returning ? "Opening your dashboard" : "Opening your workspace"}
+        subtitle={
+          returning
+            ? "This account already has a workspace."
+            : "Checking whether this account already has a company."
+        }
+      >
+        <p className="text-sm text-muted-foreground">{returning ? "Taking you to the console…" : "Just a moment…"}</p>
+      </AuthFrame>
+    );
+  }
+
+  if (returning && !isNewSignupSession() && !token) {
     return (
       <AuthFrame title="Opening your dashboard" subtitle="This account already has a workspace.">
         <p className="text-sm text-muted-foreground">Taking you to the console…</p>
