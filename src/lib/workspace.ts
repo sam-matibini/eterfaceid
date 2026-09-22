@@ -258,6 +258,10 @@ export function workspaceFromMemberships(memberships: WorkspaceMembership[]): Wo
   return { memberships, orgId, hasOrganization: Boolean(orgId), lookupFailed: false };
 }
 
+export function returningWorkspace(orgId: string, name = "Your company"): WorkspaceMembership {
+  return toWorkspaceMembership(asAdminMembership(orgId), { name, legal_name: name });
+}
+
 export async function fetchWorkspaceClient(userId: string): Promise<WorkspaceLookup> {
   const { supabase } = await import("@/integrations/supabase/client");
   return resolveWorkspace(supabase, userId);

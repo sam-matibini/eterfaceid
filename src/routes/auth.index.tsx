@@ -7,7 +7,16 @@ import { AuthFrame, authButtonClass, authInputClass } from "@/components/auth/Au
 import { supabase } from "@/integrations/supabase/client";
 import { setActiveOrganization, useSession } from "@/hooks/useSession";
 import { sendPasswordResetEmail, sendSignupVerificationEmail } from "@/lib/auth-email.functions";
-import { authCallbackUrl, isAuthCallbackLocation, mfaChallengeRequired, pathAfterSignIn } from "@/lib/after-auth";
+import {
+  authCallbackUrl,
+  isAuthCallbackLocation,
+  isNewSignupSession,
+  isReturningAccount,
+  markNewSignup,
+  markReturningUser,
+  mfaChallengeRequired,
+  pathAfterSignIn,
+} from "@/lib/after-auth";
 import { publicEmailFailureMessage } from "@/lib/email-copy";
 import { loadMyWorkspace } from "@/lib/teams.functions";
 import { resolveWorkspaceAfterAuth } from "@/lib/workspace";
@@ -90,12 +99,16 @@ function AuthPage() {
         }
         const space = await resolveWorkspaceAfterAuth(() => loadWorkspace(), session.user.id);
         if (space.orgId) setActiveOrganization(space.orgId);
+        const returning = isReturningAccount(session.user);
+        if (returning) markReturningUser();
         void navigate({
           to: pathAfterSignIn({
             signedIn: true,
             mfaNeeded: false,
             hasOrganization: space.hasOrganization,
             lookupFailed: space.lookupFailed,
+            returning,
+            newSignup: isNewSignupSession(),
           }),
           replace: true,
         });
@@ -173,6 +186,7 @@ function AuthPage() {
     setBusy(true);
     try {
       if (mode === "signup") {
+        markNewSignup();
         if (companyName.trim()) window.sessionStorage.setItem("eid_company", companyName.trim());
         window.sessionStorage.setItem("eid_admin_name", `${firstName.trim()} ${lastName.trim()}`.trim());
         const { data, error: signUpError } = await supabase.auth.signUp({
@@ -205,6 +219,7 @@ function AuthPage() {
           password: parsed.data.password,
         });
         if (signInError) throw signInError;
+        markReturningUser();
         setResumeAfterAuth(true);
       }
     } catch (err) {

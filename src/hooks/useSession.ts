@@ -5,8 +5,9 @@ import type { Session } from "@supabase/supabase-js";
 
 import { supabase } from "@/integrations/supabase/client";
 import { hasPermission, mfaRequiredFor, type PermissionCode } from "@/lib/access";
+import { isReturningAccount } from "@/lib/after-auth";
 import { loadMyWorkspace } from "@/lib/teams.functions";
-import { resolveWorkspaceAfterAuth, type WorkspaceMembership } from "@/lib/workspace";
+import { resolveWorkspaceAfterAuth, returningWorkspace, type WorkspaceMembership } from "@/lib/workspace";
 
 const ACTIVE_ORG_KEY = "eid_active_org";
 
@@ -56,7 +57,11 @@ export function useOrganization() {
     queryFn: async () => {
       const space = await resolveWorkspaceAfterAuth(() => loadWorkspace(), user?.id);
       if (space.lookupFailed) throw new Error("Could not load your company workspace");
-      const memberships = space.memberships as OrganizationMembership[];
+      let memberships = space.memberships as OrganizationMembership[];
+      if (!memberships.length && user && isReturningAccount(user)) {
+        const stored = readStoredOrg() ?? user.id;
+        memberships = [returningWorkspace(stored)];
+      }
       if (!memberships.length) return { memberships: [], current: null as OrganizationMembership | null };
       const stored = readStoredOrg();
       const current = memberships.find((m) => m.orgId === stored) ?? memberships[0] ?? null;

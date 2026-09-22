@@ -5,6 +5,7 @@ import { useEffect, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useEnvironment } from "@/hooks/useEnvironment";
 import { useOrganization, useRoles, useSession } from "@/hooks/useSession";
+import { isReturningAccount } from "@/lib/after-auth";
 import { usePlatformStaff } from "@/hooks/usePlatformStaff";
 import { displayRole, type PermissionCode } from "@/lib/access";
 
@@ -84,8 +85,10 @@ export function ConsoleShell({ children }: { children: ReactNode }) {
   const { environment, setEnvironment, canUseLive } = useEnvironment();
 
   useEffect(() => {
-    if (ready && !organization && !lookupFailed) void navigate({ to: "/onboarding", replace: true });
-  }, [ready, organization, lookupFailed, navigate]);
+    if (ready && !organization && !lookupFailed && !isReturningAccount(user)) {
+      void navigate({ to: "/onboarding", replace: true });
+    }
+  }, [ready, organization, lookupFailed, user, navigate]);
 
   async function signOut() {
     await queryClient.cancelQueries();

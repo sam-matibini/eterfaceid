@@ -3,6 +3,7 @@ import {
   publicWorkspaceError,
   resolveWorkspace,
   resolveWorkspaceAfterAuth,
+  returningWorkspace,
   toWorkspaceMembership,
 } from "./workspace";
 
@@ -135,5 +136,9 @@ assert(
     "Enter your company name",
   "zod payload is shown as a short message",
 );
+
+const placeholder = returningWorkspace("org-returning", "eFinMoney");
+assert(placeholder.orgId === "org-returning", "returning workspace keeps the org");
+assert(placeholder.isOwner === true, "returning workspace is the owner");
 
 console.log("workspace.test.ts passed");

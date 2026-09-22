@@ -6,6 +6,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { AuthFrame, authButtonClass, authInputClass } from "@/components/auth/AuthFrame";
 import { setActiveOrganization, useOrganization, useSession } from "@/hooks/useSession";
 import { supabase } from "@/integrations/supabase/client";
+import { isNewSignupSession, isReturningAccount } from "@/lib/after-auth";
 import { COUNTRY_OPTIONS, countrySelectValue } from "@/lib/company-country";
 import { acceptInvite, createOrganization } from "@/lib/teams.functions";
 import { publicWorkspaceError } from "@/lib/workspace";
@@ -39,17 +40,23 @@ function OnboardingPage() {
     postalCode: "",
     website: "",
   });
-  const [token, setToken] = useState("");
+  const [token, setToken] = useState(() =>
+    typeof window === "undefined" ? "" : window.sessionStorage.getItem("eid_invite_token") ?? "",
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (ready && organization) void navigate({ to: "/console", replace: true });
-  }, [ready, organization, navigate]);
+  const returning = isReturningAccount(session?.user);
 
   useEffect(() => {
-    if (ready && lookupFailed) void navigate({ to: "/console", replace: true });
-  }, [ready, lookupFailed, navigate]);
+    if (organization || lookupFailed) {
+      void navigate({ to: "/console", replace: true });
+      return;
+    }
+    if (returning && !isNewSignupSession() && !token) {
+      void navigate({ to: "/console", replace: true });
+    }
+  }, [organization, lookupFailed, returning, token, navigate]);
 
   useEffect(() => {
     const stored = window.sessionStorage.getItem("eid_invite_token");
@@ -82,10 +89,10 @@ function OnboardingPage() {
   const legalName = form.legalName.trim() || form.name.trim();
   const displayName = form.name.trim().length >= 2 ? form.name.trim() : legalName;
 
-  if (!ready) {
+  if (!ready || (returning && !isNewSignupSession() && !token)) {
     return (
-      <AuthFrame title="Opening your workspace" subtitle="Checking whether this account already has a company.">
-        <p className="text-sm text-muted-foreground">Just a moment…</p>
+      <AuthFrame title="Opening your dashboard" subtitle="This account already has a workspace.">
+        <p className="text-sm text-muted-foreground">Taking you to the console…</p>
       </AuthFrame>
     );
   }

@@ -1,6 +1,7 @@
 import {
   authCallbackUrl,
   isAuthCallbackLocation,
+  isReturningAccount,
   pathAfterSignIn,
   shouldResumeAuthSession,
 } from "./after-auth";
@@ -43,5 +44,30 @@ assert(
   pathAfterSignIn({ signedIn: true, mfaNeeded: false, hasOrganization: false, lookupFailed: true }) === "/console",
   "a failed workspace lookup does not open company setup",
 );
+assert(
+  pathAfterSignIn({ signedIn: true, mfaNeeded: false, hasOrganization: false, returning: true }) === "/console",
+  "returning users skip company setup",
+);
+assert(
+  pathAfterSignIn({
+    signedIn: true,
+    mfaNeeded: false,
+    hasOrganization: false,
+    returning: true,
+    newSignup: true,
+  }) === "/onboarding",
+  "a brand-new signup still sets up the company",
+);
+
+const tenMinutesAgo = new Date(Date.now() - 11 * 60 * 1000).toISOString();
+assert(isReturningAccount({ created_at: tenMinutesAgo }) === true, "an older account is returning");
+assert(
+  isReturningAccount({
+    created_at: new Date().toISOString(),
+    last_sign_in_at: new Date(Date.now() + 60_000).toISOString(),
+  }) === true,
+  "a later sign-in is returning",
+);
+assert(isReturningAccount({ created_at: new Date().toISOString() }) === false, "a fresh account is not returning");
 
 console.log("after-auth.test.ts passed");

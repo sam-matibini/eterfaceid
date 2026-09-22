@@ -5,7 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { AuthFrame, authButtonClass, authInputClass } from "@/components/auth/AuthFrame";
 import { supabase } from "@/integrations/supabase/client";
 import { setActiveOrganization, useSession } from "@/hooks/useSession";
-import { pathAfterSignIn } from "@/lib/after-auth";
+import { isNewSignupSession, isReturningAccount, markReturningUser, pathAfterSignIn } from "@/lib/after-auth";
 import { loadMyWorkspace } from "@/lib/teams.functions";
 import { resolveWorkspaceAfterAuth } from "@/lib/workspace";
 
@@ -54,12 +54,16 @@ function MfaChallengePage() {
       if (verifyError) throw verifyError;
       const space = await resolveWorkspaceAfterAuth(() => loadWorkspace(), session?.user.id);
       if (space.orgId) setActiveOrganization(space.orgId);
+      const returning = isReturningAccount(session?.user);
+      if (returning) markReturningUser();
       void navigate({
         to: pathAfterSignIn({
           signedIn: true,
           mfaNeeded: false,
           hasOrganization: space.hasOrganization,
           lookupFailed: space.lookupFailed,
+          returning,
+          newSignup: isNewSignupSession(),
         }),
         replace: true,
       });
