@@ -393,7 +393,11 @@ export const createOrganization = createServerFn({ method: "POST" })
       );
     }
     if (inserted.error || !inserted.data?.id) {
-      throw new Error(inserted.error?.message ?? "The company could not be created");
+      const message = inserted.error?.message ?? "The company could not be created";
+      if (isRlsError(message)) {
+        throw new Error("The company could not be created. Apply the latest database update, then sign in again.");
+      }
+      throw new Error(message);
     }
     const org = inserted.data;
 
