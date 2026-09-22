@@ -38,6 +38,21 @@ export type WorkspaceLookup = {
   lookupFailed: boolean;
 };
 
+export function publicWorkspaceError(err: unknown) {
+  const message = err instanceof Error ? err.message : "Something went wrong";
+  if (message.startsWith("[") || message.startsWith("{")) {
+    try {
+      const parsed = JSON.parse(message) as Array<{ message?: string }> | { message?: string };
+      const first = Array.isArray(parsed) ? parsed[0]?.message : parsed.message;
+      if (first) return first;
+    } catch {
+      /* keep the original message */
+    }
+    return "Check your company details";
+  }
+  return message;
+}
+
 export const emptyWorkspace: WorkspaceLookup = {
   memberships: [],
   orgId: null,

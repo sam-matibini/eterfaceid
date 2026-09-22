@@ -8,6 +8,7 @@ import { setActiveOrganization, useOrganization, useSession } from "@/hooks/useS
 import { supabase } from "@/integrations/supabase/client";
 import { COUNTRY_OPTIONS, countrySelectValue } from "@/lib/company-country";
 import { acceptInvite, createOrganization } from "@/lib/teams.functions";
+import { publicWorkspaceError } from "@/lib/workspace";
 
 export const Route = createFileRoute("/_authenticated/onboarding")({
   head: () => ({
@@ -72,13 +73,14 @@ function OnboardingPage() {
       await queryClient.invalidateQueries({ queryKey: ["my-org"] });
       void navigate({ to: "/console", replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(publicWorkspaceError(err));
     } finally {
       setBusy(false);
     }
   }
 
   const legalName = form.legalName.trim() || form.name.trim();
+  const displayName = form.name.trim().length >= 2 ? form.name.trim() : legalName;
 
   if (!ready) {
     return (
@@ -127,7 +129,7 @@ function OnboardingPage() {
             void finish(() =>
               create({
                 data: {
-                  name: form.name.trim() || legalName,
+                  name: displayName,
                   legalName,
                   registrationNumber: form.registrationNumber || undefined,
                   country: form.country || undefined,

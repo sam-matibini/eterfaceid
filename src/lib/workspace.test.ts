@@ -1,4 +1,10 @@
-import { asAdminMembership, resolveWorkspace, resolveWorkspaceAfterAuth, toWorkspaceMembership } from "./workspace";
+import {
+  asAdminMembership,
+  publicWorkspaceError,
+  resolveWorkspace,
+  resolveWorkspaceAfterAuth,
+  toWorkspaceMembership,
+} from "./workspace";
 
 function assert(condition: unknown, message: string) {
   if (!condition) throw new Error(message);
@@ -123,5 +129,11 @@ const confirmedEmpty = await resolveWorkspaceAfterAuth(async () => ({
   hasOrganization: false,
 }), null);
 assert(!confirmedEmpty.hasOrganization && !confirmedEmpty.lookupFailed, "an empty successful lookup is a new company");
+
+assert(
+  publicWorkspaceError(new Error('[{"code":"too_small","message":"Enter your company name","path":["name"]}]')) ===
+    "Enter your company name",
+  "zod payload is shown as a short message",
+);
 
 console.log("workspace.test.ts passed");
