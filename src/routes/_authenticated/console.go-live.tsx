@@ -1,11 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { ConsoleShell, Panel, StatusPill } from "@/components/console/shell";
 import { useOrganization, useRoles } from "@/hooks/useSession";
 import { supabase } from "@/integrations/supabase/client";
+import { COUNTRY_OPTIONS, countrySelectValue } from "@/lib/company-country";
 import { acceptContract, submitLiveApplication } from "@/lib/go-live.functions";
 
 export const Route = createFileRoute("/_authenticated/console/go-live")({
@@ -54,7 +55,11 @@ function GoLivePage() {
     enabled: Boolean(orgId),
     queryFn: async () => {
       const [org, application, contract] = await Promise.all([
-        supabase.from("organizations").select("live_access, live_approved_at, name").eq("id", orgId!).maybeSingle(),
+        supabase
+          .from("organizations")
+          .select("live_access, live_approved_at, name, legal_name, registration_number, country, address_line1, city, region, postal_code, website")
+          .eq("id", orgId!)
+          .maybeSingle(),
         supabase
           .from("org_applications")
           .select("*")
@@ -70,8 +75,12 @@ function GoLivePage() {
           .limit(1)
           .maybeSingle(),
       ]);
+      const orgRow =
+        org.error && /does not exist|schema cache|could not find/i.test(org.error.message)
+          ? await supabase.from("organizations").select("live_access, live_approved_at, name").eq("id", orgId!).maybeSingle()
+          : org;
       return {
-        org: org.data as { live_access?: string; live_approved_at?: string; name?: string } | null,
+        org: (orgRow.data ?? null) as Record<string, unknown> | null,
         application: application.data as Record<string, unknown> | null,
         contract: contract.data as Record<string, unknown> | null,
       };
@@ -136,7 +145,32 @@ function GoLivePage() {
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["go-live"] }),
   });
 
-  const access = status.data?.org?.live_access ?? "locked";
+  useEffect(() => {
+    const org = status.data?.org;
+    const app = status.data?.application;
+    if (!org && !app) return;
+    setForm((current) => {
+      if (current.legal_name.trim()) return current;
+      return {
+        ...current,
+        legal_name: String(app?.["legal_name"] ?? org?.["legal_name"] ?? org?.["name"] ?? ""),
+        registration_number: String(app?.["registration_number"] ?? org?.["registration_number"] ?? ""),
+        country: countrySelectValue(String(app?.["country"] ?? org?.["country"] ?? current.country)),
+        address_line1: String(app?.["address_line1"] ?? org?.["address_line1"] ?? ""),
+        city: String(app?.["city"] ?? org?.["city"] ?? ""),
+        region: String(app?.["region"] ?? org?.["region"] ?? ""),
+        postal_code: String(app?.["postal_code"] ?? org?.["postal_code"] ?? ""),
+        website: String(app?.["website"] ?? org?.["website"] ?? ""),
+        contact_name: String(app?.["contact_name"] ?? ""),
+        contact_email: String(app?.["contact_email"] ?? ""),
+        contact_phone: String(app?.["contact_phone"] ?? ""),
+        use_case: String(app?.["use_case"] ?? ""),
+        expected_volume: app?.["expected_volume"] != null ? String(app["expected_volume"]) : "",
+      };
+    });
+  }, [status.data]);
+
+  const access = String(status.data?.org?.["live_access"] ?? "locked");
   const application = status.data?.application;
   const contract = status.data?.contract;
   const appStatus = (application?.["status"] as string | undefined) ?? null;
@@ -212,13 +246,18 @@ function GoLivePage() {
                   onChange={(e) => setForm({ ...form, registration_number: e.target.value })}
                 />
               </Field>
-              <Field label="Country (2 letters)">
-                <input
+              <Field label="Country">
+                <select
                   className={inputClass}
-                  maxLength={2}
-                  value={form.country}
-                  onChange={(e) => setForm({ ...form, country: e.target.value.toUpperCase() })}
-                />
+                  value={countrySelectValue(form.country)}
+                  onChange={(e) => setForm({ ...form, country: e.target.value })}
+                >
+                  {COUNTRY_OPTIONS.map((option) => (
+                    <option key={option.code} value={option.code}>
+                      {option.name}
+                    </option>
+                  ))}
+                </select>
               </Field>
               <Field label="Street address">
                 <input
@@ -348,11 +387,10 @@ function GoLivePage() {
                       <input
                         className={inputClass}
                         placeholder="Country"
-                        maxLength={2}
                         value={owner.country}
                         onChange={(e) => {
                           const next = [...owners];
-                          next[index] = { ...owner, country: e.target.value.toUpperCase() };
+                          next[index] = { ...owner, country: e.target.value };
                           setOwners(next);
                         }}
                       />
@@ -464,7 +502,7 @@ function GoLivePage() {
               <label className="flex items-start gap-2 text-sm">
                 <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="mt-1" />
                 <span>
-                  I am authorised to bind {status.data?.org?.name ?? "my company"} and I accept these terms.
+                  I am authorised to bind {String(status.data?.org?.["name"] ?? "my company")} and I accept these terms.
                 </span>
               </label>
               <div className="flex items-center gap-3">

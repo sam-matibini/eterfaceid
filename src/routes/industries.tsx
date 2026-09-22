@@ -2,8 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { CTASection, Container, PageHero, Section } from "@/components/site/primitives";
 import { industries } from "@/components/site/nav-data";
 import { ProductFilm } from "@/components/site/ProductFilm";
-import fintechFilm from "@/assets/fintech-real-time-monitoring.mp4.asset.json";
-import fintechPoster from "@/assets/fintech-real-time-monitoring-poster.png.asset.json";
+import fintechFilm from "@/assets/fintech-real-time-monitoring.mp4";
+import fintechPoster from "@/assets/fintech-real-time-monitoring-poster.png";
 
 export const Route = createFileRoute("/industries")({
   head: () => ({
@@ -60,8 +60,8 @@ function Industries() {
             </Link>
           </div>
           <ProductFilm
-            src={fintechFilm.url}
-            poster={fintechPoster.url}
+            src={fintechFilm}
+            poster={fintechPoster}
             title="High-velocity monitoring"
             description="A live risk signal is surfaced for human review."
           />

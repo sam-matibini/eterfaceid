@@ -24,10 +24,21 @@ import {
   isUniqueConflict,
   liveInviteInsert,
   liveMemberInsert,
+  liveOrganizationInsert,
   liveOrganizationProfileUpdate,
   writeWithFallback,
 } from "@/lib/schema-fallback";
 import { toTeamMemberView, withCreatorOnTeam, type TeamInviteView, type TeamMemberView } from "@/lib/team-view";
+import {
+  asAdminMembership,
+  membershipsFor,
+  resolveWorkspace,
+  workspaceFromMemberships,
+  type MembershipRow,
+  type WorkspaceMembership,
+} from "@/lib/workspace";
+
+export type { MembershipRow, WorkspaceMembership };
 
 const accessRoleSchema = z.enum(["administrator", "developer", "compliance", "analyst", "viewer"]);
 const userTypeSchema = z.enum(["employee", "contractor", "consultant"]);
@@ -42,71 +53,8 @@ function slugify(name: string) {
   return `${base || "team"}-${Math.random().toString(36).slice(2, 7)}`;
 }
 
-export type MembershipRow = {
-  org_id: string;
-  role: "admin" | "analyst" | "viewer";
-  access_role: AccessRole;
-  is_owner: boolean;
-  sandbox_access: boolean;
-  live_access: boolean;
-  permissions: string[];
-  mfa_required: boolean;
-  user_type: UserType;
-  job_title: string | null;
-  status: string;
-};
-
 function isCompanyAdmin(row: Pick<MembershipRow, "role" | "is_owner" | "access_role">) {
   return row.is_owner || row.role === "admin" || row.access_role === "owner" || row.access_role === "administrator";
-}
-
-function asAdminMembership(orgId: string): MembershipRow {
-  return {
-    org_id: orgId,
-    role: "admin",
-    access_role: "owner",
-    is_owner: true,
-    sandbox_access: true,
-    live_access: true,
-    permissions: defaultPermissions("owner"),
-    mfa_required: true,
-    user_type: "employee",
-    job_title: null,
-    status: "active",
-  };
-}
-
-async function membershipsFor(supabase: any, userId: string) {
-  const full = await supabase
-    .from("organization_members")
-    .select(
-      "org_id, role, access_role, is_owner, sandbox_access, live_access, permissions, mfa_required, user_type, job_title, status",
-    )
-    .eq("user_id", userId)
-    .order("created_at");
-  if (!full.error) {
-    return ((full.data ?? []) as MembershipRow[]).filter((row) => row.status !== "disabled");
-  }
-  if (isRlsError(full.error.message)) return [];
-  if (!isMissingColumnError(full.error.message)) throw new Error(full.error.message);
-  const legacy = await supabase
-    .from("organization_members")
-    .select("org_id, role")
-    .eq("user_id", userId);
-  if (legacy.error) throw new Error(legacy.error.message);
-  return ((legacy.data ?? []) as Array<{ org_id: string; role: MembershipRow["role"] }>).map((row) => ({
-    org_id: row.org_id,
-    role: row.role,
-    access_role: row.role === "admin" ? "administrator" : row.role === "analyst" ? "analyst" : "viewer",
-    is_owner: row.role === "admin",
-    sandbox_access: true,
-    live_access: row.role === "admin",
-    permissions: defaultPermissions(row.role === "admin" ? "administrator" : row.role === "analyst" ? "analyst" : "viewer"),
-    mfa_required: row.role === "admin",
-    user_type: "employee" as const,
-    job_title: null,
-    status: "active",
-  })) as MembershipRow[];
 }
 
 async function insertMembership(
@@ -190,6 +138,34 @@ async function createdOrgId(db: any, userId: string, orgId?: string | null) {
     .maybeSingle();
   return (created.data as { id?: string } | null)?.id ?? null;
 }
+
+async function fetchWorkspaceForUser(userClient: any, userId: string) {
+  const admin = await loadAdmin();
+  const readers = admin ? [admin, userClient] : [userClient];
+  const writer = admin ?? userClient;
+
+  for (const db of readers) {
+    try {
+      const found = await resolveWorkspace(db, userId, writer);
+      if (found.hasOrganization) return found;
+    } catch {
+      /* try the service-role client if the user JWT cannot see memberships */
+    }
+  }
+
+  return workspaceFromMemberships([]);
+}
+
+export const loadMyWorkspace = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const space = await fetchWorkspaceForUser(context.supabase, context.userId);
+    return {
+      memberships: space.memberships,
+      orgId: space.orgId,
+      hasOrganization: space.hasOrganization,
+    };
+  });
 
 async function requireAdmin(supabase: any, userId: string, orgId?: string | null) {
   let membership: MembershipRow | null = null;
@@ -325,78 +301,144 @@ export const createOrganization = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const admin = await loadAdmin();
+    const db = admin ?? context.supabase;
     const legalName = data.legalName?.trim() || data.name;
-    const { data: org, error } = await supabaseAdmin
-      .from("organizations")
-      .insert({
+    const country = data.country ? normalizeCountry(data.country) : null;
+
+    const existingSpace = await fetchWorkspaceForUser(context.supabase, context.userId);
+    let already = existingSpace.orgId ?? (await createdOrgId(db, context.userId, null));
+    if (!already) {
+      const opened = await context.supabase.rpc("open_my_company", { _name: data.name });
+      if (!opened.error && opened.data) already = String(opened.data);
+    }
+    if (already) {
+      await joinCreatorIfNeeded(db, context.userId, already);
+      try {
+        await writeOrganizationProfile(
+          admin,
+          context.supabase,
+          already,
+          {
+            name: data.name,
+            legal_name: legalName,
+            registration_number: data.registrationNumber || null,
+            country,
+            address_line1: data.addressLine1 || null,
+            city: data.city || null,
+            region: data.region || null,
+            postal_code: data.postalCode || null,
+            website: data.website || null,
+          },
+          liveOrganizationProfileUpdate({ name: data.name }),
+        );
+      } catch {
+        /* existing company still opens the dashboard */
+      }
+      return { orgId: already, existing: true };
+    }
+
+    const slug = slugify(data.name);
+    let inserted = await writeWithFallback(
+      async (payload) => {
+        const result = await db
+          .from("organizations")
+          .insert(payload as never)
+          .select("id, name")
+          .maybeSingle();
+        return { data: result.data as { id: string; name: string } | null, error: result.error };
+      },
+      {
         name: data.name,
         legal_name: legalName,
-        slug: slugify(data.name),
+        slug,
         created_by: context.userId,
         primary_admin_user_id: context.userId,
         registration_number: data.registrationNumber || null,
-        country: data.country ? normalizeCountry(data.country) : null,
+        country,
         address_line1: data.addressLine1 || null,
         city: data.city || null,
         region: data.region || null,
         postal_code: data.postalCode || null,
         website: data.website || null,
-      })
-      .select("id, name")
-      .single();
-    if (error) throw new Error(error.message);
-
-    const { error: memberError } = await (async () => {
-      try {
-        await insertMembership(
-          supabaseAdmin,
-          {
-            org_id: org.id,
-            user_id: context.userId,
-            role: "admin",
-            access_role: "owner",
-            is_owner: true,
-            user_type: "employee",
-            sandbox_access: true,
-            live_access: true,
-            permissions: defaultPermissions("owner"),
-            mfa_required: true,
-            status: "active",
-          },
-          liveMemberInsert({ orgId: org.id as string, userId: context.userId, role: "admin" }),
-        );
-        return { error: null };
-      } catch (err) {
-        return { error: err instanceof Error ? err : new Error("Could not open the company dashboard") };
+      },
+      liveOrganizationInsert({ name: data.name, slug, createdBy: context.userId }),
+    );
+    if (inserted.error && isUniqueConflict(inserted.error.message)) {
+      const retrySlug = slugify(data.name);
+      inserted = await writeWithFallback(
+        async (payload) => {
+          const result = await db
+            .from("organizations")
+            .insert(payload as never)
+            .select("id, name")
+            .maybeSingle();
+          return { data: result.data as { id: string; name: string } | null, error: result.error };
+        },
+        {
+          name: data.name,
+          legal_name: legalName,
+          slug: retrySlug,
+          created_by: context.userId,
+          primary_admin_user_id: context.userId,
+          registration_number: data.registrationNumber || null,
+          country,
+          address_line1: data.addressLine1 || null,
+          city: data.city || null,
+          region: data.region || null,
+          postal_code: data.postalCode || null,
+          website: data.website || null,
+        },
+        liveOrganizationInsert({ name: data.name, slug: retrySlug, createdBy: context.userId }),
+      );
+    }
+    if (inserted.error || !inserted.data?.id) {
+      const message = inserted.error?.message ?? "The company could not be created";
+      if (isRlsError(message)) {
+        throw new Error("The company could not be created. Apply the latest database update, then sign in again.");
       }
-    })();
-    if (memberError) throw new Error(memberError.message);
+      throw new Error(message);
+    }
+    const org = inserted.data;
 
-    await supabaseAdmin.from("org_environments").insert([
-      { org_id: org.id, code: "sandbox", label: "Sandbox", publishable_prefix: "ef_test_" },
-      { org_id: org.id, code: "live", label: "Live", publishable_prefix: "ef_live_" },
-    ]);
+    try {
+      await joinCreatorIfNeeded(db, context.userId, org.id);
+    } catch (err) {
+      throw new Error(err instanceof Error ? err.message : "Could not open the company dashboard");
+    }
 
-    await supabaseAdmin.from("audit_events").insert({
-      org_id: org.id,
-      actor_id: context.userId,
-      action: "team.created",
-      entity_type: "organization",
-      entity_id: org.id,
-      detail: { name: data.name, legalName } as never,
-    });
+    try {
+      await db.from("org_environments").insert([
+        { org_id: org.id, code: "sandbox", label: "Sandbox", publishable_prefix: "ef_test_" },
+        { org_id: org.id, code: "live", label: "Live", publishable_prefix: "ef_live_" },
+      ]);
+    } catch {
+      /* environments are optional on older schemas */
+    }
+
+    try {
+      await db.from("audit_events").insert({
+        org_id: org.id,
+        actor_id: context.userId,
+        action: "team.created",
+        entity_type: "organization",
+        entity_id: org.id,
+        detail: { name: data.name, legalName } as never,
+      });
+    } catch {
+      /* audit must not block creating the company */
+    }
 
     try {
       const email = context.claims?.email as string | undefined;
-      if (email) {
+      if (email && admin) {
         const { sendNotification } = await import("@/lib/email.server");
-        await sendNotification(supabaseAdmin, {
+        await sendNotification(admin, {
           event: "team.welcome",
           to: [email],
-          orgId: org.id as string,
+          orgId: org.id,
           data: {
-            org: org.name as string,
+            org: org.name,
             name: (context.claims?.user_metadata as { full_name?: string } | undefined)?.full_name ?? email,
             role: "Organization Owner",
             access: "Sandbox, company administration, API documentation",
@@ -408,7 +450,7 @@ export const createOrganization = createServerFn({ method: "POST" })
       /* the welcome email must never block sign-up */
     }
 
-    return { orgId: org.id as string, existing: false };
+    return { orgId: org.id, existing: false };
   });
 
 export const updateOrganizationProfile = createServerFn({ method: "POST" })

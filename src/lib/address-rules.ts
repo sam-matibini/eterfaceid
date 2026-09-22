@@ -1,3 +1,5 @@
+import { normalizeCountry } from "@/lib/company-country";
+
 export type AddressInput = {
   line1: string;
   line2?: string | undefined;
@@ -22,7 +24,7 @@ const CA_POSTAL_REGION: Record<string, string[]> = {
 
 export function validateAddress(addr: AddressInput, documentAddress?: string | undefined): AddressCheck[] {
   const checks: AddressCheck[] = [];
-  const country = addr.country.toUpperCase();
+  const country = (normalizeCountry(addr.country) ?? addr.country.trim()).toUpperCase();
 
   checks.push({
     name: "Street address present",

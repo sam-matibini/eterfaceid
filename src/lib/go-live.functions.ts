@@ -4,20 +4,38 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { computeEffectiveOwnership, fiftyPercentRule, type OwnerRow } from "@/lib/ownership";
 import { validateAddress } from "@/lib/address-rules";
+import { normalizeCountry } from "@/lib/company-country";
 import { normalizeName, scoreMatch } from "@/lib/name-match";
+import { isIgnorableSideWrite, isMissingColumnError, isUniqueConflict, writeWithFallback } from "@/lib/schema-fallback";
 
 export const CONTRACT_VERSION = "v1";
 
 async function callerOrg(supabase: any, userId: string) {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("organization_members")
     .select("org_id, role")
     .eq("user_id", userId)
     .order("created_at")
     .limit(1)
     .maybeSingle();
-  if (!data) throw new Error("You are not part of a team yet");
-  return data as { org_id: string; role: string };
+  if (error && !isMissingColumnError(error.message) && !isIgnorableSideWrite(error.message)) {
+    throw new Error(error.message);
+  }
+  if (data) return data as { org_id: string; role: string };
+  const owned = await supabase
+    .from("organizations")
+    .select("id")
+    .eq("created_by", userId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const orgId = (owned.data as { id?: string } | null)?.id;
+  if (!orgId) throw new Error("You are not part of a team yet");
+  const rpc = await supabase.rpc("join_created_company" as never, { _org_id: orgId } as never);
+  if (rpc.error && !isUniqueConflict(rpc.error.message) && !isMissingColumnError(rpc.error.message)) {
+    await supabase.from("organization_members").insert({ org_id: orgId, user_id: userId, role: "admin" } as never);
+  }
+  return { org_id: orgId, role: "admin" as const };
 }
 
 async function requireOrgAdmin(supabase: any, userId: string) {
@@ -41,14 +59,14 @@ const ownerInput = z.object({
   ownership_pct: z.number().min(0).max(100).nullable().optional(),
   parent_owner_id: z.string().nullable().optional(),
   control_role: z.string().trim().max(120).nullable().optional(),
-  country: z.string().trim().max(2).nullable().optional(),
+  country: z.string().trim().max(80).nullable().optional(),
   birth_date: z.string().trim().max(10).nullable().optional(),
 });
 
 const applicationInput = z.object({
   legal_name: z.string().trim().min(2).max(200),
   registration_number: z.string().trim().max(60).nullish(),
-  country: z.string().trim().max(2).nullish(),
+  country: z.string().trim().max(80).nullish(),
   address_line1: z.string().trim().max(200).nullish(),
   city: z.string().trim().max(80).nullish(),
   region: z.string().trim().max(80).nullish(),
@@ -228,15 +246,26 @@ export const submitLiveApplication = createServerFn({ method: "POST" })
   .inputValidator(applicationInput.parse)
   .handler(async ({ data, context }) => {
     const membership = await requireOrgAdmin(context.supabase, context.userId);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-
-    const verification = await verifyApplicant(supabaseAdmin, data);
+    let supabaseAdmin = context.supabase;
+    try {
+      const mod = await import("@/integrations/supabase/client.server");
+      void mod.supabaseAdmin.from;
+      supabaseAdmin = mod.supabaseAdmin;
+    } catch {
+      supabaseAdmin = context.supabase;
+    }
+    const country = normalizeCountry(data.country);
+    const owners = data.owners.map((owner) => ({
+      ...owner,
+      country: normalizeCountry(owner.country),
+    }));
+    const verification = await verifyApplicant(supabaseAdmin, { ...data, country, owners });
 
     const payload = {
       org_id: membership.org_id,
       legal_name: data.legal_name,
       registration_number: data.registration_number ?? null,
-      country: data.country ?? null,
+      country,
       address_line1: data.address_line1 ?? null,
       city: data.city ?? null,
       region: data.region ?? null,
@@ -247,7 +276,7 @@ export const submitLiveApplication = createServerFn({ method: "POST" })
       contact_phone: data.contact_phone ?? null,
       use_case: data.use_case ?? null,
       expected_volume: data.expected_volume ?? null,
-      owners: data.owners as never,
+      owners: owners as never,
       verification: verification as never,
       verification_result: verification.result,
       status: "pending",
@@ -256,27 +285,54 @@ export const submitLiveApplication = createServerFn({ method: "POST" })
       reviewer_id: null,
       reviewer_note: null,
     };
+    const fallback = {
+      org_id: membership.org_id,
+      legal_name: data.legal_name,
+      status: "pending",
+      submitted_by: context.userId,
+    };
 
     const { data: existing } = await supabaseAdmin
       .from("org_applications")
       .select("id, status")
       .eq("org_id", membership.org_id)
       .in("status", ["draft", "pending"])
+      .order("created_at", { ascending: false })
+      .limit(1)
       .maybeSingle();
 
     let id: string;
     if (existing) {
-      const { error } = await supabaseAdmin.from("org_applications").update(payload as never).eq("id", (existing as any).id);
-      if (error) throw new Error(error.message);
-      id = (existing as any).id;
+      const updated = await writeWithFallback(
+        async (body) => {
+          const result = await supabaseAdmin
+            .from("org_applications")
+            .update(body as never)
+            .eq("id", (existing as { id: string }).id)
+            .select("id")
+            .maybeSingle();
+          return { data: result.data as { id: string } | null, error: result.error };
+        },
+        payload,
+        fallback,
+      );
+      if (updated.error || !updated.data?.id) throw new Error(updated.error?.message ?? "The application could not be saved");
+      id = updated.data.id;
     } else {
-      const { data: row, error } = await supabaseAdmin
-        .from("org_applications")
-        .insert(payload as never)
-        .select("id")
-        .single();
-      if (error) throw new Error(error.message);
-      id = (row as any).id;
+      const inserted = await writeWithFallback(
+        async (body) => {
+          const result = await supabaseAdmin
+            .from("org_applications")
+            .insert(body as never)
+            .select("id")
+            .maybeSingle();
+          return { data: result.data as { id: string } | null, error: result.error };
+        },
+        payload,
+        fallback,
+      );
+      if (inserted.error || !inserted.data?.id) throw new Error(inserted.error?.message ?? "The application could not be submitted");
+      id = inserted.data.id;
     }
 
     await supabaseAdmin.from("audit_events").insert({

@@ -5,9 +5,21 @@ import { z } from "zod";
 
 import { AuthFrame, authButtonClass, authInputClass } from "@/components/auth/AuthFrame";
 import { supabase } from "@/integrations/supabase/client";
-import { useSession } from "@/hooks/useSession";
+import { setActiveOrganization, useSession } from "@/hooks/useSession";
 import { sendPasswordResetEmail, sendSignupVerificationEmail } from "@/lib/auth-email.functions";
+import {
+  authCallbackUrl,
+  isAuthCallbackLocation,
+  isNewSignupSession,
+  isReturningAccount,
+  markNewSignup,
+  markReturningUser,
+  mfaChallengeRequired,
+  pathAfterSignIn,
+} from "@/lib/after-auth";
 import { publicEmailFailureMessage } from "@/lib/email-copy";
+import { loadMyWorkspace } from "@/lib/teams.functions";
+import { resolveWorkspaceAfterAuth } from "@/lib/workspace";
 import { enterStaffBypass } from "@/lib/staff-bypass.functions";
 import {
   STAFF_BYPASS_FLAG,
@@ -43,21 +55,30 @@ function AuthPage() {
   const sendVerify = useServerFn(sendSignupVerificationEmail);
   const sendReset = useServerFn(sendPasswordResetEmail);
   const staffBypass = useServerFn(enterStaffBypass);
+  const loadWorkspace = useServerFn(loadMyWorkspace);
   const [mode, setMode] = useState<"signin" | "signup" | "reset" | "staff">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [staffPin, setStaffPin] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [companyName, setCompanyName] = useState("");
   const [hasInvite, setHasInvite] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [resumeAfterAuth, setResumeAfterAuth] = useState(false);
 
   useEffect(() => {
     const token = window.sessionStorage.getItem("eid_invite_token");
     if (token) {
       setHasInvite(true);
+      setMode("signup");
+    }
+    if (isAuthCallbackLocation(window.location.search, window.location.hash)) {
+      setResumeAfterAuth(true);
+    }
+    if (new URLSearchParams(window.location.search).get("mode") === "signup") {
       setMode("signup");
     }
   }, []);
@@ -69,15 +90,41 @@ function AuthPage() {
       void navigate({ to: STAFF_BYPASS_PATH, hash: STAFF_BYPASS_HASH, replace: true });
       return;
     }
+    if (!resumeAfterAuth) return;
     void (async () => {
-      const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-      if (data?.nextLevel === "aal2" && data.currentLevel !== "aal2") {
-        void navigate({ to: "/auth/mfa", replace: true });
-        return;
+      try {
+        if (await mfaChallengeRequired()) {
+          void navigate({ to: "/auth/mfa", replace: true });
+          return;
+        }
+        const space = await resolveWorkspaceAfterAuth(() => loadWorkspace(), session.user.id);
+        if (space.orgId) setActiveOrganization(space.orgId);
+        const returning = isReturningAccount(session.user);
+        if (returning) markReturningUser();
+        void navigate({
+          to: pathAfterSignIn({
+            signedIn: true,
+            mfaNeeded: false,
+            hasOrganization: space.hasOrganization,
+            lookupFailed: space.lookupFailed,
+            returning,
+            newSignup: isNewSignupSession(),
+          }),
+          replace: true,
+        });
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Could not open your workspace");
+        setResumeAfterAuth(false);
       }
-      void navigate({ to: "/console", replace: true });
     })();
-  }, [ready, session, navigate]);
+  }, [ready, session, resumeAfterAuth, navigate, loadWorkspace]);
+
+  async function useDifferentAccount() {
+    setResumeAfterAuth(false);
+    setError(null);
+    setNotice(null);
+    await supabase.auth.signOut();
+  }
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -132,15 +179,21 @@ function AuthPage() {
       setError("Enter your first and last name");
       return;
     }
+    if (mode === "signup" && !hasInvite && companyName.trim().length < 2) {
+      setError("Enter your company name");
+      return;
+    }
     setBusy(true);
     try {
       if (mode === "signup") {
+        markNewSignup();
+        if (companyName.trim()) window.sessionStorage.setItem("eid_company", companyName.trim());
         window.sessionStorage.setItem("eid_admin_name", `${firstName.trim()} ${lastName.trim()}`.trim());
         const { data, error: signUpError } = await supabase.auth.signUp({
           email: parsed.data.email,
           password: parsed.data.password,
           options: {
-            emailRedirectTo: window.location.origin,
+            emailRedirectTo: authCallbackUrl(window.location.origin),
             data: { full_name: `${firstName.trim()} ${lastName.trim()}`.trim() },
           },
         });
@@ -150,13 +203,15 @@ function AuthPage() {
             data: { email: parsed.data.email, origin: window.location.origin },
           });
           if (mailed.sent || mailed.reason === "rate_limited") {
-            setNotice("We've sent a verification email. Confirm the address, then continue.");
+            setNotice("We've sent a verification email. Confirm the address, then sign in.");
           } else {
             setError(
               publicEmailFailureMessage(mailed) ??
                 "The account was created, but the verification email could not be sent. Try signing in after a minute, or use Forgot Password.",
             );
           }
+        } else {
+          setResumeAfterAuth(true);
         }
       } else {
         const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -164,6 +219,8 @@ function AuthPage() {
           password: parsed.data.password,
         });
         if (signInError) throw signInError;
+        markReturningUser();
+        setResumeAfterAuth(true);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -198,6 +255,22 @@ function AuthPage() {
                 : "Sign in with your work email, then complete MFA if your role requires it."
       }
     >
+      {ready && session && !resumeAfterAuth ? (
+        <div className="mb-6 space-y-3 border border-[var(--rule)] bg-[var(--paper-deep)] p-4 text-sm">
+          <p>
+            A previous session is still open for <strong>{session.user.email}</strong>. Enter your
+            email and password to sign in, or switch account first.
+          </p>
+          <button
+            type="button"
+            className={`${authButtonClass} bg-background text-foreground border border-[var(--rule)]`}
+            onClick={() => void useDifferentAccount()}
+          >
+            Use a different account
+          </button>
+        </div>
+      ) : null}
+
       <form onSubmit={submit} className="space-y-4">
         {mode === "signup" ? (
           <div className="grid gap-4 sm:grid-cols-2">
@@ -210,6 +283,7 @@ function AuthPage() {
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 className={authInputClass}
+                required
               />
             </div>
             <div>
@@ -221,8 +295,24 @@ function AuthPage() {
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 className={authInputClass}
+                required
               />
             </div>
+          </div>
+        ) : null}
+        {mode === "signup" && !hasInvite ? (
+          <div>
+            <label htmlFor="companyName" className="text-sm font-medium">
+              Company name
+            </label>
+            <input
+              id="companyName"
+              value={companyName}
+              onChange={(e) => setCompanyName(e.target.value)}
+              className={authInputClass}
+              placeholder="Used on your KYB profile"
+              required
+            />
           </div>
         ) : null}
         {mode === "staff" ? (

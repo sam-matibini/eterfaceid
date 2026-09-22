@@ -1,9 +1,13 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 
 import { AuthFrame, authButtonClass, authInputClass } from "@/components/auth/AuthFrame";
 import { supabase } from "@/integrations/supabase/client";
-import { useSession } from "@/hooks/useSession";
+import { setActiveOrganization, useSession } from "@/hooks/useSession";
+import { isNewSignupSession, isReturningAccount, markReturningUser, pathAfterSignIn } from "@/lib/after-auth";
+import { loadMyWorkspace } from "@/lib/teams.functions";
+import { resolveWorkspaceAfterAuth } from "@/lib/workspace";
 
 export const Route = createFileRoute("/auth/mfa")({
   ssr: false,
@@ -19,6 +23,7 @@ export const Route = createFileRoute("/auth/mfa")({
 function MfaChallengePage() {
   const navigate = useNavigate();
   const { session, ready } = useSession();
+  const loadWorkspace = useServerFn(loadMyWorkspace);
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -47,7 +52,21 @@ function MfaChallengePage() {
         code: code.trim(),
       });
       if (verifyError) throw verifyError;
-      void navigate({ to: "/console", replace: true });
+      const space = await resolveWorkspaceAfterAuth(() => loadWorkspace(), session?.user.id);
+      if (space.orgId) setActiveOrganization(space.orgId);
+      const returning = isReturningAccount(session?.user);
+      if (returning) markReturningUser();
+      void navigate({
+        to: pathAfterSignIn({
+          signedIn: true,
+          mfaNeeded: false,
+          hasOrganization: space.hasOrganization,
+          lookupFailed: space.lookupFailed,
+          returning,
+          newSignup: isNewSignupSession(),
+        }),
+        replace: true,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "That code could not be verified");
     } finally {

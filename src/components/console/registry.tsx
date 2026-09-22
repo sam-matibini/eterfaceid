@@ -197,7 +197,7 @@ export function RegistryPanel({
                   {row.created_at ? ` · ${new Date(row.created_at).toLocaleString()}` : ""}
                 </div>
               </div>
-              <StatusPill tone={row.result}>{String(row.result).replace("_", " ")}</StatusPill>
+              <StatusPill tone={String(row.result ?? "pending")}>{String(row.result ?? "pending").replace("_", " ")}</StatusPill>
             </div>
             <ul className="mt-3 space-y-1 text-sm">
               {((row.comparisons ?? []) as unknown as RegistryComparison[]).map((c, i) => (

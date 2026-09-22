@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
 export function ProductFilm({
@@ -14,7 +14,9 @@ export function ProductFilm({
   description: string;
   className?: string;
 }) {
-  const [reduceMotion, setReduceMotion] = useState(true);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [reduceMotion, setReduceMotion] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     const query = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -24,10 +26,25 @@ export function ProductFilm({
     return () => query.removeEventListener("change", update);
   }, []);
 
+  useEffect(() => {
+    const node = videoRef.current;
+    if (!node || reduceMotion || failed) return;
+    const play = () => {
+      void node.play().catch(() => {
+        /* autoplay can be blocked; the poster remains visible until playback starts */
+      });
+    };
+    play();
+    node.addEventListener("canplay", play);
+    return () => node.removeEventListener("canplay", play);
+  }, [src, reduceMotion, failed]);
+
+  const showStill = reduceMotion || failed;
+
   return (
     <figure className={cn("overflow-hidden border border-rule bg-paper", className)}>
       <div className="aspect-[8/5] overflow-hidden bg-paper">
-        {reduceMotion ? (
+        {showStill ? (
           <img
             src={poster}
             alt={`${title}: ${description}`}
@@ -36,6 +53,7 @@ export function ProductFilm({
           />
         ) : (
           <video
+            ref={videoRef}
             src={src}
             poster={poster}
             aria-label={`${title}: ${description}`}
@@ -44,7 +62,9 @@ export function ProductFilm({
             muted
             loop
             playsInline
-            preload="metadata"
+            preload="auto"
+            disablePictureInPicture
+            onError={() => setFailed(true)}
           />
         )}
       </div>

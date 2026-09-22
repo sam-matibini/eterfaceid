@@ -2901,6 +2901,10 @@ export type Database = {
       can_write: { Args: { _user_id: string }; Returns: boolean }
       can_write_org: { Args: { _org: string }; Returns: boolean }
       current_org_ids: { Args: never; Returns: string[] }
+      find_my_company: { Args: never; Returns: string }
+      join_created_company: { Args: { _org_id: string }; Returns: string }
+      open_my_company: { Args: { _name?: string }; Returns: string }
+      created_this_org: { Args: { _org: string }; Returns: boolean }
       has_any_role: { Args: { _user_id: string }; Returns: boolean }
       has_org_permission: { Args: { _org: string; _perm: string }; Returns: boolean }
       has_org_role: {
